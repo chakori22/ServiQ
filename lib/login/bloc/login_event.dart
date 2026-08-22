@@ -19,3 +19,26 @@ final class LoginSubmitted extends LoginEvent {
   @override
   List<Object> get props => [];
 }
+
+final class OtpChanged extends LoginEvent {
+  final String otp;
+
+  const OtpChanged(this.otp);
+
+  @override
+  List<Object> get props => [otp];
+}
+
+final class OtpSubmitted extends LoginEvent {
+  const OtpSubmitted();
+
+  @override
+  List<Object> get props => [];
+}
+
+final class OtpResendRequested extends LoginEvent {
+  const OtpResendRequested();
+
+  @override
+  List<Object> get props => [];
+}

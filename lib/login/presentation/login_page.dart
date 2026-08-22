@@ -9,6 +9,7 @@ import 'package:local_markerplace/components/primary_button.dart';
 import 'package:local_markerplace/components/textfield.dart';
 import '../bloc/login_bloc.dart';
 import '../repository/login_repository.dart';
+import 'otp_verification.dart';
 
 const _carouselImages = [
   'assets/images/serviq_login_illustration.svg',
@@ -44,14 +45,33 @@ class _LoginViewState extends State<_LoginView> {
     final sheetHeight = screenHeight * 0.4;
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      body: BlocListener<LoginBloc, LoginState>(
-        listener: (context, state) {
-          if (state.errorMessage != null) {
-            ScaffoldMessenger.of(context)
-              ..hideCurrentSnackBar()
-              ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
-          }
-        },
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<LoginBloc, LoginState>(
+            listenWhen: (previous, current) =>
+                current.errorMessage != null &&
+                previous.errorMessage != current.errorMessage,
+            listener: (context, state) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+            },
+          ),
+          BlocListener<LoginBloc, LoginState>(
+            listenWhen: (previous, current) =>
+                !previous.isOtpSent && current.isOtpSent,
+            listener: (context, state) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<LoginBloc>(),
+                    child: const OtpVerificationPage(),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
         child: Stack(
           children: [
             // Only fills the space above the sheet's resting position so the

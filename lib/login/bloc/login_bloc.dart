@@ -12,9 +12,15 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       super(const LoginState.initial()) {
     on<MobileNumberChanged>(_onMobileNumberChanged);
     on<LoginSubmitted>(_onLoginSubmitted);
+    on<OtpChanged>(_onOtpChanged);
+    on<OtpSubmitted>(_onOtpSubmitted);
+    on<OtpResendRequested>(_onOtpResendRequested);
   }
 
   final LoginRepository _loginRepository;
+
+  // TODO: replace with the real OTP issued by the backend.
+  static const _validOtp = '111111';
 
   void _onMobileNumberChanged(
     MobileNumberChanged event,
@@ -34,12 +40,40 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
       emit(
         state.copyWith(
           isLoading: false,
-          isSuccess: success,
+          isOtpSent: success,
           errorMessage: success ? null : 'Invalid mobile number',
         ),
       );
     } catch (e) {
       emit(state.copyWith(isLoading: false, errorMessage: e.toString()));
     }
+  }
+
+  void _onOtpChanged(OtpChanged event, Emitter<LoginState> emit) {
+    emit(state.copyWith(otp: event.otp, otpError: null));
+  }
+
+  Future<void> _onOtpSubmitted(
+    OtpSubmitted event,
+    Emitter<LoginState> emit,
+  ) async {
+    if (!state.isOtpValid) return;
+    emit(state.copyWith(isLoading: true, otpError: null));
+    await Future.delayed(const Duration(milliseconds: 600));
+    final isValid = state.otp == _validOtp;
+    emit(
+      state.copyWith(
+        isLoading: false,
+        isSuccess: isValid,
+        otpError: isValid ? null : 'Invalid OTP',
+      ),
+    );
+  }
+
+  void _onOtpResendRequested(
+    OtpResendRequested event,
+    Emitter<LoginState> emit,
+  ) {
+    emit(state.copyWith(otp: '', otpError: null));
   }
 }
