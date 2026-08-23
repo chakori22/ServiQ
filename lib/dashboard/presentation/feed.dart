@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:local_markerplace/app_color.dart';
+import 'package:local_markerplace/dashboard/presentation/components/option_card.dart';
+import 'package:local_markerplace/dashboard/presentation/components/post.dart';
 
 class FeedPage extends StatelessWidget {
   const FeedPage({super.key});
@@ -75,15 +78,143 @@ class FeedPage extends StatelessWidget {
           ),
         ],
       ),
-      body: ClipPath(
-        clipper: BottomCurveClipper(),
-        child: Container(
-          height: 250,
-          color: AppColor.indicativeBlueColor300,
-          child: Column(children: [
-            
-          ],),
-        ),
+      body: Column(
+        children: [
+          ClipPath(
+            clipper: BottomCurveClipper(),
+            child: Container(
+              height: 250,
+              width: double.infinity,
+
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColor.indicativeBlueColor300,
+                    AppColor.indicativeBlueColor500,
+                    AppColor.indicativeBlueColor700,
+                  ],
+                ),
+              ),
+
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/images/post_tab_person_gold.svg',
+                          width: 120,
+                          height: 180,
+                          fit: BoxFit.contain,
+                        ),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Real-time help, right \naround the corner.',
+                              style: TextStyle(
+                                color: AppColor.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                ServiceOptionCard(
+                                  title: 'Get Instant\nService',
+                                  icon: Icons.bolt_rounded,
+                                  onTap: () {
+                                    // Instant service
+                                  },
+                                ),
+
+                                const SizedBox(width: 16),
+
+                                ServiceOptionCard(
+                                  title: 'Schedule for\nLater',
+                                  icon: Icons.calendar_month_rounded,
+                                  onTap: () {
+                                    // Schedule service
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    //   Text(
+                    //     'Welcome to Local Marketplace',
+                    //     style: Theme.of(context).textTheme.headlineSmall
+                    //         ?.copyWith(
+                    //           color: AppColor.white,
+                    //           fontWeight: FontWeight.w700,
+                    //         ),
+                    //   ),
+
+                    //   const SizedBox(height: 8),
+
+                    //   Text(
+                    //     'Find shops, products and services near you.',
+                    //     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    //       color: AppColor.white.withOpacity(0.85),
+                    //     ),
+                    //   ),
+
+                    //   const SizedBox(height: 20),
+
+                    //   // Search container
+                    //   Container(
+                    //     height: 52,
+                    //     width: double.infinity,
+                    //     decoration: BoxDecoration(
+                    //       color: AppColor.white,
+                    //       borderRadius: BorderRadius.circular(14),
+                    //       boxShadow: [
+                    //         BoxShadow(
+                    //           color: Colors.black.withOpacity(0.08),
+                    //           blurRadius: 10,
+                    //           offset: const Offset(0, 4),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //     child: Row(
+                    //       children: [
+                    //         const SizedBox(width: 16),
+
+                    //         Icon(
+                    //           Icons.search_rounded,
+                    //           color: AppColor.neutralGreyColor500,
+                    //         ),
+
+                    //         const SizedBox(width: 12),
+
+                    //         Text(
+                    //           'Search shops, services...',
+                    //           style: TextStyle(
+                    //             color: AppColor.neutralGreyColor500,
+                    //             fontSize: 14,
+                    //           ),
+                    //         ),
+                    //       ],
+                    //     ),
+                    //   ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          PostCard(),
+        ],
       ),
     );
   }
