@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/dashboard/presentation/feed.dart';
 
 import '../../app_color.dart';
 import '../../components/otp_input.dart';
 import '../../components/primary_button.dart';
+import '../../dashboard/presentation/dashboard_page.dart';
 import '../bloc/login_bloc.dart';
 
 class OtpVerificationPage extends StatefulWidget {
@@ -65,11 +67,10 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         listenWhen: (previous, current) =>
             !previous.isSuccess && current.isSuccess,
         listener: (context, state) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(
-              const SnackBar(content: Text('OTP verified successfully')),
-            );
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            (route) => false,
+          );
         },
         child: SafeArea(
           child: Padding(

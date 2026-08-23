@@ -1,7 +1,6 @@
 part of 'login_bloc.dart';
 
 // Sentinel so copyWith can tell "not passed" apart from an explicit null.
-const _unset = Object();
 
 class LoginState extends Equatable {
   final String mobileNumber;
@@ -35,24 +34,20 @@ class LoginState extends Equatable {
   LoginState copyWith({
     String? mobileNumber,
     bool? isLoading,
-    Object? errorMessage = _unset,
+    String? errorMessage,
     bool? isSuccess,
     bool? isOtpSent,
     String? otp,
-    Object? otpError = _unset,
+    String? otpError,
   }) {
     return LoginState(
       mobileNumber: mobileNumber ?? this.mobileNumber,
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: identical(errorMessage, _unset)
-          ? this.errorMessage
-          : errorMessage as String?,
+      errorMessage: errorMessage ?? this.errorMessage,
       isSuccess: isSuccess ?? this.isSuccess,
       isOtpSent: isOtpSent ?? this.isOtpSent,
       otp: otp ?? this.otp,
-      otpError: identical(otpError, _unset)
-          ? this.otpError
-          : otpError as String?,
+      otpError: otpError ?? this.otpError,
     );
   }
 
