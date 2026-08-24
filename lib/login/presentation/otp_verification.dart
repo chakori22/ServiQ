@@ -67,7 +67,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
             !previous.isSuccess && current.isSuccess,
         listener: (context, state) {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const DashboardScreen()),
+            MaterialPageRoute(builder: (_) => const DashboardPage()),
             (route) => false,
           );
         },

@@ -1,0 +1,92 @@
+import 'package:local_markerplace/dashboard/model/post_details.dart';
+import 'package:local_markerplace/network/failure.dart';
+import 'package:dartz/dartz.dart'; // add this import for Either
+
+class DashboardRepository {
+  const DashboardRepository();
+
+  Future<bool> login(String mobileNumber) async {
+    // TODO: replace with a real authentication API call.
+    await Future.delayed(const Duration(seconds: 1));
+    return mobileNumber.isNotEmpty;
+  }
+
+  Future<Either<Failure, List<PostDetails>>> getPostDetails() async {
+    // TODO: replace with a real API call (e.g. GET /posts).
+    await Future.delayed(const Duration(seconds: 1));
+
+    final post = [
+      PostDetails(
+        username: 'chakorichaturvedi',
+        userAvatarUrl: 'assets/images/avatar1.png',
+        postedAt: DateTime(2026, 1, 1),
+        imageUrl: 'assets/images/marketplace.png',
+        description:
+            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash.',
+        budgetAmount: 500,
+        paymentMode: 'Cash',
+        isInstant: true,
+        scheduledTime: DateTime.now(),
+        acceptCount: 3,
+        chatCount: 2,
+      ),
+      PostDetails(
+        username: 'rahul_verma',
+        userAvatarUrl: 'assets/images/avatar2.png',
+        postedAt: DateTime(2026, 4, 26),
+        imageUrl: 'assets/images/marketplace.png',
+        description:
+            'Need help assembling a new wardrobe delivered yesterday. Should take about an hour.',
+        budgetAmount: 350,
+        paymentMode: 'UPI',
+        isInstant: false,
+        scheduledTime: DateTime.now().add(const Duration(hours: 4)),
+        acceptCount: 1,
+        chatCount: 0,
+      ),
+      PostDetails(
+        username: 'chakorichaturvedi',
+        userAvatarUrl: 'assets/images/avatar1.png',
+        postedAt: DateTime(2026, 9, 20),
+        imageUrl: 'assets/images/marketplace.png',
+        description:
+            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash.',
+        budgetAmount: 500,
+        paymentMode: 'Cash',
+        isInstant: true,
+        scheduledTime: DateTime(2026, 9, 21),
+        acceptCount: 3,
+        chatCount: 2,
+      ),
+      PostDetails(
+        username: 'chakorichaturvedi',
+        userAvatarUrl: 'assets/images/avatar1.png',
+        postedAt: DateTime(2026, 1, 3),
+        imageUrl: 'assets/images/marketplace.png',
+        description:
+            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash.',
+        budgetAmount: 500,
+        paymentMode: 'Cash',
+        isInstant: true,
+        scheduledTime: DateTime(2026, 1, 4),
+        acceptCount: 3,
+        chatCount: 2,
+      ),
+      PostDetails(
+        username: 'chakorichaturvedi',
+        userAvatarUrl: 'assets/images/avatar1.png',
+        postedAt: DateTime(2026, 1, 4),
+        imageUrl: 'assets/images/marketplace.png',
+        description:
+            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash.',
+        budgetAmount: 500,
+        paymentMode: 'Cash',
+        isInstant: false,
+        scheduledTime: DateTime(2026, 1, 5),
+        acceptCount: 3,
+        chatCount: 2,
+      ),
+    ];
+    return Right(post);
+  }
+}

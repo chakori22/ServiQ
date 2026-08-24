@@ -4,8 +4,8 @@ sealed class DashboardEvent extends Equatable {
   const DashboardEvent();
 }
 
-final class DashboardStarted extends DashboardEvent {
-  const DashboardStarted();
+final class OnFetchPostDetails extends DashboardEvent {
+  const OnFetchPostDetails();
 
   @override
   List<Object> get props => [];

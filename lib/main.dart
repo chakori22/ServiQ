@@ -16,6 +16,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
+        useMaterial3: true,
         // This is the theme of your application.
         //
         // TRY THIS: Try running your application with "flutter run". You'll see
@@ -33,7 +34,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         //colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
       ),
-      home: const DashboardScreen(),
+      home: const DashboardPage(),
     );
   }
 }
