@@ -1,4 +1,5 @@
 import 'package:local_markerplace/dashboard/model/post_details.dart';
+import 'package:local_markerplace/dashboard/model/your_post.dart';
 import 'package:local_markerplace/network/failure.dart';
 import 'package:dartz/dartz.dart'; // add this import for Either
 
@@ -22,7 +23,7 @@ class DashboardRepository {
         postedAt: DateTime(2026, 1, 1),
         imageUrl: 'assets/images/marketplace.png',
         description:
-            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash.',
+            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash. Should take about an hour.',
         budgetAmount: 500,
         paymentMode: 'Cash',
         isInstant: true,
@@ -84,6 +85,54 @@ class DashboardRepository {
         isInstant: false,
         scheduledTime: DateTime(2026, 1, 5),
         acceptCount: 3,
+        chatCount: 2,
+      ),
+    ];
+    return Right(post);
+  }
+
+  Future<Either<Failure, List<YourPostDetails>>> getYourPostDetails() async {
+    // TODO: replace with a real API call (e.g. GET /posts).
+    await Future.delayed(const Duration(seconds: 1));
+
+    final post = [
+      YourPostDetails(
+        username: 'chakorichaturvedi',
+        userAvatarUrl: 'assets/images/avatar1.png',
+        postedAt: DateTime(2026, 1, 1),
+        imageUrl: 'assets/images/marketplace2.png',
+        description:
+            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash. Should take about an hour.',
+        budgetAmount: 500,
+        paymentMode: 'Cash',
+        isInstant: true,
+        scheduledTime: DateTime.now(),
+        chatCount: 2,
+      ),
+      YourPostDetails(
+        username: 'rahul_verma',
+        userAvatarUrl: 'assets/images/avatar2.png',
+        postedAt: DateTime(2026, 4, 26),
+        imageUrl: 'assets/images/marketplace2.png',
+        description:
+            'Need help assembling a new wardrobe delivered yesterday. Should take about an hour.',
+        budgetAmount: 350,
+        paymentMode: 'UPI',
+        isInstant: false,
+        scheduledTime: DateTime.now().add(const Duration(hours: 4)),
+        chatCount: 0,
+      ),
+      YourPostDetails(
+        username: 'chakorichaturvedi',
+        userAvatarUrl: 'assets/images/avatar1.png',
+        postedAt: DateTime(2026, 9, 20),
+        imageUrl: 'assets/images/marketplace2.png',
+        description:
+            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash.',
+        budgetAmount: 500,
+        paymentMode: 'Cash',
+        isInstant: true,
+        scheduledTime: DateTime(2026, 9, 21),
         chatCount: 2,
       ),
     ];

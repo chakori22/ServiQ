@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:local_markerplace/app_color.dart';
-import 'package:local_markerplace/dashboard/model/post_details.dart';
+import 'package:local_markerplace/dashboard/model/your_post.dart';
 
-class DashboardPostCard extends StatefulWidget {
-  final List<PostDetails> postDetailsList;
+class YourPostCard extends StatefulWidget {
+  final List<YourPostDetails> postDetailsList;
 
-  const DashboardPostCard({super.key, required this.postDetailsList});
+  const YourPostCard({super.key, required this.postDetailsList});
 
   @override
-  State<DashboardPostCard> createState() => _DashboardPostCardState();
+  State<YourPostCard> createState() => _YourPostCardState();
 }
 
-class _DashboardPostCardState extends State<DashboardPostCard> {
-  late List<PostDetails> _posts;
+class _YourPostCardState extends State<YourPostCard> {
+  late List<YourPostDetails> _posts;
 
   @override
   void initState() {
@@ -21,7 +21,7 @@ class _DashboardPostCardState extends State<DashboardPostCard> {
   }
 
   @override
-  void didUpdateWidget(DashboardPostCard oldWidget) {
+  void didUpdateWidget(YourPostCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Keep local list in sync if the parent passes a new list (e.g. after
     // a bloc refetch), without wiping out any in-progress expand state
@@ -46,7 +46,7 @@ class _DashboardPostCardState extends State<DashboardPostCard> {
     }
 
     return SizedBox(
-      height: 304,
+      height: 328,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -68,12 +68,12 @@ class _DashboardPostCardState extends State<DashboardPostCard> {
 }
 
 Widget postCard({
-  required PostDetails post,
+  required YourPostDetails post,
   required VoidCallback onToggleExpanded,
   required BuildContext context,
 }) {
   return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     child: Column(
       mainAxisAlignment: MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,6 +160,25 @@ Widget postCard({
             ),
           ],
         ),
+        SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            Icon(
+              Icons.people_alt_outlined,
+              size: 16,
+              color: AppColor.neutralGreyColor700,
+            ),
+            Text(
+              ' ${post.chatCount} peopleresponded',
+              style: TextStyle(
+                color: AppColor.neutralGreyColor700,
+                fontWeight: FontWeight.w500,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
         SizedBox(height: 8),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -167,13 +186,13 @@ Widget postCard({
             Row(
               children: [
                 Icon(
-                  Icons.add_task_rounded,
+                  Icons.edit_note_outlined,
                   size: 24,
                   color: AppColor.neutralGreyColor700,
                 ),
                 SizedBox(width: 4),
                 Text(
-                  'Accept',
+                  'Edit',
                   style: TextStyle(
                     color: AppColor.neutralGreyColor700,
                     fontWeight: FontWeight.w700,
@@ -186,13 +205,13 @@ Widget postCard({
             Row(
               children: [
                 Icon(
-                  Icons.chat_bubble_outline,
+                  Icons.delete_outline,
                   size: 24,
                   color: AppColor.neutralGreyColor700,
                 ),
                 SizedBox(width: 8),
                 Text(
-                  'Chat',
+                  'Delete',
                   style: TextStyle(
                     color: AppColor.neutralGreyColor700,
                     fontWeight: FontWeight.w700,

@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:local_markerplace/dashboard/model/post_details.dart';
+import 'package:local_markerplace/dashboard/model/your_post.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 
 part 'dashboard_event.dart';
@@ -23,6 +24,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     : _dashboardRepository = dashboardRepository,
       super(const DashboardState.initial()) {
     on<OnFetchPostDetails>(_onFetchPostDetails);
+    on<OnFetchYourPostDetails>(_onFetchYourPostDetails);
   }
 
   final DashboardRepository _dashboardRepository;
@@ -43,6 +45,23 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
             filteredPostDetails: postDetails.sublist(0, 4),
             postDetails: postDetails,
           ),
+        );
+      },
+    );
+  }
+
+  Future<void> _onFetchYourPostDetails(
+    OnFetchYourPostDetails event,
+    Emitter<DashboardState> emit,
+  ) async {
+    final result = await _dashboardRepository.getYourPostDetails();
+    result.fold(
+      (failure) {
+        emit(state.copyWith(errorMessage: failure.errorMessage));
+      },
+      (yourPostDetails) {
+        emit(
+          state.copyWith(errorMessage: "", yourPostDetails: yourPostDetails),
         );
       },
     );

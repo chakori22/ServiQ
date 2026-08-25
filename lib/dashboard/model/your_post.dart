@@ -1,4 +1,4 @@
-class PostDetails {
+class YourPostDetails {
   /// Unique identifier for the post (e.g. Firestore doc id / DB primary key)
 
   /// Username of the person who created the post
@@ -30,16 +30,12 @@ class PostDetails {
   /// placeholder, since the field is mandatory regardless of instant status.
   final DateTime? scheduledTime;
 
-  /// Number of people who have accepted this task
-  final int acceptCount;
-  final bool isAccepted;
-
   /// Number of chat messages / replies on this post
   final int chatCount;
 
   final bool isExpanded;
 
-  const PostDetails({
+  const YourPostDetails({
     required this.username,
     required this.userAvatarUrl,
     required this.postedAt,
@@ -49,10 +45,8 @@ class PostDetails {
     required this.paymentMode,
     required this.isInstant,
     required this.scheduledTime,
-    required this.acceptCount,
     required this.chatCount,
     this.isExpanded = false,
-    this.isAccepted = false,
   });
 
   /// Human-readable "time ago" string for the post card header,
@@ -80,8 +74,8 @@ class PostDetails {
     return 'Today, $hour:$minute $period';
   }
 
-  factory PostDetails.fromJson(Map<String, dynamic> json) {
-    return PostDetails(
+  factory YourPostDetails.fromJson(Map<String, dynamic> json) {
+    return YourPostDetails(
       username: json['username'] as String,
       userAvatarUrl: json['userAvatarUrl'] as String,
       postedAt: DateTime.parse(json['postedAt'] as String),
@@ -93,10 +87,9 @@ class PostDetails {
       scheduledTime: json['scheduledTime'] != null
           ? DateTime.parse(json['scheduledTime'] as String)
           : null,
-      acceptCount: json['acceptCount'] as int,
+      // acceptCount: json['acceptCount'] as int,
       chatCount: json['chatCount'] as int,
       isExpanded: json['isExpanded'] as bool? ?? false,
-      isAccepted: json['isAccepted'] as bool? ?? false,
     );
   }
 
@@ -111,14 +104,12 @@ class PostDetails {
       'paymentMode': paymentMode,
       'isInstant': isInstant,
       'scheduledTime': scheduledTime?.toIso8601String(),
-      'acceptCount': acceptCount,
       'chatCount': chatCount,
       'isExpanded': isExpanded,
-      'isAccepted': isAccepted,
     };
   }
 
-  PostDetails copyWith({
+  YourPostDetails copyWith({
     String? username,
     String? userAvatarUrl,
     DateTime? postedAt,
@@ -128,12 +119,10 @@ class PostDetails {
     String? paymentMode,
     bool? isInstant,
     DateTime? scheduledTime,
-    int? acceptCount,
     int? chatCount,
     bool? isExpanded,
-    bool? isAccepted,
   }) {
-    return PostDetails(
+    return YourPostDetails(
       username: username ?? this.username,
       userAvatarUrl: userAvatarUrl ?? this.userAvatarUrl,
       postedAt: postedAt ?? this.postedAt,
@@ -143,10 +132,8 @@ class PostDetails {
       paymentMode: paymentMode ?? this.paymentMode,
       isInstant: isInstant ?? this.isInstant,
       scheduledTime: scheduledTime ?? this.scheduledTime,
-      acceptCount: acceptCount ?? this.acceptCount,
       chatCount: chatCount ?? this.chatCount,
       isExpanded: isExpanded ?? this.isExpanded,
-      isAccepted: isAccepted ?? this.isAccepted,
     );
   }
 }

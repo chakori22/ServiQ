@@ -5,6 +5,7 @@ import 'package:local_markerplace/app_color.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 import 'package:local_markerplace/dashboard/presentation/components/option_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_post.dart';
+import 'package:local_markerplace/dashboard/presentation/components/your_post.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -13,13 +14,26 @@ class FeedPage extends StatefulWidget {
   State<FeedPage> createState() => _FeedPageState();
 }
 
-class _FeedPageState extends State<FeedPage> {
+class _FeedPageState extends State<FeedPage>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
   @override
   void initState() {
     super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
     context.read<DashboardBloc>().add(const OnFetchPostDetails());
+    context.read<DashboardBloc>().add(const OnFetchYourPostDetails());
     // Fetch post details when the widget is initialized
     // You can use a Bloc or any state management solution to fetch the data
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -133,12 +147,44 @@ class _FeedPageState extends State<FeedPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              SvgPicture.asset(
-                                'assets/images/post_tab_person_gold.svg',
-                                width: 120,
-                                height: 180,
-                                fit: BoxFit.contain,
+                              AnimatedBuilder(
+                                animation: _controller,
+                                builder: (context, child) {
+                                  return ShaderMask(
+                                    shaderCallback: (bounds) {
+                                      final position =
+                                          _controller.value * 2 - 1;
+
+                                      return LinearGradient(
+                                        begin: Alignment(position - 0.5, 0),
+                                        end: Alignment(position + 0.5, 0),
+                                        colors: const [
+                                          Colors.transparent,
+                                          Colors.white54,
+                                          Colors.transparent,
+                                        ],
+                                      ).createShader(bounds);
+                                    },
+                                    blendMode: BlendMode.srcATop,
+                                    child: child,
+                                  );
+                                },
+                                child: SvgPicture.asset(
+                                  'assets/images/post_tab_person_gold.svg',
+                                  width: 120,
+                                  height: 180,
+                                  fit: BoxFit.contain,
+                                ),
                               ),
+                              // Shimmer(
+
+                              //   child: SvgPicture.asset(
+                              //     'assets/images/post_tab_person_gold.svg',
+                              //     width: 120,
+                              //     height: 180,
+                              //     fit: BoxFit.contain,
+                              //   ),
+                              // ),
                               Column(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
@@ -281,14 +327,50 @@ class _FeedPageState extends State<FeedPage> {
                   ),
                 ),
                 DashboardPostCard(postDetailsList: state.filteredPostDetails),
-                Text(
-                  'No more posts available.',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: AppColor.neutralGreyColor500,
-                    fontSize: 16,
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18.0,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Your Posts',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.neutralGreyColor700,
+                          fontSize: 24,
+                        ),
+                      ),
+                      AnimatedScale(
+                        scale: 1.0,
+                        duration: const Duration(milliseconds: 300),
+                        child: TextButton(
+                          onPressed: () {},
+                          child: Row(
+                            children: [
+                              Text(
+                                'View All',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColor.indicativeBlueColor400,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 12,
+                                color: AppColor.indicativeBlueColor400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+                YourPostCard(postDetailsList: state.yourPostDetails),
               ],
             ),
           ),
