@@ -17,3 +17,10 @@ final class OnFetchYourPostDetails extends DashboardEvent {
   @override
   List<Object> get props => [];
 }
+
+final class OnFetchServiceDetails extends DashboardEvent {
+  const OnFetchServiceDetails();
+
+  @override
+  List<Object> get props => [];
+}

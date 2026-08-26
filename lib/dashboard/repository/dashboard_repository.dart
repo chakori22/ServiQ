@@ -1,4 +1,5 @@
 import 'package:local_markerplace/dashboard/model/post_details.dart';
+import 'package:local_markerplace/dashboard/model/services.dart';
 import 'package:local_markerplace/dashboard/model/your_post.dart';
 import 'package:local_markerplace/network/failure.dart';
 import 'package:dartz/dartz.dart'; // add this import for Either
@@ -137,5 +138,45 @@ class DashboardRepository {
       ),
     ];
     return Right(post);
+  }
+
+  Future<Either<Failure, List<ServiceDetails>>> getServiceDetails() async {
+    // TODO: replace with a real API call (e.g. GET /posts).
+    await Future.delayed(const Duration(seconds: 1));
+
+    final services = [
+      ServiceDetails(
+        imageUrl: 'assets/images/carpenter.svg',
+        price: '500',
+        title: 'Carpenter',
+      ),
+      ServiceDetails(
+        imageUrl: 'assets/images/cleaner.svg',
+        price: '350',
+        title: 'Cleaner',
+      ),
+      ServiceDetails(
+        imageUrl: 'assets/images/electrician.svg',
+        price: '500',
+        title: 'Electrician',
+      ),
+
+      ServiceDetails(
+        imageUrl: 'assets/images/plumber.svg',
+        price: '500',
+        title: 'Plumber',
+      ),
+      ServiceDetails(
+        imageUrl: 'assets/images/mechanic.svg',
+        price: '500',
+        title: 'Mechanic',
+      ),
+      ServiceDetails(
+        imageUrl: 'assets/images/serviq_trusted_providers.svg',
+        price: '500',
+        title: 'Kitchen sink repair',
+      ),
+    ];
+    return Right(services);
   }
 }

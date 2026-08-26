@@ -45,24 +45,69 @@ class _YourPostCardState extends State<YourPostCard> {
       return const SizedBox.shrink();
     }
 
-    return SizedBox(
-      height: 328,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 4),
-        itemCount: _posts.length,
-        itemBuilder: (context, index) {
-          final post = _posts[index];
-          return SizedBox(
-            width: 380,
-            child: postCard(
-              post: post,
-              onToggleExpanded: () => _toggleExpanded(index),
-              context: context,
-            ),
-          );
-        },
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Your Posts',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColor.neutralGreyColor700,
+                  fontSize: 24,
+                ),
+              ),
+              AnimatedScale(
+                scale: 1.0,
+                duration: const Duration(milliseconds: 300),
+                child: TextButton(
+                  onPressed: () {},
+                  child: Row(
+                    children: [
+                      Text(
+                        'View All',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.indicativeBlueColor400,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 12,
+                        color: AppColor.indicativeBlueColor400,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 328,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            itemCount: _posts.length,
+            itemBuilder: (context, index) {
+              final post = _posts[index];
+              return SizedBox(
+                width: 380,
+                child: postCard(
+                  post: post,
+                  onToggleExpanded: () => _toggleExpanded(index),
+                  context: context,
+                ),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -170,7 +215,7 @@ Widget postCard({
               color: AppColor.neutralGreyColor700,
             ),
             Text(
-              ' ${post.chatCount} peopleresponded',
+              ' ${post.chatCount} people responded',
               style: TextStyle(
                 color: AppColor.neutralGreyColor700,
                 fontWeight: FontWeight.w500,

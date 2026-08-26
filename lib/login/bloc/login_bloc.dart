@@ -50,7 +50,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   void _onOtpChanged(OtpChanged event, Emitter<LoginState> emit) {
-    emit(state.copyWith(otp: event.otp, otpError: null));
+    emit(state.copyWith(otp: event.otp, otpError: ""));
   }
 
   Future<void> _onOtpSubmitted(

@@ -1,6 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:local_markerplace/dashboard/model/post_details.dart';
+import 'package:local_markerplace/dashboard/model/services.dart';
 import 'package:local_markerplace/dashboard/model/your_post.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 
@@ -25,6 +26,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       super(const DashboardState.initial()) {
     on<OnFetchPostDetails>(_onFetchPostDetails);
     on<OnFetchYourPostDetails>(_onFetchYourPostDetails);
+    on<OnFetchServiceDetails>(_onFetchServiceDetails);
   }
 
   final DashboardRepository _dashboardRepository;
@@ -63,6 +65,21 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         emit(
           state.copyWith(errorMessage: "", yourPostDetails: yourPostDetails),
         );
+      },
+    );
+  }
+
+  Future<void> _onFetchServiceDetails(
+    OnFetchServiceDetails event,
+    Emitter<DashboardState> emit,
+  ) async {
+    final result = await _dashboardRepository.getServiceDetails();
+    result.fold(
+      (failure) {
+        emit(state.copyWith(errorMessage: failure.errorMessage));
+      },
+      (serviceDetails) {
+        emit(state.copyWith(errorMessage: "", serviceDetails: serviceDetails));
       },
     );
   }

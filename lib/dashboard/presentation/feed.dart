@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
@@ -5,7 +7,9 @@ import 'package:local_markerplace/app_color.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 import 'package:local_markerplace/dashboard/presentation/components/option_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_post.dart';
+import 'package:local_markerplace/dashboard/presentation/components/service_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/your_post.dart';
+import 'package:local_markerplace/dashboard/presentation/instant/instant_form.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -26,6 +30,7 @@ class _FeedPageState extends State<FeedPage>
     )..repeat();
     context.read<DashboardBloc>().add(const OnFetchPostDetails());
     context.read<DashboardBloc>().add(const OnFetchYourPostDetails());
+    context.read<DashboardBloc>().add(const OnFetchServiceDetails());
     // Fetch post details when the widget is initialized
     // You can use a Bloc or any state management solution to fetch the data
   }
@@ -91,26 +96,18 @@ class _FeedPageState extends State<FeedPage>
             actions: [
               Padding(
                 padding: const EdgeInsets.only(right: 16.0),
-                child: CircleAvatar(
-                  backgroundColor: AppColor.neutralGreyColor100,
-                  radius: 18,
-                  child: Icon(
-                    Icons.notifications_none_rounded,
-                    size: 22,
-                    color: AppColor.white,
-                  ),
+                child: Icon(
+                  Icons.notifications_none_rounded,
+                  size: 24,
+                  color: AppColor.white,
                 ),
               ),
               Padding(
                 padding: const EdgeInsets.only(right: 16.0),
-                child: CircleAvatar(
-                  backgroundColor: AppColor.neutralGreyColor100,
-                  radius: 18,
-                  child: Icon(
-                    Icons.person_outline_rounded,
-                    size: 22,
-                    color: AppColor.white,
-                  ),
+                child: Icon(
+                  Icons.person_outline_rounded,
+                  size: 24,
+                  color: AppColor.white,
                 ),
               ),
             ],
@@ -203,7 +200,13 @@ class _FeedPageState extends State<FeedPage>
                                         title: 'Get Instant\nService',
                                         icon: Icons.bolt_rounded,
                                         onTap: () {
-                                          // Instant service
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  const InstantForm(),
+                                            ),
+                                          );
                                         },
                                       ),
 
@@ -292,6 +295,67 @@ class _FeedPageState extends State<FeedPage>
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
+                        'Services Near Me',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: AppColor.neutralGreyColor700,
+                          fontSize: 24,
+                        ),
+                      ),
+                      AnimatedScale(
+                        scale: 1.0,
+                        duration: const Duration(milliseconds: 300),
+                        child: TextButton(
+                          onPressed: () {},
+                          child: Row(
+                            children: [
+                              Text(
+                                'View All',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColor.indicativeBlueColor400,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                size: 12,
+                                color: AppColor.indicativeBlueColor400,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                state.serviceDetails.isEmpty
+                    ? SizedBox.shrink()
+                    : SizedBox(
+                        height: 208,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          itemCount: state.serviceDetails.length,
+                          itemBuilder: (context, index) {
+                            final service = state.serviceDetails[index];
+                            return SizedBox(
+                              width: 174,
+                              child: ServiceCard(serviceDetails: service),
+                            );
+                          },
+                        ),
+                      ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18.0,
+                    vertical: 10,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
                         'Posts',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
@@ -327,50 +391,33 @@ class _FeedPageState extends State<FeedPage>
                   ),
                 ),
                 DashboardPostCard(postDetailsList: state.filteredPostDetails),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18.0,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Your Posts',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColor.neutralGreyColor700,
-                          fontSize: 24,
-                        ),
-                      ),
-                      AnimatedScale(
-                        scale: 1.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: TextButton(
-                          onPressed: () {},
-                          child: Row(
-                            children: [
-                              Text(
-                                'View All',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColor.indicativeBlueColor400,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 12,
-                                color: AppColor.indicativeBlueColor400,
-                              ),
+                AnimatedBuilder(
+                  builder: (context, child) {
+                    return ClipPath(
+                      clipper: WavyClipper(phase: _controller.value),
+                      child: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Color(
+                                0xFFFDEBE4,
+                              ), // Very light soft skin tone (Top)
+                              Color(0xFFFFF8F5),
+                              // Lighter pink/white towards the bottom
                             ],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
                           ),
                         ),
+                        child: YourPostCard(
+                          postDetailsList: state.yourPostDetails,
+                        ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
+                  animation: _controller,
                 ),
-                YourPostCard(postDetailsList: state.yourPostDetails),
+                // YourPostCard(postDetailsList: state.yourPostDetails),
               ],
             ),
           ),
@@ -378,6 +425,47 @@ class _FeedPageState extends State<FeedPage>
       },
     );
   }
+}
+
+class WavyClipper extends CustomClipper<Path> {
+  final double phase; // Ranges from 0.0 to 1.0
+
+  WavyClipper({required this.phase});
+
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+
+    // Increased amplitude from 10 to 22.0 for taller wave height
+    const double amplitude = 4.0;
+    const double waveCount =
+        8.0; // Number of waves visible across the screen width
+
+    final double frequency = (2 * pi * waveCount) / size.width;
+
+    // Multiplied by 2*pi to ensure a seamless loop from 0 to 1
+    final double phaseShift = phase * 2 * pi;
+
+    // Move to starting point on the left (- phaseShift moves wave right)
+    path.moveTo(0, amplitude * sin(-phaseShift) + amplitude);
+
+    // Draw the sine wave across the width of the screen
+    for (double x = 0; x <= size.width; x++) {
+      // Changed + phaseShift to - phaseShift to shift direction to the right
+      double y = amplitude * sin(frequency * x - phaseShift) + amplitude;
+      path.lineTo(x, y);
+    }
+
+    // Complete the path block by drawing down to the bottom corners
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    return path;
+  }
+
+  @override
+  bool shouldReclip(WavyClipper oldClipper) => oldClipper.phase != phase;
 }
 
 class BottomCurveClipper extends CustomClipper<Path> {
