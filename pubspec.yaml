@@ -39,6 +39,7 @@ dependencies:
   equatable: ^2.1.0
   flutter_svg: ^2.2.1
   dartz: ^0.10.1
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:

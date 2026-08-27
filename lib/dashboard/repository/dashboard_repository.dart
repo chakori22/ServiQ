@@ -179,4 +179,20 @@ class DashboardRepository {
     ];
     return Right(services);
   }
+
+  Future<Either<Failure, List<String>>> getCategories() async {
+    // TODO: replace with a real API call (e.g. GET /categories).
+    await Future.delayed(const Duration(seconds: 1));
+
+    final categories = [
+      'Plumbing',
+      'Electrical',
+      'Carpentry',
+      'Cleaning',
+      'Mechanic',
+      'Kitchen sink repair',
+      'Others',
+    ];
+    return Right(categories);
+  }
 }

@@ -9,7 +9,7 @@ import 'package:local_markerplace/dashboard/presentation/components/option_card.
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_post.dart';
 import 'package:local_markerplace/dashboard/presentation/components/service_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/your_post.dart';
-import 'package:local_markerplace/dashboard/presentation/instant/instant_form.dart';
+import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -135,7 +135,7 @@ class _FeedPageState extends State<FeedPage>
 
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
+                        horizontal: 10,
                         vertical: 16,
                       ),
                       child: Column(
@@ -173,15 +173,7 @@ class _FeedPageState extends State<FeedPage>
                                   fit: BoxFit.contain,
                                 ),
                               ),
-                              // Shimmer(
 
-                              //   child: SvgPicture.asset(
-                              //     'assets/images/post_tab_person_gold.svg',
-                              //     width: 120,
-                              //     height: 180,
-                              //     fit: BoxFit.contain,
-                              //   ),
-                              // ),
                               Column(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
@@ -204,13 +196,13 @@ class _FeedPageState extends State<FeedPage>
                                             context,
                                             MaterialPageRoute(
                                               builder: (context) =>
-                                                  const InstantForm(),
+                                                  const InstantFormPage(),
                                             ),
                                           );
                                         },
                                       ),
 
-                                      const SizedBox(width: 16),
+                                      const SizedBox(width: 12),
 
                                       ServiceOptionCard(
                                         title: 'Schedule for\nLater',
