@@ -111,313 +111,327 @@ class _FeedPageState extends State<FeedPage>
               ),
             ],
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                ClipPath(
-                  clipper: BottomCurveClipper(),
-                  child: Container(
-                    height: 250,
-                    width: double.infinity,
+          body: Stack(
+            children: [
+              SingleChildScrollView(
+                child: Column(
+                  children: [
+                    ClipPath(
+                      clipper: BottomCurveClipper(),
+                      child: Container(
+                        height: 250,
+                        width: double.infinity,
 
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColor.indicativeBlueColor300,
-                          AppColor.indicativeBlueColor500,
-                          AppColor.indicativeBlueColor700,
-                        ],
-                      ),
-                    ),
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              AppColor.indicativeBlueColor300,
+                              AppColor.indicativeBlueColor500,
+                              AppColor.indicativeBlueColor700,
+                            ],
+                          ),
+                        ),
 
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 16,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 16,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              AnimatedBuilder(
-                                animation: _controller,
-                                builder: (context, child) {
-                                  return ShaderMask(
-                                    shaderCallback: (bounds) {
-                                      final position =
-                                          _controller.value * 2 - 1;
-
-                                      return LinearGradient(
-                                        begin: Alignment(position - 0.5, 0),
-                                        end: Alignment(position + 0.5, 0),
-                                        colors: const [
-                                          Colors.transparent,
-                                          Colors.white54,
-                                          Colors.transparent,
-                                        ],
-                                      ).createShader(bounds);
-                                    },
-                                    blendMode: BlendMode.srcATop,
-                                    child: child,
-                                  );
-                                },
-                                child: SvgPicture.asset(
-                                  'assets/images/post_tab_person_gold.svg',
-                                  width: 120,
-                                  height: 180,
-                                  fit: BoxFit.contain,
-                                ),
-                              ),
-
-                              Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  const Text(
-                                    'Real-time help, right \naround the corner.',
-                                    style: TextStyle(
-                                      color: AppColor.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
+                                  AnimatedBuilder(
+                                    animation: _controller,
+                                    builder: (context, child) {
+                                      return ShaderMask(
+                                        shaderCallback: (bounds) {
+                                          final position =
+                                              _controller.value * 2 - 1;
+
+                                          return LinearGradient(
+                                            begin: Alignment(position - 0.5, 0),
+                                            end: Alignment(position + 0.5, 0),
+                                            colors: const [
+                                              Colors.transparent,
+                                              Colors.white54,
+                                              Colors.transparent,
+                                            ],
+                                          ).createShader(bounds);
+                                        },
+                                        blendMode: BlendMode.srcATop,
+                                        child: child,
+                                      );
+                                    },
+                                    child: SvgPicture.asset(
+                                      'assets/images/post_tab_person_gold.svg',
+                                      width: 120,
+                                      height: 180,
+                                      fit: BoxFit.contain,
                                     ),
                                   ),
-                                  const SizedBox(height: 8),
-                                  Row(
+
+                                  Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      ServiceOptionCard(
-                                        title: 'Get Instant\nService',
-                                        icon: Icons.bolt_rounded,
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const InstantFormPage(),
-                                            ),
-                                          );
-                                        },
+                                      const Text(
+                                        'Real-time help, right \naround the corner.',
+                                        style: TextStyle(
+                                          color: AppColor.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                        ),
                                       ),
+                                      const SizedBox(height: 8),
+                                      Row(
+                                        children: [
+                                          ServiceOptionCard(
+                                            title: 'Get Instant\nService',
+                                            icon: Icons.bolt_rounded,
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      const InstantFormPage(),
+                                                ),
+                                              );
+                                            },
+                                          ),
 
-                                      const SizedBox(width: 12),
+                                          const SizedBox(width: 12),
 
-                                      ServiceOptionCard(
-                                        title: 'Schedule for\nLater',
-                                        icon: Icons.calendar_month_rounded,
-                                        onTap: () {
-                                          // Schedule service
-                                        },
+                                          ServiceOptionCard(
+                                            title: 'Schedule for\nLater',
+                                            icon: Icons.calendar_month_rounded,
+                                            onTap: () {
+                                              // Schedule service
+                                            },
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
                                 ],
                               ),
+                              //   Text(
+                              //     'Welcome to Local Marketplace',
+                              //     style: Theme.of(context).textTheme.headlineSmall
+                              //         ?.copyWith(
+                              //           color: AppColor.white,
+                              //           fontWeight: FontWeight.w700,
+                              //         ),
+                              //   ),
+
+                              //   const SizedBox(height: 8),
+
+                              //   Text(
+                              //     'Find shops, products and services near you.',
+                              //     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              //       color: AppColor.white.withOpacity(0.85),
+                              //     ),
+                              //   ),
+
+                              //   const SizedBox(height: 20),
+
+                              //   // Search container
+                              //   Container(
+                              //     height: 52,
+                              //     width: double.infinity,
+                              //     decoration: BoxDecoration(
+                              //       color: AppColor.white,
+                              //       borderRadius: BorderRadius.circular(14),
+                              //       boxShadow: [
+                              //         BoxShadow(
+                              //           color: Colors.black.withOpacity(0.08),
+                              //           blurRadius: 10,
+                              //           offset: const Offset(0, 4),
+                              //         ),
+                              //       ],
+                              //     ),
+                              //     child: Row(
+                              //       children: [
+                              //         const SizedBox(width: 16),
+
+                              //         Icon(
+                              //           Icons.search_rounded,
+                              //           color: AppColor.neutralGreyColor500,
+                              //         ),
+
+                              //         const SizedBox(width: 12),
+
+                              //         Text(
+                              //           'Search shops, services...',
+                              //           style: TextStyle(
+                              //             color: AppColor.neutralGreyColor500,
+                              //             fontSize: 14,
+                              //           ),
+                              //         ),
+                              //       ],
+                              //     ),
+                              //   ),
                             ],
                           ),
-                          //   Text(
-                          //     'Welcome to Local Marketplace',
-                          //     style: Theme.of(context).textTheme.headlineSmall
-                          //         ?.copyWith(
-                          //           color: AppColor.white,
-                          //           fontWeight: FontWeight.w700,
-                          //         ),
-                          //   ),
-
-                          //   const SizedBox(height: 8),
-
-                          //   Text(
-                          //     'Find shops, products and services near you.',
-                          //     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          //       color: AppColor.white.withOpacity(0.85),
-                          //     ),
-                          //   ),
-
-                          //   const SizedBox(height: 20),
-
-                          //   // Search container
-                          //   Container(
-                          //     height: 52,
-                          //     width: double.infinity,
-                          //     decoration: BoxDecoration(
-                          //       color: AppColor.white,
-                          //       borderRadius: BorderRadius.circular(14),
-                          //       boxShadow: [
-                          //         BoxShadow(
-                          //           color: Colors.black.withOpacity(0.08),
-                          //           blurRadius: 10,
-                          //           offset: const Offset(0, 4),
-                          //         ),
-                          //       ],
-                          //     ),
-                          //     child: Row(
-                          //       children: [
-                          //         const SizedBox(width: 16),
-
-                          //         Icon(
-                          //           Icons.search_rounded,
-                          //           color: AppColor.neutralGreyColor500,
-                          //         ),
-
-                          //         const SizedBox(width: 12),
-
-                          //         Text(
-                          //           'Search shops, services...',
-                          //           style: TextStyle(
-                          //             color: AppColor.neutralGreyColor500,
-                          //             fontSize: 14,
-                          //           ),
-                          //         ),
-                          //       ],
-                          //     ),
-                          //   ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18.0,
+                        vertical: 10,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Services Near Me',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColor.neutralGreyColor700,
+                              fontSize: 24,
+                            ),
+                          ),
+                          AnimatedScale(
+                            scale: 1.0,
+                            duration: const Duration(milliseconds: 300),
+                            child: TextButton(
+                              onPressed: () {},
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'View All',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColor.indicativeBlueColor400,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 12,
+                                    color: AppColor.indicativeBlueColor400,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18.0,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Services Near Me',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColor.neutralGreyColor700,
-                          fontSize: 24,
-                        ),
-                      ),
-                      AnimatedScale(
-                        scale: 1.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: TextButton(
-                          onPressed: () {},
-                          child: Row(
-                            children: [
-                              Text(
-                                'View All',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColor.indicativeBlueColor400,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 12,
-                                color: AppColor.indicativeBlueColor400,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
 
-                state.serviceDetails.isEmpty
-                    ? SizedBox.shrink()
-                    : SizedBox(
-                        height: 208,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          itemCount: state.serviceDetails.length,
-                          itemBuilder: (context, index) {
-                            final service = state.serviceDetails[index];
-                            return SizedBox(
-                              width: 174,
-                              child: ServiceCard(
-                                serviceDetails: service,
-                                index: index,
+                    state.serviceDetails.isEmpty
+                        ? SizedBox.shrink()
+                        : SizedBox(
+                            height: 208,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
                               ),
-                            );
-                          },
-                        ),
-                      ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18.0,
-                    vertical: 10,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Posts',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColor.neutralGreyColor700,
-                          fontSize: 24,
-                        ),
-                      ),
-                      AnimatedScale(
-                        scale: 1.0,
-                        duration: const Duration(milliseconds: 300),
-                        child: TextButton(
-                          onPressed: () {},
-                          child: Row(
-                            children: [
-                              Text(
-                                'View All',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColor.indicativeBlueColor400,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              Icon(
-                                Icons.arrow_forward_ios_rounded,
-                                size: 12,
-                                color: AppColor.indicativeBlueColor400,
-                              ),
-                            ],
+                              itemCount: state.serviceDetails.length,
+                              itemBuilder: (context, index) {
+                                final service = state.serviceDetails[index];
+                                return SizedBox(
+                                  width: 174,
+                                  child: ServiceCard(
+                                    serviceDetails: service,
+                                    index: index,
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18.0,
+                        vertical: 10,
                       ),
-                    ],
-                  ),
-                ),
-                DashboardPostCard(postDetailsList: state.filteredPostDetails),
-                AnimatedBuilder(
-                  builder: (context, child) {
-                    return ClipPath(
-                      clipper: WavyClipper(phase: _controller.value),
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Color(
-                                0xFFFDEBE4,
-                              ), // Very light soft skin tone (Top)
-                              Color(0xFFFFF8F5),
-                              // Lighter pink/white towards the bottom
-                            ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Posts',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColor.neutralGreyColor700,
+                              fontSize: 24,
+                            ),
                           ),
-                        ),
-                        child: YourPostCard(
-                          postDetailsList: state.yourPostDetails,
-                        ),
+                          AnimatedScale(
+                            scale: 1.0,
+                            duration: const Duration(milliseconds: 300),
+                            child: TextButton(
+                              onPressed: () {},
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'View All',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColor.indicativeBlueColor400,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.arrow_forward_ios_rounded,
+                                    size: 12,
+                                    color: AppColor.indicativeBlueColor400,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                  animation: _controller,
+                    ),
+                    DashboardPostCard(
+                      postDetailsList: state.filteredPostDetails,
+                    ),
+                    AnimatedBuilder(
+                      builder: (context, child) {
+                        return ClipPath(
+                          clipper: WavyClipper(phase: _controller.value),
+                          child: Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Color(
+                                    0xFFFDEBE4,
+                                  ), // Very light soft skin tone (Top)
+                                  Color(0xFFFFF8F5),
+                                  // Lighter pink/white towards the bottom
+                                ],
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                              ),
+                            ),
+                            child: YourPostCard(
+                              postDetailsList: state.yourPostDetails,
+                            ),
+                          ),
+                        );
+                      },
+                      animation: _controller,
+                    ),
+                    // YourPostCard(postDetailsList: state.yourPostDetails),
+                  ],
                 ),
-                // YourPostCard(postDetailsList: state.yourPostDetails),
-              ],
-            ),
+              ),
+              if (state.selectedServicesCount > 0)
+                Positioned(
+                  left: 8,
+                  right: 8,
+                  bottom: 8,
+                  child: _CartSummaryBar(state: state),
+                ),
+            ],
           ),
-          bottomNavigationBar: state.selectedServicesCount > 0
-              ? _CartSummaryBar(state: state)
-              : null,
+
           // /
         );
       },
@@ -437,11 +451,11 @@ class _CartSummaryBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        margin: const EdgeInsets.all(12),
+        margin: const EdgeInsets.all(8),
         padding: const EdgeInsets.all(8),
         height: 60,
         decoration: BoxDecoration(
-          color: AppColor.neutralGreyColor50,
+          color: AppColor.indicativeBlueColor100,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -476,17 +490,12 @@ class _CartSummaryBar extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${state.selectedServicesCount} services',
+                        '${state.selectedServicesCount} ${state.selectedServicesCount > 1 ? 'services' : 'service'}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
                           color: AppColor.neutralGreyColor700,
                         ),
-                      ),
-                      const Icon(
-                        Icons.keyboard_arrow_up_rounded,
-                        size: 18,
-                        color: AppColor.neutralGreyColor700,
                       ),
                     ],
                   ),
@@ -506,7 +515,7 @@ class _CartSummaryBar extends StatelessWidget {
               // TODO: navigate to the cart page once it exists.
               onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
+                backgroundColor: AppColor.indicativeBlueColor400,
                 foregroundColor: AppColor.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
