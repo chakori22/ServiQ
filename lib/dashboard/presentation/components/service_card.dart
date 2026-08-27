@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:local_markerplace/app_color.dart';
+import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 import 'package:local_markerplace/dashboard/model/services.dart';
 
 class ServiceCard extends StatelessWidget {
   final ServiceDetails serviceDetails;
-  const ServiceCard({super.key, required this.serviceDetails});
+  final int index;
+  const ServiceCard({
+    super.key,
+    required this.serviceDetails,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -86,16 +93,23 @@ class ServiceCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {
-                      // Handle the button press here
-                    },
-                    icon: const Icon(
-                      Icons.add_circle_outline_sharp,
-                      size: 32,
-                      color: AppColor.indicativeBlueColor400,
-                    ),
-                  ),
+                  serviceDetails.isSelected
+                      ? _CountStepper(
+                          serviceDetails: serviceDetails,
+                          index: index,
+                        )
+                      : IconButton(
+                          onPressed: () {
+                            context.read<DashboardBloc>().add(
+                              OnToggleServiceSelection(index),
+                            );
+                          },
+                          icon: const Icon(
+                            Icons.add_circle_outline_sharp,
+                            size: 32,
+                            color: AppColor.indicativeBlueColor400,
+                          ),
+                        ),
                 ],
               ),
             ),
@@ -115,6 +129,83 @@ class ServiceCard extends StatelessWidget {
             // const SizedBox(height: 8),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CountStepper extends StatelessWidget {
+  final ServiceDetails serviceDetails;
+  final int index;
+
+  const _CountStepper({required this.serviceDetails, required this.index});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      decoration: BoxDecoration(
+        color: AppColor.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColor.neutralGreyColor300),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StepperIconButton(
+            icon: Icons.remove,
+            onTap: () {
+              context.read<DashboardBloc>().add(
+                OnChangeServiceCount(
+                  index,
+                  serviceDetails.count - ServiceDetails.countStep,
+                ),
+              );
+            },
+          ),
+          SizedBox(
+            width: 28,
+            child: Text(
+              '${serviceDetails.count}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColor.neutralGreyColor700,
+              ),
+            ),
+          ),
+          _StepperIconButton(
+            icon: Icons.add,
+            onTap: () {
+              context.read<DashboardBloc>().add(
+                OnChangeServiceCount(
+                  index,
+                  serviceDetails.count + ServiceDetails.countStep,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepperIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _StepperIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(icon, size: 16, color: Colors.green),
       ),
     );
   }

@@ -24,3 +24,22 @@ final class OnFetchServiceDetails extends DashboardEvent {
   @override
   List<Object> get props => [];
 }
+
+final class OnToggleServiceSelection extends DashboardEvent {
+  final int index;
+
+  const OnToggleServiceSelection(this.index);
+
+  @override
+  List<Object> get props => [index];
+}
+
+final class OnChangeServiceCount extends DashboardEvent {
+  final int index;
+  final int count;
+
+  const OnChangeServiceCount(this.index, this.count);
+
+  @override
+  List<Object> get props => [index, count];
+}

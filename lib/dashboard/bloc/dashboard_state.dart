@@ -38,6 +38,14 @@ class DashboardState extends Equatable {
     );
   }
 
+  List<ServiceDetails> get selectedServices =>
+      serviceDetails.where((service) => service.isSelected).toList();
+
+  int get selectedServicesCount => selectedServices.length;
+
+  String get selectedServicesSummary =>
+      selectedServices.map((service) => service.title).join(', ');
+
   @override
   List<Object> get props => [
     errorMessage,

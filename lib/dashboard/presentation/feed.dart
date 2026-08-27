@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
@@ -334,7 +333,10 @@ class _FeedPageState extends State<FeedPage>
                             final service = state.serviceDetails[index];
                             return SizedBox(
                               width: 174,
-                              child: ServiceCard(serviceDetails: service),
+                              child: ServiceCard(
+                                serviceDetails: service,
+                                index: index,
+                              ),
                             );
                           },
                         ),
@@ -413,8 +415,115 @@ class _FeedPageState extends State<FeedPage>
               ],
             ),
           ),
+          bottomNavigationBar: state.selectedServicesCount > 0
+              ? _CartSummaryBar(state: state)
+              : null,
+          // /
         );
       },
+    );
+  }
+}
+
+class _CartSummaryBar extends StatelessWidget {
+  final DashboardState state;
+
+  const _CartSummaryBar({required this.state});
+
+  @override
+  Widget build(BuildContext context) {
+    final firstSelected = state.selectedServices.first;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(8),
+        height: 60,
+        decoration: BoxDecoration(
+          color: AppColor.neutralGreyColor50,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Container(
+                width: 40,
+                height: 40,
+                color: AppColor.white,
+                child: Center(
+                  child: SvgPicture.asset(
+                    firstSelected.imageUrl,
+                    width: 24,
+                    height: 24,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '${state.selectedServicesCount} services',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: AppColor.neutralGreyColor700,
+                        ),
+                      ),
+                      const Icon(
+                        Icons.keyboard_arrow_up_rounded,
+                        size: 18,
+                        color: AppColor.neutralGreyColor700,
+                      ),
+                    ],
+                  ),
+                  Text(
+                    state.selectedServicesSummary,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColor.neutralGreyColor500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ElevatedButton(
+              // TODO: navigate to the cart page once it exists.
+              onPressed: () {},
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: AppColor.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
+              ),
+              child: const Text(
+                'Go to cart',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

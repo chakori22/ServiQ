@@ -323,10 +323,10 @@ class _InstantFormState extends State<_InstantForm> {
             clipBehavior: Clip.none,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
                 child: Image.file(
                   _pickedImage!,
-                  width: 90,
+                  width: double.infinity,
                   height: 90,
                   fit: BoxFit.cover,
                 ),

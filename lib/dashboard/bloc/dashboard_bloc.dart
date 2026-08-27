@@ -15,6 +15,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     on<OnFetchPostDetails>(_onFetchPostDetails);
     on<OnFetchYourPostDetails>(_onFetchYourPostDetails);
     on<OnFetchServiceDetails>(_onFetchServiceDetails);
+    on<OnToggleServiceSelection>(_onToggleServiceSelection);
+    on<OnChangeServiceCount>(_onChangeServiceCount);
   }
 
   final DashboardRepository _dashboardRepository;
@@ -70,5 +72,37 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         emit(state.copyWith(errorMessage: "", serviceDetails: serviceDetails));
       },
     );
+  }
+
+  void _onToggleServiceSelection(
+    OnToggleServiceSelection event,
+    Emitter<DashboardState> emit,
+  ) {
+    final updatedServices = List<ServiceDetails>.from(state.serviceDetails);
+    final service = updatedServices[event.index];
+    updatedServices[event.index] = service.copyWith(
+      isSelected: !service.isSelected,
+      count: ServiceDetails.defaultCount,
+    );
+    emit(state.copyWith(serviceDetails: updatedServices));
+  }
+
+  void _onChangeServiceCount(
+    OnChangeServiceCount event,
+    Emitter<DashboardState> emit,
+  ) {
+    final updatedServices = List<ServiceDetails>.from(state.serviceDetails);
+    final service = updatedServices[event.index];
+
+    // Dropping below one removes the service from selection.
+    if (event.count < ServiceDetails.countStep) {
+      updatedServices[event.index] = service.copyWith(
+        isSelected: false,
+        count: ServiceDetails.defaultCount,
+      );
+    } else {
+      updatedServices[event.index] = service.copyWith(count: event.count);
+    }
+    emit(state.copyWith(serviceDetails: updatedServices));
   }
 }
