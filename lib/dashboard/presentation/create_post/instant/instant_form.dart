@@ -279,7 +279,10 @@ class _InstantFormState extends State<_InstantForm> {
         child: PrimaryButton(
           label: "Share",
           enabled: isFormValid,
-          onPressed: () {},
+          onPressed: () {
+            context.read<CreatePostBloc>().add(OnSubmitPost());
+            Navigator.of(context).pop();
+          },
         ),
       ),
     );

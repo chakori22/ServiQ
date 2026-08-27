@@ -16,6 +16,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     on<OnChangeDescription>(_onChangeDescription);
     on<OnChangeBudget>(_onChangeBudget);
     on<OnChangeImage>(_onChangeImage);
+    on<OnSubmitPost>(_onSubmitPost);
   }
 
   final DashboardRepository _dashboardRepository;
@@ -66,5 +67,9 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   void _onChangeImage(OnChangeImage event, Emitter<CreatePostState> emit) {
     emit(state.copyWith(imagePath: event.imagePath));
+  }
+
+  void _onSubmitPost(OnSubmitPost event, Emitter<CreatePostState> emit) {
+    // Handle the submission logic here, e.g., call a repository method to submit the post.
   }
 }

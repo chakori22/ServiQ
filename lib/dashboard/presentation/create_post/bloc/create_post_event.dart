@@ -62,3 +62,10 @@ final class OnChangeImage extends CreatePostEvent {
   @override
   List<Object> get props => [imagePath];
 }
+
+final class OnSubmitPost extends CreatePostEvent {
+  const OnSubmitPost();
+
+  @override
+  List<Object> get props => [];
+}
