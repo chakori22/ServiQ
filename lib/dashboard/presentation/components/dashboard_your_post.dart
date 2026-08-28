@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:local_markerplace/app_color.dart';
 import 'package:local_markerplace/dashboard/model/your_post.dart';
 
-class YourPostCard extends StatefulWidget {
+class DashboardYourPostCard extends StatefulWidget {
   final List<YourPostDetails> postDetailsList;
 
-  const YourPostCard({super.key, required this.postDetailsList});
+  const DashboardYourPostCard({super.key, required this.postDetailsList});
 
   @override
-  State<YourPostCard> createState() => _YourPostCardState();
+  State<DashboardYourPostCard> createState() => _YourPostCardState();
 }
 
-class _YourPostCardState extends State<YourPostCard> {
+class _YourPostCardState extends State<DashboardYourPostCard> {
   late List<YourPostDetails> _posts;
 
   @override
@@ -21,7 +21,7 @@ class _YourPostCardState extends State<YourPostCard> {
   }
 
   @override
-  void didUpdateWidget(YourPostCard oldWidget) {
+  void didUpdateWidget(DashboardYourPostCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Keep local list in sync if the parent passes a new list (e.g. after
     // a bloc refetch), without wiping out any in-progress expand state

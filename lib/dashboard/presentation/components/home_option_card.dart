@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:local_markerplace/app_color.dart';
 
-class ServiceOptionCard extends StatelessWidget {
+class HomeOptionCard extends StatelessWidget {
   final String title;
   final IconData icon;
   final VoidCallback onTap;
 
-  const ServiceOptionCard({
+  const HomeOptionCard({
     super.key,
     required this.title,
     required this.icon,

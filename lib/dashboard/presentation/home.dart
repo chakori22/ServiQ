@@ -5,21 +5,21 @@ import 'package:flutter_svg/svg.dart';
 import 'package:local_markerplace/app_color.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 import 'package:local_markerplace/dashboard/presentation/components/card_summary.dart';
-import 'package:local_markerplace/dashboard/presentation/components/option_card.dart';
+import 'package:local_markerplace/dashboard/presentation/components/home_option_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_post.dart';
 import 'package:local_markerplace/dashboard/presentation/components/service_card.dart';
-import 'package:local_markerplace/dashboard/presentation/components/your_post.dart';
+import 'package:local_markerplace/dashboard/presentation/components/dashboard_your_post.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
 import 'package:local_markerplace/dashboard/presentation/services/service_page.dart';
 
-class FeedPage extends StatefulWidget {
-  const FeedPage({super.key});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
 
   @override
-  State<FeedPage> createState() => _FeedPageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _FeedPageState extends State<FeedPage>
+class _HomePageState extends State<HomePage>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   @override
@@ -192,7 +192,7 @@ class _FeedPageState extends State<FeedPage>
                                       const SizedBox(height: 8),
                                       Row(
                                         children: [
-                                          ServiceOptionCard(
+                                          HomeOptionCard(
                                             title: 'Get Instant\nService',
                                             icon: Icons.bolt_rounded,
                                             onTap: () {
@@ -208,7 +208,7 @@ class _FeedPageState extends State<FeedPage>
 
                                           const SizedBox(width: 12),
 
-                                          ServiceOptionCard(
+                                          HomeOptionCard(
                                             title: 'Schedule for\nLater',
                                             icon: Icons.calendar_month_rounded,
                                             onTap: () {
@@ -434,7 +434,7 @@ class _FeedPageState extends State<FeedPage>
                                 end: Alignment.bottomCenter,
                               ),
                             ),
-                            child: YourPostCard(
+                            child: DashboardYourPostCard(
                               postDetailsList: state.yourPostDetails,
                             ),
                           ),

@@ -6,12 +6,18 @@ class DashboardState extends Equatable {
   final List<PostDetails> filteredPostDetails;
   final List<YourPostDetails> yourPostDetails;
   final List<ServiceDetails> serviceDetails;
+  final bool servicesLoading;
+  final bool postsLoading;
+  final bool yourPostsLoading;
   const DashboardState({
     required this.errorMessage,
     required this.postDetails,
     required this.filteredPostDetails,
     required this.yourPostDetails,
     required this.serviceDetails,
+    required this.servicesLoading,
+    required this.postsLoading,
+    required this.yourPostsLoading,
   });
 
   const DashboardState.initial({
@@ -20,6 +26,9 @@ class DashboardState extends Equatable {
     this.filteredPostDetails = const [],
     this.yourPostDetails = const [],
     this.serviceDetails = const [],
+    this.servicesLoading = false,
+    this.postsLoading = false,
+    this.yourPostsLoading = false,
   });
 
   DashboardState copyWith({
@@ -28,6 +37,9 @@ class DashboardState extends Equatable {
     List<PostDetails>? filteredPostDetails,
     List<YourPostDetails>? yourPostDetails,
     List<ServiceDetails>? serviceDetails,
+    bool? servicesLoading,
+    bool? postsLoading,
+    bool? yourPostsLoading,
   }) {
     return DashboardState(
       errorMessage: errorMessage ?? this.errorMessage,
@@ -35,6 +47,9 @@ class DashboardState extends Equatable {
       filteredPostDetails: filteredPostDetails ?? this.filteredPostDetails,
       yourPostDetails: yourPostDetails ?? this.yourPostDetails,
       serviceDetails: serviceDetails ?? this.serviceDetails,
+      servicesLoading: servicesLoading ?? this.servicesLoading,
+      postsLoading: postsLoading ?? this.postsLoading,
+      yourPostsLoading: yourPostsLoading ?? this.yourPostsLoading,
     );
   }
 
@@ -53,5 +68,8 @@ class DashboardState extends Equatable {
     filteredPostDetails,
     yourPostDetails,
     serviceDetails,
+    servicesLoading,
+    postsLoading,
+    yourPostsLoading,
   ];
 }

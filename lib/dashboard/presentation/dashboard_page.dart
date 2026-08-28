@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:local_markerplace/app_color.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 import 'package:local_markerplace/dashboard/presentation/explore.dart';
-import 'package:local_markerplace/dashboard/presentation/feed.dart';
+import 'package:local_markerplace/dashboard/presentation/home.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -30,7 +30,7 @@ class _DashboardViewState extends State<_DashboardView> {
   int _selectedIndex = 0;
 
   // Add more pages here later — just extend this list + the nav items below
-  final List<Widget> _pages = [const FeedPage(), const ExplorePage()];
+  final List<Widget> _pages = [const HomePage(), const ExplorePage()];
 
   void _onItemTapped(int index) {
     setState(() {

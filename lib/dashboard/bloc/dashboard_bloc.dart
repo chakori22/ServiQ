@@ -16,7 +16,6 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     on<OnFetchYourPostDetails>(_onFetchYourPostDetails);
     on<OnFetchServiceDetails>(_onFetchServiceDetails);
     on<OnToggleServiceSelection>(_onToggleServiceSelection);
-    on<OnChangeServiceCount>(_onChangeServiceCount);
   }
 
   final DashboardRepository _dashboardRepository;
@@ -25,10 +24,16 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     OnFetchPostDetails event,
     Emitter<DashboardState> emit,
   ) async {
+    emit(state.copyWith(postsLoading: true));
     final result = await _dashboardRepository.getPostDetails();
     result.fold(
       (failure) {
-        emit(state.copyWith(errorMessage: failure.errorMessage));
+        emit(
+          state.copyWith(
+            errorMessage: failure.errorMessage,
+            postsLoading: false,
+          ),
+        );
       },
       (postDetails) {
         emit(
@@ -36,6 +41,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
             errorMessage: "",
             filteredPostDetails: postDetails.sublist(0, 4),
             postDetails: postDetails,
+            postsLoading: false,
           ),
         );
       },
@@ -46,14 +52,24 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     OnFetchYourPostDetails event,
     Emitter<DashboardState> emit,
   ) async {
+    emit(state.copyWith(yourPostsLoading: true));
     final result = await _dashboardRepository.getYourPostDetails();
     result.fold(
       (failure) {
-        emit(state.copyWith(errorMessage: failure.errorMessage));
+        emit(
+          state.copyWith(
+            errorMessage: failure.errorMessage,
+            yourPostsLoading: false,
+          ),
+        );
       },
       (yourPostDetails) {
         emit(
-          state.copyWith(errorMessage: "", yourPostDetails: yourPostDetails),
+          state.copyWith(
+            errorMessage: "",
+            yourPostDetails: yourPostDetails,
+            yourPostsLoading: false,
+          ),
         );
       },
     );
@@ -63,13 +79,25 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     OnFetchServiceDetails event,
     Emitter<DashboardState> emit,
   ) async {
+    emit(state.copyWith(servicesLoading: true));
     final result = await _dashboardRepository.getServiceDetails();
     result.fold(
       (failure) {
-        emit(state.copyWith(errorMessage: failure.errorMessage));
+        emit(
+          state.copyWith(
+            errorMessage: failure.errorMessage,
+            servicesLoading: false,
+          ),
+        );
       },
       (serviceDetails) {
-        emit(state.copyWith(errorMessage: "", serviceDetails: serviceDetails));
+        emit(
+          state.copyWith(
+            errorMessage: "",
+            serviceDetails: serviceDetails,
+            servicesLoading: false,
+          ),
+        );
       },
     );
   }
@@ -84,25 +112,6 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       isSelected: !service.isSelected,
       count: ServiceDetails.defaultCount,
     );
-    emit(state.copyWith(serviceDetails: updatedServices));
-  }
-
-  void _onChangeServiceCount(
-    OnChangeServiceCount event,
-    Emitter<DashboardState> emit,
-  ) {
-    final updatedServices = List<ServiceDetails>.from(state.serviceDetails);
-    final service = updatedServices[event.index];
-
-    // Dropping below one removes the service from selection.
-    if (event.count < ServiceDetails.countStep) {
-      updatedServices[event.index] = service.copyWith(
-        isSelected: false,
-        count: ServiceDetails.defaultCount,
-      );
-    } else {
-      updatedServices[event.index] = service.copyWith(count: event.count);
-    }
     emit(state.copyWith(serviceDetails: updatedServices));
   }
 }
