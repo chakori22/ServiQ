@@ -149,18 +149,19 @@ class DashboardRepository {
         imageUrl: 'assets/images/carpenter.svg',
         price: '500',
         title: 'Carpenter',
+        isSelected: true,
       ),
       ServiceDetails(
         imageUrl: 'assets/images/cleaner.svg',
         price: '350',
         title: 'Cleaner',
+        isSelected: true,
       ),
       ServiceDetails(
         imageUrl: 'assets/images/electrician.svg',
         price: '500',
         title: 'Electrician',
       ),
-
       ServiceDetails(
         imageUrl: 'assets/images/plumber.svg',
         price: '500',
@@ -175,6 +176,21 @@ class DashboardRepository {
         imageUrl: 'assets/images/serviq_trusted_providers.svg',
         price: '500',
         title: 'Kitchen sink repair',
+      ),
+      ServiceDetails(
+        imageUrl: 'assets/images/plumber.svg',
+        price: '500',
+        title: 'Tutor',
+      ),
+      ServiceDetails(
+        imageUrl: 'assets/images/mechanic.svg',
+        price: '500',
+        title: 'Delivery',
+      ),
+      ServiceDetails(
+        imageUrl: 'assets/images/serviq_trusted_providers.svg',
+        price: '500',
+        title: 'Ac repair',
       ),
     ];
     return Right(services);

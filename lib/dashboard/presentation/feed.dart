@@ -4,11 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:local_markerplace/app_color.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
+import 'package:local_markerplace/dashboard/presentation/components/card_summary.dart';
 import 'package:local_markerplace/dashboard/presentation/components/option_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_post.dart';
 import 'package:local_markerplace/dashboard/presentation/components/service_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/your_post.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
+import 'package:local_markerplace/dashboard/presentation/services/service_page.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -300,7 +302,19 @@ class _FeedPageState extends State<FeedPage>
                             scale: 1.0,
                             duration: const Duration(milliseconds: 300),
                             child: TextButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                final dashboardBloc = context
+                                    .read<DashboardBloc>();
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => BlocProvider.value(
+                                      value: dashboardBloc,
+                                      child: const ServicePage(),
+                                    ),
+                                  ),
+                                );
+                              },
                               child: Row(
                                 children: [
                                   Text(
@@ -333,14 +347,24 @@ class _FeedPageState extends State<FeedPage>
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 4,
                               ),
-                              itemCount: state.serviceDetails.length,
+                              itemCount: state.serviceDetails
+                                  .sublist(0, 5)
+                                  .length,
                               itemBuilder: (context, index) {
-                                final service = state.serviceDetails[index];
+                                final service = state.serviceDetails.sublist(
+                                  0,
+                                  5,
+                                )[index];
                                 return SizedBox(
                                   width: 174,
                                   child: ServiceCard(
                                     serviceDetails: service,
                                     index: index,
+                                    onTap: () {
+                                      context.read<DashboardBloc>().add(
+                                        OnToggleServiceSelection(index),
+                                      );
+                                    },
                                   ),
                                 );
                               },
@@ -427,7 +451,7 @@ class _FeedPageState extends State<FeedPage>
                   left: 8,
                   right: 8,
                   bottom: 8,
-                  child: _CartSummaryBar(state: state),
+                  child: CartSummaryBar(state: state),
                 ),
             ],
           ),
@@ -435,104 +459,6 @@ class _FeedPageState extends State<FeedPage>
           // /
         );
       },
-    );
-  }
-}
-
-class _CartSummaryBar extends StatelessWidget {
-  final DashboardState state;
-
-  const _CartSummaryBar({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final firstSelected = state.selectedServices.first;
-
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: const EdgeInsets.all(8),
-        padding: const EdgeInsets.all(8),
-        height: 60,
-        decoration: BoxDecoration(
-          color: AppColor.indicativeBlueColor100,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: Container(
-                width: 40,
-                height: 40,
-                color: AppColor.white,
-                child: Center(
-                  child: SvgPicture.asset(
-                    firstSelected.imageUrl,
-                    width: 24,
-                    height: 24,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '${state.selectedServicesCount} ${state.selectedServicesCount > 1 ? 'services' : 'service'}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: AppColor.neutralGreyColor700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    state.selectedServicesSummary,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColor.neutralGreyColor500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              // TODO: navigate to the cart page once it exists.
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColor.indicativeBlueColor400,
-                foregroundColor: AppColor.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-              ),
-              child: const Text(
-                'Go to cart',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

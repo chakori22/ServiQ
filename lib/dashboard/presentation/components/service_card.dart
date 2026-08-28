@@ -8,10 +8,12 @@ import 'package:local_markerplace/dashboard/model/services.dart';
 class ServiceCard extends StatelessWidget {
   final ServiceDetails serviceDetails;
   final int index;
+  final VoidCallback onTap;
   const ServiceCard({
     super.key,
     required this.serviceDetails,
     required this.index,
+    required this.onTap,
   });
 
   @override
@@ -67,11 +69,7 @@ class ServiceCard extends StatelessWidget {
                   right: 4,
                   child: serviceDetails.isSelected
                       ? GestureDetector(
-                          onTap: () {
-                            context.read<DashboardBloc>().add(
-                              OnToggleServiceSelection(index),
-                            );
-                          },
+                          onTap: onTap,
                           child: Icon(
                             Icons.delete_outline_rounded,
                             size: 24,
@@ -79,11 +77,7 @@ class ServiceCard extends StatelessWidget {
                           ),
                         )
                       : GestureDetector(
-                          onTap: () {
-                            context.read<DashboardBloc>().add(
-                              OnToggleServiceSelection(index),
-                            );
-                          },
+                          onTap: onTap,
                           child: Icon(
                             Icons.add_circle_outline_sharp,
                             size: 24,
@@ -116,7 +110,7 @@ class ServiceCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         // Replace with your service price
                         Text(
-                          '₹${serviceDetails.price}',
+                          '₹${serviceDetails.price}, ${serviceDetails.isSelected ? "Selected" : "Not Selected"}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
