@@ -109,10 +109,26 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   ) {
     final updatedServices = List<ServiceDetails>.from(state.serviceDetails);
     final service = updatedServices[event.index];
-    updatedServices[event.index] = service.copyWith(
+    final updatedService = service.copyWith(
       isSelected: !service.isSelected,
       count: ServiceDetails.defaultCount,
     );
-    emit(state.copyWith(serviceDetails: updatedServices));
+    updatedServices[event.index] = updatedService;
+
+    // filteredServiceDetails holds its own copies, keep it in sync by title.
+    final updatedFilteredServices = state.filteredServiceDetails
+        .map(
+          (filteredService) => filteredService.title == service.title
+              ? updatedService
+              : filteredService,
+        )
+        .toList();
+
+    emit(
+      state.copyWith(
+        serviceDetails: updatedServices,
+        filteredServiceDetails: updatedFilteredServices,
+      ),
+    );
   }
 }

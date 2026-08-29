@@ -10,7 +10,9 @@ import 'package:local_markerplace/dashboard/presentation/components/dashboard_po
 import 'package:local_markerplace/dashboard/presentation/components/service_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_your_post.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
 import 'package:local_markerplace/dashboard/presentation/services/service_page.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -291,7 +293,7 @@ class _HomePageState extends State<HomePage>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Services Near Me ${state.servicesLoading}',
+                            'Services Near Me',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: AppColor.neutralGreyColor700,
@@ -338,30 +340,57 @@ class _HomePageState extends State<HomePage>
                       ),
                     ),
 
-                    SizedBox(
-                      height: 208,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        itemCount: state.filteredServiceDetails.length,
-                        itemBuilder: (context, index) {
-                          final service = state.filteredServiceDetails[index];
-                          return SizedBox(
-                            width: 174,
-                            child: ServiceCard(
-                              serviceDetails: service,
-                              index: index,
-                              isLoading: state.servicesLoading,
-                              onTap: () {
-                                context.read<DashboardBloc>().add(
-                                  OnToggleServiceSelection(index),
+                    state.servicesLoading
+                        ? Shimmer.fromColors(
+                            baseColor: AppColor.indicativeBlueColor100,
+                            highlightColor: AppColor.indicativeBlueColor50,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              itemCount: 5,
+                              itemBuilder: (context, index) {
+                                return SizedBox(
+                                  height: 208,
+                                  width: 174,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
                                 );
                               },
                             ),
-                          );
-                        },
-                      ),
-                    ),
+                          )
+                        : SizedBox(
+                            height: 208,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
+                              itemCount: state.filteredServiceDetails.length,
+                              itemBuilder: (context, index) {
+                                final service =
+                                    state.filteredServiceDetails[index];
+                                return SizedBox(
+                                  width: 174,
+                                  child: ServiceCard(
+                                    serviceDetails: service,
+                                    index: index,
+                                    isLoading: state.servicesLoading,
+                                    onTap: () {
+                                      context.read<DashboardBloc>().add(
+                                        OnToggleServiceSelection(index),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 18.0,
@@ -382,7 +411,14 @@ class _HomePageState extends State<HomePage>
                             scale: 1.0,
                             duration: const Duration(milliseconds: 300),
                             child: TextButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const PostPage(),
+                                  ),
+                                );
+                              },
                               child: Row(
                                 children: [
                                   Text(
