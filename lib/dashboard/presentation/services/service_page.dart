@@ -84,6 +84,7 @@ class ServicePage extends StatelessWidget {
                               OnToggleServiceSelection(index),
                             );
                           },
+                          isLoading: state.servicesLoading,
                         ),
                         childCount: state.serviceDetails.length,
                       ),

@@ -95,6 +95,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           state.copyWith(
             errorMessage: "",
             serviceDetails: serviceDetails,
+            filteredServiceDetails: serviceDetails.sublist(0, 5),
             servicesLoading: false,
           ),
         );

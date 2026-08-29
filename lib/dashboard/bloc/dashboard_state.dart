@@ -6,6 +6,7 @@ class DashboardState extends Equatable {
   final List<PostDetails> filteredPostDetails;
   final List<YourPostDetails> yourPostDetails;
   final List<ServiceDetails> serviceDetails;
+  final List<ServiceDetails> filteredServiceDetails;
   final bool servicesLoading;
   final bool postsLoading;
   final bool yourPostsLoading;
@@ -15,6 +16,7 @@ class DashboardState extends Equatable {
     required this.filteredPostDetails,
     required this.yourPostDetails,
     required this.serviceDetails,
+    required this.filteredServiceDetails,
     required this.servicesLoading,
     required this.postsLoading,
     required this.yourPostsLoading,
@@ -26,6 +28,7 @@ class DashboardState extends Equatable {
     this.filteredPostDetails = const [],
     this.yourPostDetails = const [],
     this.serviceDetails = const [],
+    this.filteredServiceDetails = const [],
     this.servicesLoading = false,
     this.postsLoading = false,
     this.yourPostsLoading = false,
@@ -37,6 +40,7 @@ class DashboardState extends Equatable {
     List<PostDetails>? filteredPostDetails,
     List<YourPostDetails>? yourPostDetails,
     List<ServiceDetails>? serviceDetails,
+    List<ServiceDetails>? filteredServiceDetails,
     bool? servicesLoading,
     bool? postsLoading,
     bool? yourPostsLoading,
@@ -47,6 +51,8 @@ class DashboardState extends Equatable {
       filteredPostDetails: filteredPostDetails ?? this.filteredPostDetails,
       yourPostDetails: yourPostDetails ?? this.yourPostDetails,
       serviceDetails: serviceDetails ?? this.serviceDetails,
+      filteredServiceDetails:
+          filteredServiceDetails ?? this.filteredServiceDetails,
       servicesLoading: servicesLoading ?? this.servicesLoading,
       postsLoading: postsLoading ?? this.postsLoading,
       yourPostsLoading: yourPostsLoading ?? this.yourPostsLoading,
@@ -68,6 +74,7 @@ class DashboardState extends Equatable {
     filteredPostDetails,
     yourPostDetails,
     serviceDetails,
+    filteredServiceDetails,
     servicesLoading,
     postsLoading,
     yourPostsLoading,

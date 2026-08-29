@@ -291,7 +291,7 @@ class _HomePageState extends State<HomePage>
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Services Near Me',
+                            'Services Near Me ${state.servicesLoading}',
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: AppColor.neutralGreyColor700,
@@ -338,38 +338,30 @@ class _HomePageState extends State<HomePage>
                       ),
                     ),
 
-                    state.serviceDetails.isEmpty
-                        ? SizedBox.shrink()
-                        : SizedBox(
-                            height: 208,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              itemCount: state.serviceDetails
-                                  .sublist(0, 5)
-                                  .length,
-                              itemBuilder: (context, index) {
-                                final service = state.serviceDetails.sublist(
-                                  0,
-                                  5,
-                                )[index];
-                                return SizedBox(
-                                  width: 174,
-                                  child: ServiceCard(
-                                    serviceDetails: service,
-                                    index: index,
-                                    onTap: () {
-                                      context.read<DashboardBloc>().add(
-                                        OnToggleServiceSelection(index),
-                                      );
-                                    },
-                                  ),
+                    SizedBox(
+                      height: 208,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        itemCount: state.filteredServiceDetails.length,
+                        itemBuilder: (context, index) {
+                          final service = state.filteredServiceDetails[index];
+                          return SizedBox(
+                            width: 174,
+                            child: ServiceCard(
+                              serviceDetails: service,
+                              index: index,
+                              isLoading: state.servicesLoading,
+                              onTap: () {
+                                context.read<DashboardBloc>().add(
+                                  OnToggleServiceSelection(index),
                                 );
                               },
                             ),
-                          ),
+                          );
+                        },
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 18.0,
