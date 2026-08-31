@@ -2,19 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/dashboard/model/services.dart';
-import 'package:shimmer/shimmer.dart';
 
 class ServiceCard extends StatelessWidget {
   final ServiceDetails serviceDetails;
   final int index;
   final VoidCallback onTap;
-  final bool isLoading;
   const ServiceCard({
     super.key,
     required this.serviceDetails,
     required this.index,
     required this.onTap,
-    required this.isLoading,
   });
 
   @override

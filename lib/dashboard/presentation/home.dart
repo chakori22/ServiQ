@@ -11,10 +11,7 @@ import 'package:local_markerplace/dashboard/presentation/components/home_option_
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_post.dart';
 import 'package:local_markerplace/dashboard/presentation/components/service_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_your_post.dart';
-import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
-import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
-import 'package:local_markerplace/dashboard/presentation/services/service_page.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:local_markerplace/dashboard/presentation/components/dashboard_shimmer.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -303,20 +300,12 @@ class _HomePageState extends State<HomePage>
                             duration: const Duration(milliseconds: 300),
                             child: TextButton(
                               onPressed: () {
-                                final dashboardBloc = context
-                                    .read<DashboardBloc>();
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(
-                                //     builder: (context) => BlocProvider.value(
-                                //       value: dashboardBloc,
-                                //       child: const ServicePage(),
-                                //     ),
-                                //   ),
-                                // );
-                                GoRouter.of(
-                                  context,
-                                ).pushAppRoute(AppRoutes.services);
+                                // Pass the live bloc through so the Services
+                                // page shares this screen's selections.
+                                GoRouter.of(context).pushAppRoute(
+                                  AppRoutes.services,
+                                  extra: context.read<DashboardBloc>(),
+                                );
                               },
                               child: Row(
                                 children: [
@@ -342,29 +331,7 @@ class _HomePageState extends State<HomePage>
                     ),
 
                     state.servicesLoading
-                        ? Shimmer.fromColors(
-                            baseColor: AppColor.indicativeBlueColor100,
-                            highlightColor: AppColor.indicativeBlueColor50,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              itemCount: 5,
-                              itemBuilder: (context, index) {
-                                return SizedBox(
-                                  height: 208,
-                                  width: 174,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          )
+                        ? const ServiceCardsShimmer()
                         : SizedBox(
                             height: 208,
                             child: ListView.builder(
@@ -381,7 +348,6 @@ class _HomePageState extends State<HomePage>
                                   child: ServiceCard(
                                     serviceDetails: service,
                                     index: index,
-                                    isLoading: state.servicesLoading,
                                     onTap: () {
                                       context.read<DashboardBloc>().add(
                                         OnToggleServiceSelection(index),
@@ -439,9 +405,11 @@ class _HomePageState extends State<HomePage>
                         ],
                       ),
                     ),
-                    DashboardPostCard(
-                      postDetailsList: state.filteredPostDetails,
-                    ),
+                    state.postsLoading
+                        ? const PostCardsShimmer()
+                        : DashboardPostCard(
+                            postDetailsList: state.filteredPostDetails,
+                          ),
                     AnimatedBuilder(
                       builder: (context, child) {
                         return ClipPath(
@@ -460,9 +428,11 @@ class _HomePageState extends State<HomePage>
                                 end: Alignment.bottomCenter,
                               ),
                             ),
-                            child: DashboardYourPostCard(
-                              postDetailsList: state.yourPostDetails,
-                            ),
+                            child: state.yourPostsLoading
+                                ? const YourPostCardsShimmer()
+                                : DashboardYourPostCard(
+                                    postDetailsList: state.yourPostDetails,
+                                  ),
                           ),
                         );
                       },

@@ -4,7 +4,11 @@ import 'package:flutter_svg/svg.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 import 'package:local_markerplace/dashboard/presentation/components/card_summary.dart';
+import 'package:local_markerplace/dashboard/presentation/components/dashboard_shimmer.dart';
 import 'package:local_markerplace/dashboard/presentation/components/service_card.dart';
+
+/// Placeholder tiles shown while the services load — roughly a screenful.
+const int _shimmerTileCount = 6;
 
 class ServicePage extends StatelessWidget {
   const ServicePage({super.key});
@@ -76,17 +80,20 @@ class ServicePage extends StatelessWidget {
                             childAspectRatio: 0.9,
                           ),
                       delegate: SliverChildBuilderDelegate(
-                        (context, index) => ServiceCard(
-                          serviceDetails: state.serviceDetails[index],
-                          index: index,
-                          onTap: () {
-                            context.read<DashboardBloc>().add(
-                              OnToggleServiceSelection(index),
-                            );
-                          },
-                          isLoading: state.servicesLoading,
-                        ),
-                        childCount: state.serviceDetails.length,
+                        (context, index) => state.servicesLoading
+                            ? const ServiceGridShimmerTile()
+                            : ServiceCard(
+                                serviceDetails: state.serviceDetails[index],
+                                index: index,
+                                onTap: () {
+                                  context.read<DashboardBloc>().add(
+                                    OnToggleServiceSelection(index),
+                                  );
+                                },
+                              ),
+                        childCount: state.servicesLoading
+                            ? _shimmerTileCount
+                            : state.serviceDetails.length,
                       ),
                     ),
                   ),

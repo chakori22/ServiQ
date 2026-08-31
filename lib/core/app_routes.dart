@@ -1,5 +1,8 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
+import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 import 'package:local_markerplace/dashboard/presentation/dashboard_page.dart';
 
 import 'package:local_markerplace/core/launch_app.dart';
@@ -54,7 +57,26 @@ List<RouteBase> createRoutes() {
     ),
     GoRoute(
       path: AppRoutes.services.path,
-      builder: (context, state) => const ServicePage(),
+      // ServicePage reads the DashboardBloc, but this route is built by the
+      // root navigator — outside DashboardPage's provider. The dashboard hands
+      // its bloc over via `extra` so service selections stay in sync with the
+      // home rail and the cart bar. A deep link arrives without one, so fall
+      // back to a fresh bloc that loads the services itself.
+      builder: (context, state) {
+        final dashboardBloc = state.extra;
+        if (dashboardBloc is DashboardBloc) {
+          return BlocProvider.value(
+            value: dashboardBloc,
+            child: const ServicePage(),
+          );
+        }
+        return BlocProvider(
+          create: (_) =>
+              DashboardBloc(dashboardRepository: const DashboardRepository())
+                ..add(const OnFetchServiceDetails()),
+          child: const ServicePage(),
+        );
+      },
       name: AppRoutes.services.name,
     ),
     GoRoute(
