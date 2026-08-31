@@ -1,5 +1,6 @@
 import 'package:local_markerplace/dashboard/model/post_details.dart';
 import 'package:local_markerplace/dashboard/model/services.dart';
+import 'package:local_markerplace/dashboard/model/time_slot.dart';
 import 'package:local_markerplace/dashboard/model/your_post.dart';
 import 'package:local_markerplace/network/failure.dart';
 import 'package:dartz/dartz.dart'; // add this import for Either
@@ -194,6 +195,34 @@ class DashboardRepository {
       ),
     ];
     return Right(services);
+  }
+
+  /// Bookable windows for [date], for the "Schedule for Later" form.
+  ///
+  /// Availability is per-date and server-owned, so this is refetched every
+  /// time the user picks a different day.
+  Future<Either<Failure, List<TimeSlot>>> getAvailableTimeSlots(
+    DateTime date,
+  ) async {
+    // TODO: replace with a real API call (e.g. GET /slots?date=yyyy-MM-dd).
+    await Future.delayed(const Duration(seconds: 1));
+
+    final day = DateTime(date.year, date.month, date.day);
+    final now = DateTime.now();
+    final slots = <TimeSlot>[];
+    for (int hour = 9; hour < 18; hour++) {
+      final start = day.add(Duration(hours: hour));
+      slots.add(
+        TimeSlot(
+          id: 'slot-${day.day}-$hour',
+          startTime: start,
+          endTime: start.add(const Duration(hours: 1)),
+          // Windows already past, and a couple of stand-in bookings.
+          isAvailable: start.isAfter(now) && hour != 13 && hour != 16,
+        ),
+      );
+    }
+    return Right(slots);
   }
 
   Future<Either<Failure, List<String>>> getCategories() async {

@@ -9,6 +9,16 @@ class CreatePostState extends Equatable {
   final String budget;
   final String imagePath;
 
+  /// Day chosen on the "Schedule for Later" form; null on the instant form and
+  /// until the user picks one.
+  final DateTime? selectedDate;
+
+  /// Windows returned by the API for [selectedDate].
+  final List<TimeSlot> timeSlots;
+
+  final String selectedTimeSlotId;
+  final bool timeSlotsLoading;
+
   const CreatePostState({
     required this.errorMessage,
     required this.category,
@@ -17,6 +27,10 @@ class CreatePostState extends Equatable {
     required this.description,
     required this.budget,
     required this.imagePath,
+    required this.selectedDate,
+    required this.timeSlots,
+    required this.selectedTimeSlotId,
+    required this.timeSlotsLoading,
   });
 
   const CreatePostState.initial({
@@ -27,6 +41,10 @@ class CreatePostState extends Equatable {
     this.description = '',
     this.budget = '',
     this.imagePath = '',
+    this.selectedDate,
+    this.timeSlots = const [],
+    this.selectedTimeSlotId = '',
+    this.timeSlotsLoading = false,
   });
 
   CreatePostState copyWith({
@@ -37,6 +55,10 @@ class CreatePostState extends Equatable {
     String? description,
     String? budget,
     String? imagePath,
+    DateTime? selectedDate,
+    List<TimeSlot>? timeSlots,
+    String? selectedTimeSlotId,
+    bool? timeSlotsLoading,
   }) {
     return CreatePostState(
       errorMessage: errorMessage ?? this.errorMessage,
@@ -46,9 +68,28 @@ class CreatePostState extends Equatable {
       description: description ?? this.description,
       budget: budget ?? this.budget,
       imagePath: imagePath ?? this.imagePath,
+      selectedDate: selectedDate ?? this.selectedDate,
+      timeSlots: timeSlots ?? this.timeSlots,
+      selectedTimeSlotId: selectedTimeSlotId ?? this.selectedTimeSlotId,
+      timeSlotsLoading: timeSlotsLoading ?? this.timeSlotsLoading,
     );
   }
 
+  /// The windows that can actually be booked. The API reports the full day,
+  /// including windows already taken; the form only ever offers these.
+  List<TimeSlot> get availableTimeSlots =>
+      timeSlots.where((slot) => slot.isAvailable).toList();
+
+  /// The window the user picked, or null if none is selected any more (a new
+  /// date clears the choice, since slot ids belong to a single day).
+  TimeSlot? get selectedTimeSlot {
+    for (final slot in timeSlots) {
+      if (slot.id == selectedTimeSlotId) return slot;
+    }
+    return null;
+  }
+
+  /// Instant posts need every shared field filled in.
   bool get isFormValid {
     final categoryValid =
         selectedcategory.isNotEmpty &&
@@ -60,8 +101,13 @@ class CreatePostState extends Equatable {
         imagePath.isNotEmpty;
   }
 
+  /// Scheduled posts need the same fields, plus a date and one of the
+  /// windows the API returned for it.
+  bool get isScheduleFormValid =>
+      isFormValid && selectedDate != null && selectedTimeSlot != null;
+
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
     errorMessage,
     category,
     selectedcategory,
@@ -69,5 +115,9 @@ class CreatePostState extends Equatable {
     description,
     budget,
     imagePath,
+    selectedDate,
+    timeSlots,
+    selectedTimeSlotId,
+    timeSlotsLoading,
   ];
 }

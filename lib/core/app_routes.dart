@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
+import 'package:local_markerplace/dashboard/presentation/create_post/schedule/schedule_form.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 import 'package:local_markerplace/dashboard/presentation/dashboard_page.dart';
 
@@ -18,6 +19,7 @@ enum AppRoutes {
   login("/login"),
   home("/home"),
   instantForm("/instantForm"),
+  scheduleForm("/scheduleForm"),
   services("/services"),
   posts("/posts"),
   yourPosts("/yourPosts");
@@ -56,6 +58,11 @@ List<RouteBase> createRoutes() {
       path: AppRoutes.instantForm.path,
       builder: (context, state) => const InstantFormPage(),
       name: AppRoutes.instantForm.name,
+    ),
+    GoRoute(
+      path: AppRoutes.scheduleForm.path,
+      builder: (context, state) => const ScheduleFormPage(),
+      name: AppRoutes.scheduleForm.name,
     ),
     GoRoute(
       path: AppRoutes.services.path,

@@ -210,7 +210,9 @@ class _HomePageState extends State<HomePage>
                                             title: 'Schedule for\nLater',
                                             icon: Icons.calendar_month_rounded,
                                             onTap: () {
-                                              // Schedule service
+                                              GoRouter.of(context).pushAppRoute(
+                                                AppRoutes.scheduleForm,
+                                              );
                                             },
                                           ),
                                         ],

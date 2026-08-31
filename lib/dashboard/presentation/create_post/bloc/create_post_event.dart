@@ -63,6 +63,26 @@ final class OnChangeImage extends CreatePostEvent {
   List<Object> get props => [imagePath];
 }
 
+/// The user picked a day on the "Schedule for Later" form. Selecting a date
+/// is what triggers the time-slot fetch, since availability is per-date.
+final class OnSelectDate extends CreatePostEvent {
+  final DateTime date;
+
+  const OnSelectDate(this.date);
+
+  @override
+  List<Object> get props => [date];
+}
+
+final class OnSelectTimeSlot extends CreatePostEvent {
+  final String timeSlotId;
+
+  const OnSelectTimeSlot(this.timeSlotId);
+
+  @override
+  List<Object> get props => [timeSlotId];
+}
+
 final class OnSubmitPost extends CreatePostEvent {
   const OnSubmitPost();
 

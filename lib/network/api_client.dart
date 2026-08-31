@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dio/browser.dart';
 import 'package:dio/dio.dart';
 
 const _defaultConnectTimeout = Duration(minutes: 2);
@@ -17,16 +16,16 @@ class APIClient {
   }
 
   APIClient._internal({required this.baseUrl}) {
-    dio = DioForBrowser();
+    // Plain Dio() picks the right adapter per platform. The browser-specific
+    // DioForBrowser pulls in dart:js_interop, which does not compile for
+    // Android or iOS.
+    dio = Dio();
     dio
       ..options.baseUrl = baseUrl
       ..options.connectTimeout = _defaultConnectTimeout
       ..options.receiveTimeout = _defaultReceiveTimeout
       ..options.headers = {'Content-Type': 'application/json'};
 
-    final adapter = HttpClientAdapter() as BrowserHttpClientAdapter;
-    adapter.withCredentials = true;
-    dio.httpClientAdapter = adapter;
     if (interceptors.isNotEmpty) {
       dio.interceptors.addAll(interceptors);
     }

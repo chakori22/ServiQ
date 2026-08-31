@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:local_markerplace/dashboard/model/time_slot.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 
 part 'create_post_event.dart';
@@ -16,6 +17,8 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     on<OnChangeDescription>(_onChangeDescription);
     on<OnChangeBudget>(_onChangeBudget);
     on<OnChangeImage>(_onChangeImage);
+    on<OnSelectDate>(_onSelectDate);
+    on<OnSelectTimeSlot>(_onSelectTimeSlot);
     on<OnSubmitPost>(_onSubmitPost);
   }
 
@@ -65,6 +68,41 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
 
   void _onChangeImage(OnChangeImage event, Emitter<CreatePostState> emit) {
     emit(state.copyWith(imagePath: event.imagePath));
+  }
+
+  /// Picking a date loads that day's windows. Any previously chosen slot is
+  /// dropped first — slot ids belong to one day, so keeping it would leave the
+  /// form valid with a window from the wrong date.
+  Future<void> _onSelectDate(
+    OnSelectDate event,
+    Emitter<CreatePostState> emit,
+  ) async {
+    emit(
+      state.copyWith(
+        selectedDate: event.date,
+        selectedTimeSlotId: '',
+        timeSlots: const [],
+        timeSlotsLoading: true,
+      ),
+    );
+    final result = await dashboardRepository.getAvailableTimeSlots(event.date);
+    result.fold(
+      (failure) => emit(
+        state.copyWith(
+          errorMessage: 'Failed to fetch time slots',
+          timeSlotsLoading: false,
+        ),
+      ),
+      (timeSlots) =>
+          emit(state.copyWith(timeSlots: timeSlots, timeSlotsLoading: false)),
+    );
+  }
+
+  void _onSelectTimeSlot(
+    OnSelectTimeSlot event,
+    Emitter<CreatePostState> emit,
+  ) {
+    emit(state.copyWith(selectedTimeSlotId: event.timeSlotId));
   }
 
   void _onSubmitPost(OnSubmitPost event, Emitter<CreatePostState> emit) {
