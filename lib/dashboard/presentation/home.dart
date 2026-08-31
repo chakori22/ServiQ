@@ -54,6 +54,7 @@ class _HomePageState extends State<HomePage>
           appBar: AppBar(
             elevation: 2,
             animateColor: true,
+            automaticallyImplyLeading: false,
             backgroundColor: AppColor.indicativeBlueColor300,
             surfaceTintColor: AppColor.neutralGreyColor100,
             bottom: PreferredSize(
