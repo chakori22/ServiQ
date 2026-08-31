@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:local_markerplace/app_color.dart';
+import 'package:local_markerplace/core/app_color.dart';
 
 class HomeOptionCard extends StatelessWidget {
   final String title;

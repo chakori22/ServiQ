@@ -1,6 +1,10 @@
 import 'package:go_router/go_router.dart';
+import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
 import 'package:local_markerplace/dashboard/presentation/dashboard_page.dart';
-import 'package:local_markerplace/launch_app.dart';
+
+import 'package:local_markerplace/core/launch_app.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
+import 'package:local_markerplace/dashboard/presentation/services/service_page.dart';
 import 'package:local_markerplace/login/presentation/login_page.dart';
 import 'package:local_markerplace/splash/splash_screen.dart';
 
@@ -8,7 +12,10 @@ enum AppRoutes {
   launch("/"),
   splash("/splash"),
   login("/login"),
-  home("/home");
+  home("/home"),
+  instantForm("/instantForm"),
+  services("/services"),
+  posts("/posts");
 
   final String path;
   const AppRoutes(this.path);
@@ -39,6 +46,21 @@ List<RouteBase> createRoutes() {
       path: AppRoutes.home.path,
       builder: (context, state) => const DashboardPage(),
       name: AppRoutes.home.name,
+    ),
+    GoRoute(
+      path: AppRoutes.instantForm.path,
+      builder: (context, state) => const InstantFormPage(),
+      name: AppRoutes.instantForm.name,
+    ),
+    GoRoute(
+      path: AppRoutes.services.path,
+      builder: (context, state) => const ServicePage(),
+      name: AppRoutes.services.name,
+    ),
+    GoRoute(
+      path: AppRoutes.posts.path,
+      builder: (context, state) => const PostPage(),
+      name: AppRoutes.posts.name,
     ),
   ];
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:local_markerplace/serviq_app.dart';
+import 'package:local_markerplace/core/serviq_app.dart';
 import 'package:local_markerplace/splash/splash_screen.dart';
 
 class LaunchApp extends StatefulWidget {

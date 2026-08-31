@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:local_markerplace/app_color.dart';
+import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/dashboard/model/post_details.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 import 'package:shimmer/shimmer.dart';

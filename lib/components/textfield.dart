@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../app_color.dart';
+import '../core/app_color.dart';
 
 /// A themed text field with an optional label row, styled to match the app's blue palette.
 class AppTextField extends StatelessWidget {

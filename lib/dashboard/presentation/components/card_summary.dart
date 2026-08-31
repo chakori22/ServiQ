@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:local_markerplace/app_color.dart';
+import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 
 class CartSummaryBar extends StatelessWidget {

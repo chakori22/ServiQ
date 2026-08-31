@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../app_color.dart';
+import '../core/app_color.dart';
 
 /// A single pill-shaped field for entering an OTP, spacing digits out and
 /// showing a red border plus [errorText] when validation fails.

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:local_markerplace/app_routes.dart';
+import 'package:local_markerplace/core/app_routes.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 
 import 'package:local_markerplace/login/repository/login_repository.dart';
+import 'package:local_markerplace/network/api_client.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -32,6 +33,7 @@ Future<Widget> appBuilder(
   LoginRepository? loginRepository,
   DashboardRepository? dashboardRepository,
 }) async {
+  final apiClient = APIClient(baseUrl: baseUrl);
   final _loginRepository = loginRepository ?? LoginRepository();
   final _dashboardRepository = dashboardRepository ?? DashboardRepository();
 

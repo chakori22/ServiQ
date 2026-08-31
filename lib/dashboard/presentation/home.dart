@@ -2,7 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:local_markerplace/app_color.dart';
+import 'package:go_router/go_router.dart';
+import 'package:local_markerplace/core/app_color.dart';
+import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 import 'package:local_markerplace/dashboard/presentation/components/card_summary.dart';
 import 'package:local_markerplace/dashboard/presentation/components/home_option_card.dart';
@@ -198,12 +200,8 @@ class _HomePageState extends State<HomePage>
                                             title: 'Get Instant\nService',
                                             icon: Icons.bolt_rounded,
                                             onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      const InstantFormPage(),
-                                                ),
+                                              GoRouter.of(context).pushAppRoute(
+                                                AppRoutes.instantForm,
                                               );
                                             },
                                           ),
@@ -307,15 +305,18 @@ class _HomePageState extends State<HomePage>
                               onPressed: () {
                                 final dashboardBloc = context
                                     .read<DashboardBloc>();
-                                Navigator.push(
+                                // Navigator.push(
+                                //   context,
+                                //   MaterialPageRoute(
+                                //     builder: (context) => BlocProvider.value(
+                                //       value: dashboardBloc,
+                                //       child: const ServicePage(),
+                                //     ),
+                                //   ),
+                                // );
+                                GoRouter.of(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (context) => BlocProvider.value(
-                                      value: dashboardBloc,
-                                      child: const ServicePage(),
-                                    ),
-                                  ),
-                                );
+                                ).pushAppRoute(AppRoutes.services);
                               },
                               child: Row(
                                 children: [
@@ -412,12 +413,9 @@ class _HomePageState extends State<HomePage>
                             duration: const Duration(milliseconds: 300),
                             child: TextButton(
                               onPressed: () {
-                                Navigator.push(
+                                GoRouter.of(
                                   context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const PostPage(),
-                                  ),
-                                );
+                                ).pushAppRoute(AppRoutes.posts);
                               },
                               child: Row(
                                 children: [

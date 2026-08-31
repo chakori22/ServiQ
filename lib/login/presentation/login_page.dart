@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:local_markerplace/app_color.dart';
+import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/components/primary_button.dart';
 import 'package:local_markerplace/components/textfield.dart';
 import '../bloc/login_bloc.dart';

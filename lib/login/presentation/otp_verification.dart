@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:local_markerplace/app_routes.dart';
+import 'package:local_markerplace/core/app_routes.dart';
 
-import '../../app_color.dart';
+import '../../core/app_color.dart';
 import '../../components/otp_input.dart';
 import '../../components/primary_button.dart';
 import '../../dashboard/presentation/dashboard_page.dart';

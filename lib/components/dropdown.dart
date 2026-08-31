@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../app_color.dart';
+import '../core/app_color.dart';
 
 /// A themed dropdown field, styled identically to [AppTextField].
 /// Uses [showMenu] instead of the stock [DropdownButton] so the menu

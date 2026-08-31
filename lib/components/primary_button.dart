@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../app_color.dart';
+import '../core/app_color.dart';
 
 /// A full-width pill button that greys out until [enabled] is true.
 class PrimaryButton extends StatelessWidget {
