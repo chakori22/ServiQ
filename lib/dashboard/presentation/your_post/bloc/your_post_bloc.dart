@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:local_markerplace/dashboard/model/post_details.dart';
+import 'package:local_markerplace/dashboard/model/your_post.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 
 part 'your_post_event.dart';
@@ -18,7 +18,7 @@ class YourPostBloc extends Bloc<YourPostEvent, YourPostState> {
     Emitter<YourPostState> emit,
   ) async {
     emit(state.copyWith(yourPostsLoading: true));
-    final result = await dashboardRepository.getPostDetails();
+    final result = await dashboardRepository.getYourPostDetails();
     result.fold(
       (failure) {
         emit(
@@ -29,11 +29,11 @@ class YourPostBloc extends Bloc<YourPostEvent, YourPostState> {
           ),
         );
       },
-      (postDetails) {
+      (yourPostDetails) {
         emit(
           state.copyWith(
             errorMessage: "",
-            yourPostDetails: postDetails,
+            yourPostDetails: yourPostDetails,
             yourPostsLoading: false,
           ),
         );

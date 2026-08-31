@@ -2,7 +2,7 @@ part of 'your_post_bloc.dart';
 
 class YourPostState extends Equatable {
   final String errorMessage;
-  final List<PostDetails> yourPostDetails;
+  final List<YourPostDetails> yourPostDetails;
   final bool yourPostsLoading;
 
   const YourPostState({
@@ -18,10 +18,11 @@ class YourPostState extends Equatable {
     this.yourPostsLoading = false,
   });
 
+  bool get isEmpty => yourPostDetails.isEmpty;
+
   YourPostState copyWith({
     String? errorMessage,
-    List<PostDetails>? yourPostDetails,
-    List<PostDetails>? filteredPostDetails,
+    List<YourPostDetails>? yourPostDetails,
     bool? yourPostsLoading,
   }) {
     return YourPostState(

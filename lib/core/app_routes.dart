@@ -8,6 +8,7 @@ import 'package:local_markerplace/dashboard/presentation/dashboard_page.dart';
 import 'package:local_markerplace/core/launch_app.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
 import 'package:local_markerplace/dashboard/presentation/services/service_page.dart';
+import 'package:local_markerplace/dashboard/presentation/your_post/presentation/your_post.dart';
 import 'package:local_markerplace/login/presentation/login_page.dart';
 import 'package:local_markerplace/splash/splash_screen.dart';
 
@@ -18,7 +19,8 @@ enum AppRoutes {
   home("/home"),
   instantForm("/instantForm"),
   services("/services"),
-  posts("/posts");
+  posts("/posts"),
+  yourPosts("/yourPosts");
 
   final String path;
   const AppRoutes(this.path);
@@ -83,6 +85,11 @@ List<RouteBase> createRoutes() {
       path: AppRoutes.posts.path,
       builder: (context, state) => const PostPage(),
       name: AppRoutes.posts.name,
+    ),
+    GoRoute(
+      path: AppRoutes.yourPosts.path,
+      builder: (context, state) => const YourPostPage(),
+      name: AppRoutes.yourPosts.name,
     ),
   ];
 }

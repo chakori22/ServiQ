@@ -147,6 +147,93 @@ class YourPostCardsShimmer extends StatelessWidget {
   }
 }
 
+/// Vertical placeholder list for the full Your Posts page.
+///
+/// Mirrors the card's own stack — avatar and name row, image, description
+/// line, footer line — so the page doesn't reflow when the posts arrive.
+class YourPostListShimmer extends StatelessWidget {
+  const YourPostListShimmer({super.key, this.itemCount = 4});
+
+  final int itemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return DashboardShimmer(
+      child: ListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        itemCount: itemCount,
+        itemBuilder: (context, index) => const _YourPostSkeleton(),
+      ),
+    );
+  }
+}
+
+class _YourPostSkeleton extends StatelessWidget {
+  const _YourPostSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const CircleAvatar(radius: 20, backgroundColor: Colors.white),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  _ShimmerLine(width: 120, height: 12),
+                  SizedBox(height: 6),
+                  _ShimmerLine(width: 80, height: 10),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            height: 160,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const _ShimmerLine(width: double.infinity, height: 12),
+          const SizedBox(height: 6),
+          const _ShimmerLine(width: 220, height: 12),
+          const SizedBox(height: 12),
+          const _ShimmerLine(width: 160, height: 12),
+        ],
+      ),
+    );
+  }
+}
+
+/// A single rounded bar standing in for a line of text.
+class _ShimmerLine extends StatelessWidget {
+  const _ShimmerLine({required this.width, required this.height});
+
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+}
+
 /// Placeholder tile for the services grid on the full Services page.
 class ServiceGridShimmerTile extends StatelessWidget {
   const ServiceGridShimmerTile({super.key});

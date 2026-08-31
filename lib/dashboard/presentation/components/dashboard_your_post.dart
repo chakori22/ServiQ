@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:local_markerplace/core/app_color.dart';
+import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/model/your_post.dart';
 
 class DashboardYourPostCard extends StatefulWidget {
@@ -65,7 +67,8 @@ class _YourPostCardState extends State<DashboardYourPostCard> {
                 scale: 1.0,
                 duration: const Duration(milliseconds: 300),
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () =>
+                      GoRouter.of(context).pushAppRoute(AppRoutes.yourPosts),
                   child: Row(
                     children: [
                       Text(
