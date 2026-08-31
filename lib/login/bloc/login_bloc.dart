@@ -7,17 +7,15 @@ part 'login_event.dart';
 part 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
-  LoginBloc({required LoginRepository loginRepository})
-    : _loginRepository = loginRepository,
-      super(const LoginState.initial()) {
+  final LoginRepository loginRepository;
+  LoginBloc({required this.loginRepository})
+    : super(const LoginState.initial()) {
     on<MobileNumberChanged>(_onMobileNumberChanged);
     on<LoginSubmitted>(_onLoginSubmitted);
     on<OtpChanged>(_onOtpChanged);
     on<OtpSubmitted>(_onOtpSubmitted);
     on<OtpResendRequested>(_onOtpResendRequested);
   }
-
-  final LoginRepository _loginRepository;
 
   // TODO: replace with the real OTP issued by the backend.
   static const _validOtp = '111111';
@@ -36,7 +34,7 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     if (!state.isMobileNumberValid) return;
     emit(state.copyWith(isLoading: true, errorMessage: null));
     try {
-      final success = await _loginRepository.login(state.mobileNumber);
+      final success = await loginRepository.login(state.mobileNumber);
       emit(
         state.copyWith(
           isLoading: false,

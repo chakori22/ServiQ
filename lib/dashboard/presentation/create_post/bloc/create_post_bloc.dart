@@ -6,9 +6,9 @@ part 'create_post_event.dart';
 part 'create_post_state.dart';
 
 class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
-  CreatePostBloc({required DashboardRepository dashboardRepository})
-    : _dashboardRepository = dashboardRepository,
-      super(CreatePostState.initial()) {
+  final DashboardRepository dashboardRepository;
+  CreatePostBloc({required this.dashboardRepository})
+    : super(CreatePostState.initial()) {
     on<OnDismissAlertMessage>(_onDismissAlertMessage);
     on<OnFetchCategories>(_onFetchCategories);
     on<OnSelectCategory>(_onSelectCategory);
@@ -18,8 +18,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     on<OnChangeImage>(_onChangeImage);
     on<OnSubmitPost>(_onSubmitPost);
   }
-
-  final DashboardRepository _dashboardRepository;
 
   void _onDismissAlertMessage(
     OnDismissAlertMessage event,
@@ -32,7 +30,7 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     OnFetchCategories event,
     Emitter<CreatePostState> emit,
   ) async {
-    final result = await _dashboardRepository.getCategories();
+    final result = await dashboardRepository.getCategories();
     result.fold(
       (failure) =>
           emit(state.copyWith(errorMessage: 'Failed to fetch categories')),

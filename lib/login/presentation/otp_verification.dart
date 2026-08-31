@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'package:local_markerplace/app_routes.dart';
 
 import '../../app_color.dart';
 import '../../components/otp_input.dart';
@@ -66,10 +68,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
         listenWhen: (previous, current) =>
             !previous.isSuccess && current.isSuccess,
         listener: (context, state) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const DashboardPage()),
-            (route) => false,
-          );
+          GoRouter.of(context).pushAppRoute(AppRoutes.home);
         },
         child: SafeArea(
           child: Padding(

@@ -9,23 +9,21 @@ part 'dashboard_event.dart';
 part 'dashboard_state.dart';
 
 class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
-  DashboardBloc({required DashboardRepository dashboardRepository})
-    : _dashboardRepository = dashboardRepository,
-      super(const DashboardState.initial()) {
+  final DashboardRepository dashboardRepository;
+  DashboardBloc({required this.dashboardRepository})
+    : super(const DashboardState.initial()) {
     on<OnFetchPostDetails>(_onFetchPostDetails);
     on<OnFetchYourPostDetails>(_onFetchYourPostDetails);
     on<OnFetchServiceDetails>(_onFetchServiceDetails);
     on<OnToggleServiceSelection>(_onToggleServiceSelection);
   }
 
-  final DashboardRepository _dashboardRepository;
-
   Future<void> _onFetchPostDetails(
     OnFetchPostDetails event,
     Emitter<DashboardState> emit,
   ) async {
     emit(state.copyWith(postsLoading: true));
-    final result = await _dashboardRepository.getPostDetails();
+    final result = await dashboardRepository.getPostDetails();
     result.fold(
       (failure) {
         emit(
@@ -53,7 +51,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     Emitter<DashboardState> emit,
   ) async {
     emit(state.copyWith(yourPostsLoading: true));
-    final result = await _dashboardRepository.getYourPostDetails();
+    final result = await dashboardRepository.getYourPostDetails();
     result.fold(
       (failure) {
         emit(
@@ -80,7 +78,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     Emitter<DashboardState> emit,
   ) async {
     emit(state.copyWith(servicesLoading: true));
-    final result = await _dashboardRepository.getServiceDetails();
+    final result = await dashboardRepository.getServiceDetails();
     result.fold(
       (failure) {
         emit(

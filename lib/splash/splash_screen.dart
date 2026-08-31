@@ -6,11 +6,10 @@ import 'package:flutter/material.dart';
 /// - Tagline fades + slides up shortly after
 /// - A few service icons gently float in the background for visual interest
 /// - Bottom wave matches the Home screen's header shape for continuity
-/// - Auto-navigates to [nextScreen] after the animation completes
+/// - Remains visible while the app is initialized; [ServiqApp] performs the
+///   eventual navigation to its configured target location.
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key, required this.nextScreen});
-
-  final Widget nextScreen;
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();
@@ -21,13 +20,11 @@ class _SplashScreenState extends State<SplashScreen>
   late final AnimationController _logoController;
   late final AnimationController _textController;
   late final AnimationController _floatController;
-  late final AnimationController _exitController;
 
   late final Animation<double> _logoScale;
   late final Animation<double> _logoOpacity;
   late final Animation<double> _textOpacity;
   late final Animation<Offset> _textSlide;
-  late final Animation<double> _exitOpacity;
 
   static const Color primaryBlue = Color(0xFF1E6FD9);
   static const Color darkBlue = Color(0xFF0B4FA8);
@@ -43,6 +40,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
+    print("Splash Screen");
 
     _logoController = AnimationController(
       vsync: this,
@@ -76,43 +74,12 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(seconds: 4),
     )..repeat();
 
-    // Fades the ENTIRE splash screen (logo, text, wave, everything) to
-    // fully transparent before we navigate away, so nothing from this
-    // screen is still on-screen when the next route appears — that
-    // overlap is what was causing the wave to flash after navigation.
-    _exitController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
-    _exitOpacity = CurvedAnimation(
-      parent: _exitController,
-      curve: Curves.easeOut,
-    );
-
     _startSequence();
   }
 
   Future<void> _startSequence() async {
     await _logoController.forward();
     await _textController.forward();
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
-
-    // Fade the whole splash out completely first...
-    await _exitController.forward();
-    if (!mounted) return;
-
-    // ...then swap screens with NO further transition animation, since
-    // the splash is already invisible — no two screens are ever
-    // rendered on top of each other at once.
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        transitionDuration: Duration.zero,
-        reverseTransitionDuration: Duration.zero,
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            widget.nextScreen,
-      ),
-    );
   }
 
   @override
@@ -120,7 +87,6 @@ class _SplashScreenState extends State<SplashScreen>
     _logoController.dispose();
     _textController.dispose();
     _floatController.dispose();
-    _exitController.dispose();
     super.dispose();
   }
 
@@ -128,116 +94,110 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
 
-    return Scaffold(
-      body: FadeTransition(
-        // Inverted: exitController goes 0 -> 1 while fading OUT, so we
-        // flip it here to drive opacity from 1 -> 0.
-        opacity: Tween<double>(begin: 1.0, end: 0.0).animate(_exitOpacity),
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [primaryBlue, darkBlue],
-            ),
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [primaryBlue, darkBlue],
           ),
-          child: Stack(
-            children: [
-              // Floating decorative service icons
-              ..._buildFloatingIcons(size),
+        ),
+        child: Stack(
+          children: [
+            // Floating decorative service icons
+            ..._buildFloatingIcons(size),
 
-              // Center content: logo + tagline
-              Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ScaleTransition(
-                      scale: _logoScale,
-                      child: FadeTransition(
-                        opacity: _logoOpacity,
-                        child: Container(
-                          width: 110,
-                          height: 110,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                blurRadius: 24,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.handyman_rounded,
-                            size: 52,
-                            color: primaryBlue,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    SlideTransition(
-                      position: _textSlide,
-                      child: FadeTransition(
-                        opacity: _textOpacity,
-                        child: Column(
-                          children: const [
-                            Text(
-                              'ServiQ',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Real-time help, right around the corner.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
+            // Center content: logo + tagline
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ScaleTransition(
+                    scale: _logoScale,
+                    child: FadeTransition(
+                      opacity: _logoOpacity,
+                      child: Container(
+                        width: 110,
+                        height: 110,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    FadeTransition(
-                      opacity: _textOpacity,
-                      child: const SizedBox(
-                        width: 28,
-                        height: 28,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.white,
-                          ),
+                        child: const Icon(
+                          Icons.handyman_rounded,
+                          size: 52,
+                          color: primaryBlue,
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 24),
+                  SlideTransition(
+                    position: _textSlide,
+                    child: FadeTransition(
+                      opacity: _textOpacity,
+                      child: Column(
+                        children: const [
+                          Text(
+                            'ServiQ',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            'Real-time help, right around the corner.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  FadeTransition(
+                    opacity: _textOpacity,
+                    child: const SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+            ),
 
-              // Bottom wave, matching the Home screen header shape
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: ClipPath(
-                  clipper: _WaveClipper(),
-                  child: Container(height: 60, color: Colors.white),
-                ),
+            // Bottom wave, matching the Home screen header shape
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: ClipPath(
+                clipper: _WaveClipper(),
+                child: Container(height: 60, color: Colors.white),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
