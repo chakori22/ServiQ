@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_markerplace/cart/presentation/cart_page.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
+import 'package:local_markerplace/dashboard/model/services.dart';
 import 'package:local_markerplace/dashboard/model/post_draft.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/schedule/schedule_form.dart';
@@ -23,7 +25,8 @@ enum AppRoutes {
   scheduleForm("/scheduleForm"),
   services("/services"),
   posts("/posts"),
-  yourPosts("/yourPosts");
+  yourPosts("/yourPosts"),
+  cart("/cart");
 
   final String path;
   const AppRoutes(this.path);
@@ -104,6 +107,19 @@ List<RouteBase> createRoutes() {
       path: AppRoutes.yourPosts.path,
       builder: (context, state) => const YourPostPage(),
       name: AppRoutes.yourPosts.name,
+    ),
+    GoRoute(
+      path: AppRoutes.cart.path,
+      // The services picked on the dashboard travel here as `extra`; the cart
+      // prices them itself rather than reading the dashboard's bloc, so it
+      // stays usable from anywhere that can name a list of services.
+      builder: (context, state) {
+        final extra = state.extra;
+        return CartPage(
+          services: extra is List<ServiceDetails> ? extra : const [],
+        );
+      },
+      name: AppRoutes.cart.name,
     ),
   ];
 }

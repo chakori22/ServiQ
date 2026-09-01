@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:local_markerplace/core/app_color.dart';
+import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
 
 class CartSummaryBar extends StatelessWidget {
@@ -76,8 +78,10 @@ class CartSummaryBar extends StatelessWidget {
               ),
             ),
             ElevatedButton(
-              // TODO: navigate to the cart page once it exists.
-              onPressed: () {},
+              onPressed: () => GoRouter.of(context).pushAppRoute(
+                AppRoutes.cart,
+                extra: state.selectedServices,
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColor.indicativeBlueColor400,
                 foregroundColor: AppColor.white,
