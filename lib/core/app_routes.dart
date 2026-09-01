@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
+import 'package:local_markerplace/dashboard/model/post_draft.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/schedule/schedule_form.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
@@ -90,7 +91,13 @@ List<RouteBase> createRoutes() {
     ),
     GoRoute(
       path: AppRoutes.posts.path,
-      builder: (context, state) => const PostPage(),
+      // Reached either from the home rail, with nothing extra, or straight
+      // from a create-post form, which hands over the post the user just
+      // shared so this page can run the upload and show its progress.
+      builder: (context, state) {
+        final extra = state.extra;
+        return PostPage(uploadingDraft: extra is PostDraft ? extra : null);
+      },
       name: AppRoutes.posts.name,
     ),
     GoRoute(
@@ -121,5 +128,12 @@ extension GoRouterExt on GoRouter {
 
   void pushAppRoute(AppRoutes routeName, {Object? extra}) {
     pushNamed(routeName.name, extra: extra);
+  }
+
+  /// Swaps the current screen for [routeName] instead of stacking on top of
+  /// it — used when leaving a form the user should not come back to, so Back
+  /// returns to whatever opened the form.
+  void pushReplacementAppRoute(AppRoutes routeName, {Object? extra}) {
+    pushReplacementNamed(routeName.name, extra: extra);
   }
 }

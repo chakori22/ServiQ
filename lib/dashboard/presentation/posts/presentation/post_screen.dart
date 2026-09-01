@@ -1,25 +1,35 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/dashboard/model/post_details.dart';
+import 'package:local_markerplace/dashboard/model/post_draft.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/components/post_upload_banner.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 import 'package:shimmer/shimmer.dart';
 import '../bloc/bloc/post_bloc.dart';
 
 class PostPage extends StatelessWidget {
-  const PostPage({super.key});
+  const PostPage({super.key, this.uploadingDraft});
+
+  /// Set when the page was opened straight from a create-post form: the post
+  /// the user just shared, whose upload this page runs and reports on.
+  final PostDraft? uploadingDraft;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => PostBloc(dashboardRepository: const DashboardRepository()),
-      child: const PostScreenContainer(),
+      child: PostScreenContainer(uploadingDraft: uploadingDraft),
     );
   }
 }
 
 class PostScreenContainer extends StatefulWidget {
-  const PostScreenContainer({super.key});
+  const PostScreenContainer({super.key, this.uploadingDraft});
+
+  final PostDraft? uploadingDraft;
 
   @override
   State<PostScreenContainer> createState() => _PostScreenState();
@@ -29,6 +39,10 @@ class _PostScreenState extends State<PostScreenContainer> {
   @override
   void initState() {
     context.read<PostBloc>().add(const OnFetchPostDetails());
+    final draft = widget.uploadingDraft;
+    if (draft != null) {
+      context.read<PostBloc>().add(OnStartPostUpload(draft));
+    }
     super.initState();
   }
 
@@ -73,13 +87,22 @@ class _PostScreenState extends State<PostScreenContainer> {
           ],
         ),
       ),
-      body: BlocBuilder<PostBloc, PostState>(
+      body: BlocConsumer<PostBloc, PostState>(
+        listenWhen: (previous, current) =>
+            current.errorMessage.isNotEmpty &&
+            previous.errorMessage != current.errorMessage,
+        listener: (context, state) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(SnackBar(content: Text(state.errorMessage)));
+          context.read<PostBloc>().add(const OnDismissAlertMessage());
+        },
         builder: (context, state) {
           // if (state.postDetails.isEmpty) {
           //   return const SizedBox.shrink();
           // }
 
-          return state.postsLoading
+          final content = state.postsLoading
               ? Shimmer.fromColors(
                   baseColor: AppColor.indicativeBlueColor100,
                   highlightColor: AppColor.indicativeBlueColor50,
@@ -162,6 +185,18 @@ class _PostScreenState extends State<PostScreenContainer> {
                     },
                   ),
                 );
+
+          return Column(
+            children: [
+              if (state.uploadingDraft != null)
+                PostUploadBanner(
+                  draft: state.uploadingDraft!,
+                  progress: state.uploadProgress,
+                  progressText: state.uploadProgressText,
+                ),
+              Expanded(child: content),
+            ],
+          );
         },
       ),
     );
@@ -227,12 +262,7 @@ Widget postCard({
           ],
         ),
         SizedBox(height: 8),
-        Image.asset(
-          post.imageUrl,
-          width: double.infinity,
-          height: 160,
-          fit: BoxFit.cover,
-        ),
+        postImage(post.imageUrl),
         SizedBox(height: 8),
         Row(
           // Changed to start so the username stays at the top if the description wraps to multiple lines
@@ -305,6 +335,35 @@ Widget postCard({
           ],
         ),
       ],
+    ),
+  );
+}
+
+/// A post's picture, which is a bundled asset for posts that came from the
+/// API but a file on disk for one this device just created and uploaded.
+Widget postImage(String imageUrl) {
+  const double height = 160;
+  if (imageUrl.startsWith('assets/')) {
+    return Image.asset(
+      imageUrl,
+      width: double.infinity,
+      height: height,
+      fit: BoxFit.cover,
+    );
+  }
+  return Image.file(
+    File(imageUrl),
+    width: double.infinity,
+    height: height,
+    fit: BoxFit.cover,
+    errorBuilder: (context, error, stackTrace) => Container(
+      width: double.infinity,
+      height: height,
+      color: AppColor.neutralGreyColor100,
+      child: const Icon(
+        Icons.image_outlined,
+        color: AppColor.neutralGreyColor400,
+      ),
     ),
   );
 }

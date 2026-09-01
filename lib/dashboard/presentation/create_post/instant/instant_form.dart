@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_markerplace/core/app_color.dart';
+import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/components/dropdown.dart';
 import 'package:local_markerplace/components/primary_button.dart';
 import 'package:local_markerplace/components/textfield.dart';
@@ -252,7 +254,7 @@ class _InstantFormState extends State<_InstantForm> {
         },
       ),
       bottomNavigationBar: BlocBuilder<CreatePostBloc, CreatePostState>(
-        builder: (context, state) => _buildBottomBar(state.isFormValid),
+        builder: (context, state) => _buildBottomBar(context, state),
       ),
     );
   }
@@ -261,7 +263,7 @@ class _InstantFormState extends State<_InstantForm> {
   /// scroll position. SafeArea keeps it clear of the home indicator on
   /// devices with a gesture bar; the extra bottom padding stops it from
   /// sitting flush against the screen edge.
-  Widget _buildBottomBar(bool isFormValid) {
+  Widget _buildBottomBar(BuildContext context, CreatePostState state) {
     return SafeArea(
       top: false,
       child: Container(
@@ -278,10 +280,15 @@ class _InstantFormState extends State<_InstantForm> {
         ),
         child: PrimaryButton(
           label: "Share",
-          enabled: isFormValid,
+          enabled: state.isFormValid,
           onPressed: () {
-            context.read<CreatePostBloc>().add(OnSubmitPost());
-            Navigator.of(context).pop();
+            // The upload belongs to the posts page, not this form: sharing
+            // replaces the form with the feed, which shows the post's
+            // progress banner while it uploads.
+            GoRouter.of(context).pushReplacementAppRoute(
+              AppRoutes.posts,
+              extra: state.toDraft(isInstant: true),
+            );
           },
         ),
       ),

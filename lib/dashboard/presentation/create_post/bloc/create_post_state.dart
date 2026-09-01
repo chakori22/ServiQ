@@ -106,6 +106,24 @@ class CreatePostState extends Equatable {
   bool get isScheduleFormValid =>
       isFormValid && selectedDate != null && selectedTimeSlot != null;
 
+  /// Packs the filled-in form into the draft the posts page uploads.
+  ///
+  /// [isInstant] is what separates the two forms: the scheduled one also
+  /// carries the start of the window the user picked, while an instant post
+  /// has no timing of its own.
+  PostDraft toDraft({required bool isInstant}) {
+    return PostDraft(
+      category: selectedcategory == 'Others'
+          ? otherCategory.trim()
+          : selectedcategory,
+      description: description.trim(),
+      budget: budget.trim(),
+      imagePath: imagePath,
+      isInstant: isInstant,
+      scheduledTime: isInstant ? null : selectedTimeSlot?.startTime,
+    );
+  }
+
   @override
   List<Object?> get props => [
     errorMessage,

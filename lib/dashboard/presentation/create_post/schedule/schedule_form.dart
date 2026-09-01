@@ -2,11 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_markerplace/components/dropdown.dart';
 import 'package:local_markerplace/components/primary_button.dart';
 import 'package:local_markerplace/components/textfield.dart';
 import 'package:local_markerplace/core/app_color.dart';
+import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/model/time_slot.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/bloc/create_post_bloc.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
@@ -295,7 +297,7 @@ class _ScheduleFormState extends State<_ScheduleForm> {
         },
       ),
       bottomNavigationBar: BlocBuilder<CreatePostBloc, CreatePostState>(
-        builder: (context, state) => _buildBottomBar(state.isScheduleFormValid),
+        builder: (context, state) => _buildBottomBar(context, state),
       ),
     );
   }
@@ -303,7 +305,7 @@ class _ScheduleFormState extends State<_ScheduleForm> {
   /// Fixed Post button, pinned to the bottom of the screen regardless of
   /// scroll position. SafeArea keeps it clear of the home indicator on
   /// devices with a gesture bar.
-  Widget _buildBottomBar(bool isFormValid) {
+  Widget _buildBottomBar(BuildContext context, CreatePostState state) {
     return SafeArea(
       top: false,
       child: Container(
@@ -319,10 +321,15 @@ class _ScheduleFormState extends State<_ScheduleForm> {
         ),
         child: PrimaryButton(
           label: "Share",
-          enabled: isFormValid,
+          enabled: state.isScheduleFormValid,
           onPressed: () {
-            context.read<CreatePostBloc>().add(const OnSubmitPost());
-            Navigator.of(context).pop();
+            // The upload belongs to the posts page, not this form: sharing
+            // replaces the form with the feed, which shows the post's
+            // progress banner while it uploads.
+            GoRouter.of(context).pushReplacementAppRoute(
+              AppRoutes.posts,
+              extra: state.toDraft(isInstant: false),
+            );
           },
         ),
       ),

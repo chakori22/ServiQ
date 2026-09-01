@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
+import 'package:local_markerplace/dashboard/model/post_draft.dart';
 import 'package:local_markerplace/dashboard/model/time_slot.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 
@@ -19,7 +20,6 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     on<OnChangeImage>(_onChangeImage);
     on<OnSelectDate>(_onSelectDate);
     on<OnSelectTimeSlot>(_onSelectTimeSlot);
-    on<OnSubmitPost>(_onSubmitPost);
   }
 
   void _onDismissAlertMessage(
@@ -103,9 +103,5 @@ class CreatePostBloc extends Bloc<CreatePostEvent, CreatePostState> {
     Emitter<CreatePostState> emit,
   ) {
     emit(state.copyWith(selectedTimeSlotId: event.timeSlotId));
-  }
-
-  void _onSubmitPost(OnSubmitPost event, Emitter<CreatePostState> emit) {
-    // Handle the submission logic here, e.g., call a repository method to submit the post.
   }
 }

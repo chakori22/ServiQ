@@ -1,4 +1,5 @@
 import 'package:local_markerplace/dashboard/model/post_details.dart';
+import 'package:local_markerplace/dashboard/model/post_draft.dart';
 import 'package:local_markerplace/dashboard/model/services.dart';
 import 'package:local_markerplace/dashboard/model/time_slot.dart';
 import 'package:local_markerplace/dashboard/model/your_post.dart';
@@ -223,6 +224,21 @@ class DashboardRepository {
       );
     }
     return Right(slots);
+  }
+
+  /// Uploads a post the user just created, reporting how far along it is.
+  ///
+  /// Progress is a stream rather than a single future because the posts page
+  /// shows a live percentage while the upload runs; the stream closing is
+  /// what tells the caller the post is live.
+  Stream<double> uploadPost(PostDraft draft) async* {
+    // TODO: replace with a real multipart upload (e.g. POST /posts) and yield
+    // Dio's onSendProgress ratio instead of these simulated ticks.
+    const int steps = 20;
+    for (int step = 1; step <= steps; step++) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      yield step / steps;
+    }
   }
 
   Future<Either<Failure, List<String>>> getCategories() async {
