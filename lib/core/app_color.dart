@@ -35,6 +35,59 @@ class AppColor {
   static const Color indicativePurpleColor500 = Color(0xFF970EFF);
   static const Color indicativePurpleColor100 = Color(0xFFF8EDFF);
 
+  // --- Auth screens -------------------------------------------------------
+  // Tokens for the sign-in flow's lighter, gradient-led look. Kept separate
+  // from the numbered ramps above so restyling auth cannot bleed into the
+  // dashboard, which still uses those.
+
+  /// Top of the page wash behind the logo.
+  static const Color authBackgroundTop = Color(0xFFF7FAFF);
+
+  /// Bottom of the page wash, a touch bluer than the top.
+  static const Color authBackgroundBottom = Color(0xFFE8F0FD);
+
+  /// Soft blue glow painted behind the logo.
+  static const Color authGlow = Color(0xFFD5E4FB);
+
+  /// The sheet the form sits on.
+  static const Color authSurface = Color(0xFFFFFFFF);
+
+  /// Headings.
+  static const Color authTextPrimary = Color(0xFF0F1720);
+
+  /// Supporting copy and hints.
+  static const Color authTextSecondary = Color(0xFF6B7684);
+
+  /// Fill of an input at rest.
+  static const Color authFieldFill = Color(0xFFF7F9FC);
+
+  /// Border of an input at rest.
+  static const Color authFieldBorder = Color(0xFFE4EAF3);
+
+  /// Border of the focused input and the filled OTP boxes.
+  static const Color authAccent = Color(0xFF2F6BFF);
+
+  /// Darker stop of the primary call-to-action gradient.
+  static const Color authAccentDeep = Color(0xFF1B5AF0);
+
+  /// Link and emphasised-number blue.
+  static const Color authLink = Color(0xFF1E63F5);
+
+  /// Error border, digits and message.
+  static const Color authError = Color(0xFFE5484D);
+
+  /// Tint behind an errored OTP box.
+  static const Color authErrorTint = Color(0xFFFDF2F2);
+
+  /// "Code detected from SMS" confirmation.
+  static const Color authSuccess = Color(0xFF12A594);
+
+  /// Light stop of the verified check's gradient.
+  static const Color authSuccessLight = Color(0xFF3ED6B5);
+
+  /// WhatsApp green used on the resend chip.
+  static const Color authWhatsApp = Color(0xFF25D366);
+
   static const Color black = Color(0xFF000000);
   static const Color white = Color(0xFFFFFFFF);
   static const Color accentColor = Color(0xFFC031C0);

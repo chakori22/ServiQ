@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The ServiQ backend is currently reachable only over plain HTTP at a bare IP.
+  Cleartext stays denied everywhere else, so this exemption disappears on its
+  own once the API moves behind HTTPS.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">13.207.78.186</domain>
+    </domain-config>
+</network-security-config>

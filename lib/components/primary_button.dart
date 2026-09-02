@@ -10,6 +10,8 @@ class PrimaryButton extends StatelessWidget {
     required this.enabled,
     required this.onPressed,
     this.isLoading = false,
+    this.gradient = false,
+    this.trailingIcon,
   });
 
   final String label;
@@ -17,9 +19,16 @@ class PrimaryButton extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onPressed;
 
+  /// Paints the enabled button with the auth flow's blue gradient and a soft
+  /// drop shadow. Opt-in so the dashboard's buttons keep their flat fill.
+  final bool gradient;
+
+  /// Optional icon after the label, e.g. the arrow on "Continue".
+  final IconData? trailingIcon;
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    final button = SizedBox(
       width: double.infinity,
       height: 52,
       child: ElevatedButton(
@@ -28,10 +37,15 @@ class PrimaryButton extends StatelessWidget {
           // Resolved from `enabled` instead of the disabled state so loading
           // (which nulls onPressed) doesn't grey out the button.
           backgroundColor: WidgetStateProperty.all(
-            enabled
+            // Transparent when gradient-painted, so the Container behind
+            // shows through instead of a flat fill on top of it.
+            gradient && enabled
+                ? Colors.transparent
+                : enabled
                 ? AppColor.indicativeBlueColor400
                 : AppColor.neutralGreyColor100,
           ),
+          shadowColor: WidgetStateProperty.all(Colors.transparent),
           foregroundColor: WidgetStateProperty.all(
             enabled ? AppColor.white : AppColor.neutralGreyColor300,
           ),
@@ -49,14 +63,44 @@ class PrimaryButton extends StatelessWidget {
                   color: AppColor.white,
                 ),
               )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (trailingIcon != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(trailingIcon, size: 18),
+                  ],
+                ],
               ),
       ),
+    );
+
+    if (!gradient || !enabled) return button;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColor.authAccent, AppColor.authAccentDeep],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColor.authAccent.withValues(alpha: 0.32),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: button,
     );
   }
 }

@@ -14,12 +14,14 @@ import 'package:local_markerplace/dashboard/presentation/posts/presentation/post
 import 'package:local_markerplace/dashboard/presentation/services/service_page.dart';
 import 'package:local_markerplace/dashboard/presentation/your_post/presentation/your_post.dart';
 import 'package:local_markerplace/login/presentation/login_page.dart';
+import 'package:local_markerplace/login/presentation/verified_page.dart';
 import 'package:local_markerplace/splash/splash_screen.dart';
 
 enum AppRoutes {
   launch("/"),
   splash("/splash"),
   login("/login"),
+  verified("/verified"),
   home("/home"),
   instantForm("/instantForm"),
   scheduleForm("/scheduleForm"),
@@ -52,6 +54,11 @@ List<RouteBase> createRoutes() {
       path: AppRoutes.login.path,
       builder: (context, state) => const LoginPage(),
       name: AppRoutes.login.name,
+    ),
+    GoRoute(
+      path: AppRoutes.verified.path,
+      builder: (context, state) => const VerifiedPage(),
+      name: AppRoutes.verified.name,
     ),
     GoRoute(
       path: AppRoutes.home.path,
@@ -144,6 +151,12 @@ extension GoRouterExt on GoRouter {
 
   void pushAppRoute(AppRoutes routeName, {Object? extra}) {
     pushNamed(routeName.name, extra: extra);
+  }
+
+  /// Replaces the whole stack with [routeName]. Used after sign-in and
+  /// sign-out, where every screen behind the new one is no longer reachable.
+  void goAppRoute(AppRoutes routeName, {Object? extra}) {
+    goNamed(routeName.name, extra: extra);
   }
 
   /// Swaps the current screen for [routeName] instead of stacking on top of

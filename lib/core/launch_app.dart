@@ -21,7 +21,7 @@ class _LaunchAppState extends State<LaunchApp> {
   }
 
   Future<Widget> _buildApp() async {
-    final serviqApp = appBuilder('https://serviqapp.com');
+    final serviqApp = appBuilder('http://13.207.78.186:8080');
     await Future.wait([
       serviqApp,
       Future<void>.delayed(_minimumSplashDuration),

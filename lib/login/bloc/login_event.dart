@@ -13,6 +13,15 @@ final class MobileNumberChanged extends LoginEvent {
   List<Object> get props => [mobileNumber];
 }
 
+final class CountryCodeChanged extends LoginEvent {
+  final String countryCode;
+
+  const CountryCodeChanged(this.countryCode);
+
+  @override
+  List<Object> get props => [countryCode];
+}
+
 final class LoginSubmitted extends LoginEvent {
   const LoginSubmitted();
 

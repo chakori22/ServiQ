@@ -31,6 +31,16 @@ class APIClient {
     }
   }
 
+  /// Registers an interceptor after construction.
+  ///
+  /// The [interceptors] field is read in the constructor, before any caller
+  /// can add to it, so it is never populated in practice — this is the hook
+  /// that works for things like [AuthInterceptor], which is built from state
+  /// that only exists after the client.
+  void addInterceptor(Interceptor interceptor) {
+    dio.interceptors.add(interceptor);
+  }
+
   Options createOptions({
     String? method,
     Duration? sendTimeout,
