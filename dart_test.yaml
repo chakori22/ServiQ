@@ -1,4 +1,0 @@
-tags:
-  # Tests that talk to the real backend rather than a fake. Exclude with
-  # `flutter test --exclude-tags live` when the server is unreachable.
-  live:

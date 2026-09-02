@@ -25,7 +25,7 @@ import 'support/fakes.dart';
 ///
 ///   1. POST /api/v1/auth/otp/request, then /verify, saving the response JSON
 ///   2. wait 900s for the access token to expire
-///   3. SERVIQ_EXPIRED_SESSION=<that file> flutter test <this file>
+///   3. run: SERVIQ_EXPIRED_SESSION=[that file] flutter test [this file]
 void main() {
   const baseUrl = 'http://13.207.78.186:8080';
   final sessionFile = File(
