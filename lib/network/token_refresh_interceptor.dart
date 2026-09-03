@@ -18,15 +18,6 @@ class TokenRefreshInterceptor extends Interceptor {
 
   TokenRefreshInterceptor({required this.session, required this.dio});
 
-  /// Endpoints that must never trigger a refresh-and-retry: they are how a
-  /// session is obtained in the first place, and retrying /token/refresh on
-  /// its own 401 would loop.
-  static const _authPaths = {
-    '/api/v1/auth/otp/request',
-    '/api/v1/auth/otp/verify',
-    '/api/v1/auth/token/refresh',
-  };
-
   /// Marks a request that has already been replayed, so a second 401 is
   /// reported instead of retried forever.
   static const _retriedFlag = 'tokenRefreshRetried';
@@ -35,7 +26,7 @@ class TokenRefreshInterceptor extends Interceptor {
     if (err.response?.statusCode != 401) return false;
     final options = err.requestOptions;
     if (options.extra[_retriedFlag] == true) return false;
-    if (_authPaths.contains(options.path)) return false;
+    if (authEndpointPaths.contains(options.path)) return false;
     return session.isAuthenticated;
   }
 

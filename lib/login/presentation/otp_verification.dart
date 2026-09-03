@@ -135,8 +135,16 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Read above the Scaffold, so this is the true inset whatever the Scaffold
+    // does with it.
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
     return Scaffold(
       backgroundColor: AppColor.authBackgroundTop,
+      // The body keeps the full screen height and the sheet is placed over it,
+      // so the keyboard never resizes the header behind — it is simply
+      // covered, the way a bottom sheet covers what it sits on.
+      resizeToAvoidBottomInset: false,
       body: MultiBlocListener(
         listeners: [
           BlocListener<LoginBloc, LoginState>(
@@ -176,32 +184,28 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           ),
         ],
         child: AuthBackground(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      children: [
-                        Expanded(child: _VerifyHeader()),
-                        _OtpSheet(
-                          controller: _otpController,
-                          fieldKey: _otpFieldKey,
-                          secondsLeft: _secondsLeft,
-                          timerLabel: _timerLabel,
-                          entryStatus: _entryStatus,
-                          entryLabel: _entryLabel,
-                          onCodeChanged: _onCodeChanged,
-                          onResend: _resend,
-                          onPaste: _pasteCode,
-                        ),
-                      ],
-                    ),
-                  ),
+          child: Stack(
+            children: [
+              const Positioned.fill(child: _VerifyHeader()),
+              // Rides on top of the keyboard, overlapping the header rather
+              // than squeezing it.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: bottomInset,
+                child: _OtpSheet(
+                  controller: _otpController,
+                  fieldKey: _otpFieldKey,
+                  secondsLeft: _secondsLeft,
+                  timerLabel: _timerLabel,
+                  entryStatus: _entryStatus,
+                  entryLabel: _entryLabel,
+                  onCodeChanged: _onCodeChanged,
+                  onResend: _resend,
+                  onPaste: _pasteCode,
                 ),
-              );
-            },
+              ),
+            ],
           ),
         ),
       ),
@@ -209,67 +213,83 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   }
 }
 
+/// Everything behind the code entry.
+///
+/// Laid out against the full screen height and never resized: when the
+/// keyboard raises the sheet, the sheet covers more of this. The back button
+/// is anchored to the top so it stays reachable however far the sheet rises.
 class _VerifyHeader extends StatelessWidget {
+  const _VerifyHeader();
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       bottom: false,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            AuthBackButton(onTap: () => Navigator.of(context).maybePop()),
-            const Spacer(),
-            const Center(child: _MessageBadge()),
-            const SizedBox(height: 20),
-            const Center(
-              child: Text(
-                'Verify your number',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
-                  color: AppColor.authTextPrimary,
-                ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 8,
+            left: 20,
+            child: AuthBackButton(
+              onTap: () => Navigator.of(context).maybePop(),
+            ),
+          ),
+          Align(
+            // Sits in the upper third rather than the middle, which is where
+            // the gap above the resting sheet actually is.
+            alignment: const Alignment(0, -0.42),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _MessageBadge(),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Verify your number',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                      color: AppColor.authTextPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    "We've sent a 6-digit code to",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColor.authTextSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  BlocBuilder<LoginBloc, LoginState>(
+                    builder: (context, state) {
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${state.countryCode} ${state.mobileNumber}',
+                            style: const TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: AppColor.authLink,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          _ChangeChip(
+                            onTap: () => Navigator.of(context).maybePop(),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 6),
-            const Center(
-              child: Text(
-                "We've sent a 6-digit code to",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColor.authTextSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            BlocBuilder<LoginBloc, LoginState>(
-              builder: (context, state) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${state.countryCode} ${state.mobileNumber}',
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                        color: AppColor.authLink,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    _ChangeChip(
-                      onTap: () => Navigator.of(context).maybePop(),
-                    ),
-                  ],
-                );
-              },
-            ),
-            const Spacer(),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

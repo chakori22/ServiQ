@@ -12,6 +12,7 @@ import 'package:local_markerplace/network/auth_session.dart';
 import 'package:local_markerplace/network/logging_interceptor.dart';
 import 'package:local_markerplace/network/token_refresh_interceptor.dart';
 import 'package:local_markerplace/network/token_store.dart';
+import 'package:local_markerplace/onboarding/repository/onboarding_repository.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -38,11 +39,13 @@ Future<Widget> appBuilder(
   LoginRepository? loginRepository,
   DashboardRepository? dashboardRepository,
   TokenStore? tokenStore,
+  OnboardingRepository? onboardingRepository,
 }) async {
   final apiClient = APIClient(baseUrl: baseUrl);
   final _loginRepository =
       loginRepository ?? LoginRepository(apiClient: apiClient);
   final _dashboardRepository = dashboardRepository ?? DashboardRepository();
+  final _onboardingRepository = onboardingRepository ?? OnboardingRepository();
 
   // Has to be loaded before anything can refresh or verify — both endpoints
   // take the device id.
@@ -68,19 +71,28 @@ Future<Widget> appBuilder(
   // live session. Has to finish before the router picks its initial location.
   final bootstrap = await authSession.bootstrap();
 
+  // A restored session still has to have been through onboarding — a user who
+  // verified but closed the app mid-setup would otherwise land on a dashboard
+  // that knows neither their locality nor what they came for.
+  final hasProfile = bootstrap == AuthBootstrapResult.signedIn &&
+      await _onboardingRepository.readProfile() != null;
+
   return MultiRepositoryProvider(
     providers: [
       RepositoryProvider.value(value: _loginRepository),
       RepositoryProvider.value(value: _dashboardRepository),
       RepositoryProvider.value(value: authSession),
       RepositoryProvider.value(value: deviceIdentity),
+      RepositoryProvider.value(value: _onboardingRepository),
     ],
     // A refreshed session skips the login screen entirely; a missing or
     // rejected token lands on it.
     child: ServiqApp(
-      targetLocation: bootstrap == AuthBootstrapResult.signedIn
-          ? AppRoutes.home.path
-          : AppRoutes.login.path,
+      targetLocation: switch (bootstrap) {
+        AuthBootstrapResult.signedIn when hasProfile => AppRoutes.home.path,
+        AuthBootstrapResult.signedIn => AppRoutes.onboarding.path,
+        _ => AppRoutes.login.path,
+      },
     ),
   );
 }

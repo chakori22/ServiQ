@@ -60,12 +60,15 @@ class VerifiedPage extends StatelessWidget {
                 ],
                 const Spacer(flex: 3),
                 PrimaryButton(
-                  label: 'Explore local services',
+                  label: 'Set up your profile',
                   enabled: true,
                   gradient: true,
                   trailingIcon: Icons.arrow_forward,
+                  // Pushed, not replaced, so onboarding's first step has
+                  // something to go back to — the design shows a back arrow
+                  // there.
                   onPressed: () =>
-                      GoRouter.of(context).goAppRoute(AppRoutes.home),
+                      GoRouter.of(context).pushAppRoute(AppRoutes.onboarding),
                 ),
                 const SizedBox(height: 16),
                 TextButton(

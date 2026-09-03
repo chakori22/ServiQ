@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
+import 'package:local_markerplace/dashboard/presentation/components/account_menu.dart';
 import 'package:local_markerplace/dashboard/presentation/components/card_summary.dart';
 import 'package:local_markerplace/dashboard/presentation/components/home_option_card.dart';
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_post.dart';
@@ -105,13 +106,9 @@ class _HomePageState extends State<HomePage>
                   color: AppColor.white,
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: Icon(
-                  Icons.person_outline_rounded,
-                  size: 24,
-                  color: AppColor.white,
-                ),
+              const Padding(
+                padding: EdgeInsets.only(right: 8.0),
+                child: AccountMenuButton(),
               ),
             ],
           ),

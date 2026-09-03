@@ -88,6 +88,10 @@ class AppColor {
   /// WhatsApp green used on the resend chip.
   static const Color authWhatsApp = Color(0xFF25D366);
 
+  /// Mint tint at the top of the "You're all set" wash, which the rest of
+  /// onboarding does not use.
+  static const Color onboardingSuccessWashTop = Color(0xFFEAF8F3);
+
   static const Color black = Color(0xFF000000);
   static const Color white = Color(0xFFFFFFFF);
   static const Color accentColor = Color(0xFFC031C0);

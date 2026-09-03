@@ -17,6 +17,7 @@ class LoginRepository {
   static const _otpRequestPath = '/api/v1/auth/otp/request';
   static const _otpVerifyPath = '/api/v1/auth/otp/verify';
   static const _tokenRefreshPath = '/api/v1/auth/token/refresh';
+  static const _logoutPath = '/api/v1/auth/logout';
 
   /// Identifies this app to the backend. The only client type the Flutter app
   /// ever sends.
@@ -137,6 +138,38 @@ class LoginRepository {
         return Left(response.toFailure());
       }
       return Right(tokens);
+    } on DioException catch (e) {
+      return Left(failureFromDioException(e));
+    } catch (e) {
+      return Left(Failure(errorMessage: e.toString()));
+    }
+  }
+
+  /// Retires the session on the server.
+  ///
+  /// The refresh token is the credential being revoked, so it is what the
+  /// endpoint takes — the access token that rides along in the header is
+  /// incidental and may well have expired already. The response carries no
+  /// data, only the envelope, so success is the absence of an error code.
+  Future<Either<Failure, Unit>> logout({required String refreshToken}) async {
+    try {
+      final data = await apiClient.post(
+        _logoutPath,
+        data: {'refreshToken': refreshToken},
+      );
+
+      if (data is! Map<String, dynamic>) {
+        return const Left(
+          Failure(
+            errorMessage: 'Unexpected response from the server.',
+            errorCode: 'MALFORMED_RESPONSE',
+          ),
+        );
+      }
+
+      final response = ApiResponse<void>.fromJson(data, null);
+      if (!response.isSuccess) return Left(response.toFailure());
+      return const Right(unit);
     } on DioException catch (e) {
       return Left(failureFromDioException(e));
     } catch (e) {

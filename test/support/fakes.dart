@@ -61,6 +61,12 @@ class FakeLoginRepository implements LoginRepository {
   final List<String> refreshCalls = [];
   final List<String> refreshDeviceIds = [];
 
+  /// Refresh tokens the logout endpoint was asked to retire.
+  final List<String> logoutCalls = [];
+
+  /// When set, logout comes back Left — the server unreachable, say.
+  Failure? logoutFailure;
+
   /// Tokens handed back on success, in order.
   final List<AuthTokens> responses;
   final Failure? failure;
@@ -85,6 +91,13 @@ class FakeLoginRepository implements LoginRepository {
       return const Left(Failure(errorMessage: 'no scripted response'));
     }
     return Right(responses[refreshCalls.length - 1]);
+  }
+
+  @override
+  Future<Either<Failure, Unit>> logout({required String refreshToken}) async {
+    logoutCalls.add(refreshToken);
+    final failure = logoutFailure;
+    return failure == null ? const Right(unit) : Left(failure);
   }
 
   @override

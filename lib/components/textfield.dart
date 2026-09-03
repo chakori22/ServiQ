@@ -16,6 +16,7 @@ class AppTextField extends StatelessWidget {
     this.maxLength,
     this.maxLines = 1,
     this.prefixText,
+    this.prefixIcon,
     this.suffixIcon,
     this.errorText,
     this.enabledLabelColor,
@@ -39,6 +40,12 @@ class AppTextField extends StatelessWidget {
   final int? maxLines;
 
   final String? prefixText;
+
+  /// Icon shown inside the field, before the text — e.g. the pin on a
+  /// locality input. Sits where [prefixText] would, and the two can be used
+  /// together.
+  final Widget? prefixIcon;
+
   final Widget? suffixIcon;
   final String? errorText;
   final Color? enabledLabelColor;
@@ -98,6 +105,14 @@ class AppTextField extends StatelessWidget {
       margin: showFloatingLabel ? const EdgeInsets.only(top: 10) : null,
       child: Row(
         children: [
+          if (prefixIcon != null)
+            Padding(
+              padding: EdgeInsets.only(
+                left: 18,
+                right: hasPrefix ? 0 : 10,
+              ),
+              child: prefixIcon,
+            ),
           if (hasPrefix)
             Padding(
               padding: const EdgeInsets.only(
@@ -134,7 +149,7 @@ class AppTextField extends StatelessWidget {
                 counterText: '',
                 filled: false,
                 contentPadding: EdgeInsets.only(
-                  left: hasPrefix ? 0 : 20,
+                  left: hasPrefix || prefixIcon != null ? 0 : 20,
                   right: 20,
                   top: 18,
                   bottom: 18,

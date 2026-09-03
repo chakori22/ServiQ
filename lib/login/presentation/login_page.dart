@@ -32,11 +32,16 @@ class _LoginView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Read here, above the Scaffold, so this is the true inset whatever the
+    // Scaffold does with it.
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+
     return Scaffold(
       backgroundColor: AppColor.authBackgroundTop,
-      // The sheet is part of the scrollable column, so the keyboard pushes the
-      // whole page rather than the brand mark being covered by a floating card.
-      resizeToAvoidBottomInset: true,
+      // The body keeps the full screen height and the sheet is placed over it,
+      // so the keyboard never resizes or reflows the brand behind — it is
+      // simply covered, the way a bottom sheet covers what it sits on.
+      resizeToAvoidBottomInset: false,
       body: MultiBlocListener(
         listeners: [
           BlocListener<LoginBloc, LoginState>(
@@ -65,22 +70,18 @@ class _LoginView extends StatelessWidget {
           ),
         ],
         child: AuthBackground(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: const IntrinsicHeight(
-                    child: Column(
-                      children: [
-                        Expanded(child: _BrandHeader()),
-                        _MobileLoginSheet(),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+          child: Stack(
+            children: [
+              const Positioned.fill(child: _BrandHeader()),
+              // Rides on top of the keyboard, overlapping the brand rather
+              // than squeezing it.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: bottomInset,
+                child: const _MobileLoginSheet(),
+              ),
+            ],
           ),
         ),
       ),
@@ -88,25 +89,31 @@ class _LoginView extends StatelessWidget {
   }
 }
 
+/// The brand behind the form.
+///
+/// Laid out against the full screen height and never resized: when the
+/// keyboard raises the sheet, the sheet simply covers more of this. Nothing
+/// here scales or reflows, so the mark and wordmark are always at the size
+/// they were drawn at.
 class _BrandHeader extends StatelessWidget {
   const _BrandHeader();
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
+    return const SafeArea(
       bottom: false,
-      child: Center(
+      // Sits in the upper third rather than the middle, which is where the
+      // gap above the resting sheet actually is.
+      child: Align(
+        alignment: Alignment(0, -0.38),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SizedBox(height: 24),
-            const ServiqLogoMark(),
-            const SizedBox(height: 20),
-            const ServiqWordmark(),
-            const SizedBox(height: 10),
-            const ServiqTagline(),
-            const SizedBox(height: 24),
+            ServiqLogoMark(),
+            SizedBox(height: 20),
+            ServiqWordmark(),
+            SizedBox(height: 10),
+            ServiqTagline(),
           ],
         ),
       ),

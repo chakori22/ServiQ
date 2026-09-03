@@ -15,6 +15,7 @@ import 'package:local_markerplace/dashboard/presentation/services/service_page.d
 import 'package:local_markerplace/dashboard/presentation/your_post/presentation/your_post.dart';
 import 'package:local_markerplace/login/presentation/login_page.dart';
 import 'package:local_markerplace/login/presentation/verified_page.dart';
+import 'package:local_markerplace/onboarding/presentation/onboarding_page.dart';
 import 'package:local_markerplace/splash/splash_screen.dart';
 
 enum AppRoutes {
@@ -22,6 +23,7 @@ enum AppRoutes {
   splash("/splash"),
   login("/login"),
   verified("/verified"),
+  onboarding("/onboarding"),
   home("/home"),
   instantForm("/instantForm"),
   scheduleForm("/scheduleForm"),
@@ -59,6 +61,11 @@ List<RouteBase> createRoutes() {
       path: AppRoutes.verified.path,
       builder: (context, state) => const VerifiedPage(),
       name: AppRoutes.verified.name,
+    ),
+    GoRoute(
+      path: AppRoutes.onboarding.path,
+      builder: (context, state) => const OnboardingPage(),
+      name: AppRoutes.onboarding.name,
     ),
     GoRoute(
       path: AppRoutes.home.path,
