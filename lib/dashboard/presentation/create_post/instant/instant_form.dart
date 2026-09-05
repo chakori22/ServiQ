@@ -138,7 +138,7 @@ class _InstantFormState extends State<_InstantForm> {
         title: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back_ios_rounded),
               onPressed: () {
                 Navigator.pop(context);
               },

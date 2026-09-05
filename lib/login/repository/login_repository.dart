@@ -18,6 +18,7 @@ class LoginRepository {
   static const _otpVerifyPath = '/api/v1/auth/otp/verify';
   static const _tokenRefreshPath = '/api/v1/auth/token/refresh';
   static const _logoutPath = '/api/v1/auth/logout';
+  static const _logoutAllPath = '/api/v1/auth/logout-all';
 
   /// Identifies this app to the backend. The only client type the Flutter app
   /// ever sends.
@@ -170,6 +171,45 @@ class LoginRepository {
       final response = ApiResponse<void>.fromJson(data, null);
       if (!response.isSuccess) return Left(response.toFailure());
       return const Right(unit);
+    } on DioException catch (e) {
+      return Left(failureFromDioException(e));
+    } catch (e) {
+      return Left(Failure(errorMessage: e.toString()));
+    }
+  }
+
+  /// Retires every session the account has, not only this device's.
+  ///
+  /// Takes the same credential as [logout] — the refresh token identifies the
+  /// account whose sessions are being revoked — but answers with how many
+  /// there were, so the user can be told what actually happened rather than a
+  /// flat "signed out".
+  ///
+  /// A missing or unreadable count is reported as zero rather than as a
+  /// failure: the sessions are gone either way, and the number is only there
+  /// to be shown.
+  Future<Either<Failure, int>> logoutAll({required String refreshToken}) async {
+    try {
+      final data = await apiClient.post(
+        _logoutAllPath,
+        data: {'refreshToken': refreshToken},
+      );
+
+      if (data is! Map<String, dynamic>) {
+        return const Left(
+          Failure(
+            errorMessage: 'Unexpected response from the server.',
+            errorCode: 'MALFORMED_RESPONSE',
+          ),
+        );
+      }
+
+      final response = ApiResponse<int>.fromJson(
+        data,
+        (payload) => payload['revokedSessions'] as int? ?? 0,
+      );
+      if (!response.isSuccess) return Left(response.toFailure());
+      return Right(response.responseData ?? 0);
     } on DioException catch (e) {
       return Left(failureFromDioException(e));
     } catch (e) {

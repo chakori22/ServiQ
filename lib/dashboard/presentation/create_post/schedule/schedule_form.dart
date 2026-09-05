@@ -172,7 +172,7 @@ class _ScheduleFormState extends State<_ScheduleForm> {
         title: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back_ios_rounded),
               onPressed: () => Navigator.pop(context),
             ),
             const SizedBox(width: 8),
@@ -416,11 +416,27 @@ class _DateField extends StatelessWidget {
 }
 
 const List<String> _months = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 const List<String> _weekdays = [
-  'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun',
+  'Mon',
+  'Tue',
+  'Wed',
+  'Thu',
+  'Fri',
+  'Sat',
+  'Sun',
 ];
 
 /// "Mon, 12 Sep 2026" — what the date field shows once a day is chosen.
@@ -524,9 +540,8 @@ class _TimeSlotSection extends StatelessWidget {
             (slot) => _SlotChip(
               slot: slot,
               isSelected: slot.id == state.selectedTimeSlotId,
-              onSelected: () => context.read<CreatePostBloc>().add(
-                OnSelectTimeSlot(slot.id),
-              ),
+              onSelected: () =>
+                  context.read<CreatePostBloc>().add(OnSelectTimeSlot(slot.id)),
             ),
           )
           .toList(),
@@ -566,9 +581,7 @@ class _SlotChip extends StatelessWidget {
           style: TextStyle(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-            color: isSelected
-                ? AppColor.white
-                : AppColor.neutralGreyColor700,
+            color: isSelected ? AppColor.white : AppColor.neutralGreyColor700,
           ),
         ),
       ),
@@ -585,10 +598,7 @@ class _SlotMessage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       message,
-      style: const TextStyle(
-        fontSize: 13,
-        color: AppColor.neutralGreyColor400,
-      ),
+      style: const TextStyle(fontSize: 13, color: AppColor.neutralGreyColor400),
     );
   }
 }

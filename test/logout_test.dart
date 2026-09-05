@@ -72,6 +72,54 @@ void main() {
     expect(repository.logoutCalls, isEmpty);
   });
 
+  test('signing out everywhere hits the all-devices endpoint', () async {
+    final store = FakePersistentStore();
+    final repository = FakeLoginRepository()..revokedSessions = 3;
+    final session = await signedIn(store, repository);
+
+    final result = await session.signOutEverywhere();
+
+    expect(result.getOrElse(() => -1), 3);
+    expect(repository.logoutAllCalls, ['r1']);
+    // The single-device endpoint is left alone.
+    expect(repository.logoutCalls, isEmpty);
+    expect(session.tokens, isNull);
+  });
+
+  test('a failed all-devices logout still signs this device out', () async {
+    final store = FakePersistentStore();
+    final repository = FakeLoginRepository()
+      ..logoutAllFailure = const Failure(
+        errorMessage: 'No internet connection. Please check your network.',
+        errorCode: 'CONNECTION_ERROR',
+      );
+    final session = await signedIn(store, repository);
+
+    final result = await session.signOutEverywhere();
+
+    expect(result.isLeft(), isTrue);
+    // Local state goes regardless: someone who asked to be signed out has to
+    // end up signed out even with no signal.
+    expect(session.tokens, isNull);
+    expect(store.blob, isNull);
+  });
+
+  test('with no token there is nothing to revoke anywhere', () async {
+    final session = AuthSession(
+      store: FakePersistentStore(),
+      repository: FakeLoginRepository(),
+      deviceIdentity: FakeDeviceIdentity(),
+    );
+
+    final result = await session.signOutEverywhere();
+
+    expect(result.getOrElse(() => -1), 0);
+  });
+
+  test('neither logout endpoint is pre-emptively refreshed', () {
+    expect(authEndpointPaths, contains('/api/v1/auth/logout-all'));
+  });
+
   test('logout is never pre-emptively refreshed before it is sent', () {
     // The request body carries the refresh token; refreshing first would
     // rotate it and revoke a token the server had already retired.

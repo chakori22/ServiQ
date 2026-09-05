@@ -12,6 +12,12 @@ enum DiscoveryTab { home, explore, posts, me }
 
 /// The flow's bottom bar: four tabs around a gradient post button that
 /// overhangs the bar's top edge.
+///
+/// The widget is [_overhang] taller than the bar it draws, and that strip is
+/// left transparent. It exists so the post button sits inside its parent's
+/// bounds: a child painted outside them gets no hit test, and drawn as a
+/// simple overhanging child the button looked right and was dead to taps
+/// everywhere in the flow.
 class DiscoveryTabBar extends StatelessWidget {
   const DiscoveryTabBar({
     super.key,
@@ -20,76 +26,95 @@ class DiscoveryTabBar extends StatelessWidget {
     this.onPost,
   });
 
+  /// How far the post button rises above the bar.
+  static const double _overhang = 22;
+
+  /// The bar itself, before the device's bottom inset.
+  static const double _barHeight = 64;
+
   final DiscoveryTab current;
   final ValueChanged<DiscoveryTab> onSelect;
+
   final VoidCallback? onPost;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColor.white,
-        border: const Border(top: BorderSide(color: AppColor.discoveryBorder)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColor.discoveryShadow.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
-          // The post button sits 22pt above the bar, so nothing here may
-          // clip its own children.
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.topCenter,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: _Tab(
-                      tab: DiscoveryTab.home,
-                      label: 'Home',
-                      current: current,
-                      onSelect: onSelect,
-                    ),
-                  ),
-                  Expanded(
-                    child: _Tab(
-                      tab: DiscoveryTab.explore,
-                      label: 'Explore',
-                      current: current,
-                      onSelect: onSelect,
-                    ),
-                  ),
-                  // Keeps the middle column clear for the post button.
-                  const Spacer(),
-                  Expanded(
-                    child: _Tab(
-                      tab: DiscoveryTab.posts,
-                      label: 'Posts',
-                      current: current,
-                      onSelect: onSelect,
-                    ),
-                  ),
-                  Expanded(
-                    child: _Tab(
-                      tab: DiscoveryTab.me,
-                      label: 'Me',
-                      current: current,
-                      onSelect: onSelect,
-                    ),
+    final inset = MediaQuery.paddingOf(context).bottom;
+
+    return SizedBox(
+      height: _barHeight + _overhang + inset,
+      child: Stack(
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: _barHeight + inset,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColor.white,
+                border: const Border(
+                  top: BorderSide(color: AppColor.discoveryBorder),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColor.discoveryShadow.withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, -4),
                   ),
                 ],
               ),
-              Positioned(top: -22, child: _PostButton(onTap: onPost)),
-            ],
+              child: Padding(
+                padding: EdgeInsets.only(bottom: inset),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _Tab(
+                        tab: DiscoveryTab.home,
+                        label: 'Home',
+                        current: current,
+                        onSelect: onSelect,
+                      ),
+                    ),
+                    Expanded(
+                      child: _Tab(
+                        tab: DiscoveryTab.explore,
+                        label: 'Explore',
+                        current: current,
+                        onSelect: onSelect,
+                      ),
+                    ),
+                    // Keeps the middle column clear for the post button.
+                    const Spacer(),
+                    Expanded(
+                      child: _Tab(
+                        tab: DiscoveryTab.posts,
+                        label: 'Posts',
+                        current: current,
+                        onSelect: onSelect,
+                      ),
+                    ),
+                    Expanded(
+                      child: _Tab(
+                        tab: DiscoveryTab.me,
+                        label: 'Me',
+                        current: current,
+                        onSelect: onSelect,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 56,
+            child: Center(child: DiscoveryPostButton(onTap: onPost)),
+          ),
+        ],
       ),
     );
   }
@@ -206,8 +231,13 @@ class _Line extends StatelessWidget {
   }
 }
 
-class _PostButton extends StatelessWidget {
-  const _PostButton({this.onTap});
+/// The raised gradient button that starts a post.
+///
+/// Belongs in a Scaffold's `floatingActionButton` with
+/// [FloatingActionButtonLocation.centerDocked], which is what puts it over the
+/// bar's edge while keeping it inside a parent that will hit-test it.
+class DiscoveryPostButton extends StatelessWidget {
+  const DiscoveryPostButton({super.key, this.onTap});
 
   final VoidCallback? onTap;
 

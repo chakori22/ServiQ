@@ -36,11 +36,11 @@ class _FakeProfiles implements OnboardingRepository {
 
 Future<void> loadFonts() async {
   for (final path in const [
-    'assets/fonts/PlusJakartaSans-Medium.ttf',
-    'assets/fonts/PlusJakartaSans-Bold.ttf',
-    'assets/fonts/PlusJakartaSans-ExtraBold.ttf',
+    'assets/fonts/Mulish-Medium.ttf',
+    'assets/fonts/Mulish-Bold.ttf',
+    'assets/fonts/Mulish-ExtraBold.ttf',
   ]) {
-    final loader = FontLoader('Plus Jakarta Sans')
+    final loader = FontLoader('Mulish')
       ..addFont(File(path).readAsBytes().then((b) => ByteData.view(b.buffer)));
     await loader.load();
   }

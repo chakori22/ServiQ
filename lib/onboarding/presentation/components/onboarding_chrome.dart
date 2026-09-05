@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/app_back_button.dart';
 import '../../../core/app_color.dart';
 
 /// The ground onboarding sits on.
@@ -78,27 +79,7 @@ class OnboardingHeader extends StatelessWidget {
             child: Row(
               children: [
                 if (onBack != null)
-                  Material(
-                    color: AppColor.authSurface,
-                    shape: const CircleBorder(),
-                    elevation: 1,
-                    shadowColor: AppColor.indicativeBlueColor900.withValues(
-                      alpha: 0.18,
-                    ),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: onBack,
-                      child: const SizedBox(
-                        width: 44,
-                        height: 44,
-                        child: Icon(
-                          Icons.chevron_left,
-                          size: 24,
-                          color: AppColor.authTextPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
+                  AppBackButton(onTap: onBack, color: AppColor.authTextPrimary),
                 const Spacer(),
                 if (onSkip != null)
                   TextButton(
@@ -217,12 +198,11 @@ class OnboardingFootnoteLink extends StatelessWidget {
     final text = Text(
       label,
       textAlign: TextAlign.center,
-      style: const TextStyle(
-        fontSize: 13,
-        color: AppColor.authTextSecondary,
-      ),
+      style: const TextStyle(fontSize: 13, color: AppColor.authTextSecondary),
     );
     if (onTap == null) return Center(child: text);
-    return Center(child: TextButton(onPressed: onTap, child: text));
+    return Center(
+      child: TextButton(onPressed: onTap, child: text),
+    );
   }
 }

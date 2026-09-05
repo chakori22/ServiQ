@@ -165,6 +165,53 @@ class AppColor {
   /// Colour the flow's shadows are tinted with.
   static const Color discoveryShadow = Color(0xFF17244A);
 
+  // --- Provider profile ----------------------------------------------------
+  // The public provider page shares discovery's palette; these are the few
+  // surfaces it adds.
+
+  /// Middle stop of the profile hero's wash, at 70%.
+  static const Color providerHeroMid = Color(0xFFF8FBFF);
+
+  /// Fill of the "no verified badge" explainer.
+  static const Color providerNoteFill = Color(0xFFF7FAFF);
+
+  /// The map thumbnail's ground, and the placeholder behind a product photo.
+  static const Color providerMapFill = Color(0xFFEAF1FB);
+
+  /// A block of buildings on the map thumbnail.
+  static const Color providerMapBlock = Color(0xFFDCE9FF);
+
+  /// The shape standing in for a product photo.
+  static const Color providerImageShape = Color(0xFFC3D4EC);
+
+  /// Fill of the small "Add" chip on a product card.
+  static const Color providerChipFill = Color(0xFFEEF4FF);
+
+  // --- Me & identity verification ------------------------------------------
+  // Statuses carry most of the meaning on these screens, so each one gets a
+  // tint and a text colour rather than being spelled out inline.
+
+  /// A document waiting on a reviewer.
+  static const Color kycPendingTint = Color(0xFFFEF6E7);
+  static const Color kycPendingText = Color(0xFFB45309);
+
+  /// One that came back rejected, and the band that carries the reason.
+  static const Color kycRejectTint = Color(0xFFFEF3F3);
+  static const Color kycRejectText = Color(0xFFDC2626);
+  static const Color kycRejectDeep = Color(0xFFB42318);
+
+  /// The circle behind the rejection mark.
+  static const Color kycRejectMark = Color(0xFFEF4444);
+
+  /// The DEFAULT pill on a saved address.
+  static const Color addressDefaultTint = Color(0xFFEAF1FE);
+
+  /// Border of an empty upload target.
+  static const Color uploadDashedBorder = Color(0xFFC9D4E5);
+
+  /// A primary button that cannot be pressed yet.
+  static const Color buttonDisabledFill = Color(0xFFE7ECF6);
+
   static const Color black = Color(0xFF000000);
   static const Color white = Color(0xFFFFFFFF);
   static const Color accentColor = Color(0xFFC031C0);

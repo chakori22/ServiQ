@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../components/app_back_button.dart';
 import '../../../core/app_color.dart';
 
 /// The pale blue wash every auth screen sits on, with a soft glow behind
@@ -113,7 +114,10 @@ class ServiqWordmark extends StatelessWidget {
         ),
         children: const [
           TextSpan(text: 'Servi'),
-          TextSpan(text: 'Q', style: TextStyle(color: AppColor.authAccent)),
+          TextSpan(
+            text: 'Q',
+            style: TextStyle(color: AppColor.authAccent),
+          ),
         ],
       ),
     );
@@ -163,8 +167,7 @@ class AuthSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding:
-          padding ?? const EdgeInsets.fromLTRB(24, 28, 24, 20),
+      padding: padding ?? const EdgeInsets.fromLTRB(24, 28, 24, 20),
       decoration: BoxDecoration(
         color: AppColor.authSurface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -189,25 +192,7 @@ class AuthBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColor.authSurface,
-      shape: const CircleBorder(),
-      elevation: 1,
-      shadowColor: AppColor.indicativeBlueColor900.withValues(alpha: 0.2),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: const SizedBox(
-          width: 44,
-          height: 44,
-          child: Icon(
-            Icons.chevron_left,
-            size: 26,
-            color: AppColor.authTextPrimary,
-          ),
-        ),
-      ),
-    );
+    return AppBackButton(onTap: onTap, color: AppColor.authTextPrimary);
   }
 }
 

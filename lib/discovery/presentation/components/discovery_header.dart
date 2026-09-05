@@ -1,24 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/app_back_button.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 
-/// The boxed back chevron used at the start of a drill-down screen's header.
+/// The back affordance at the start of a drill-down screen's header.
 class DiscoveryBackButton extends StatelessWidget {
   const DiscoveryBackButton({super.key, this.onTap});
 
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap ?? () => Navigator.of(context).maybePop(),
-      behavior: HitTestBehavior.opaque,
-      child: SvgPicture.asset(DiscoveryAssets.back, width: 42, height: 42),
-    );
-  }
+  Widget build(BuildContext context) => AppBackButton(onTap: onTap);
 }
 
 /// A screen header: an optional back button, the title, an optional caption
@@ -46,7 +41,7 @@ class DiscoveryHeader extends StatelessWidget {
         children: [
           if (showBack) ...[
             const DiscoveryBackButton(),
-            const SizedBox(width: 14),
+            const SizedBox(width: 6),
           ],
           Expanded(
             child: Padding(

@@ -13,7 +13,19 @@ import 'package:local_markerplace/discovery/presentation/location_page.dart';
 import 'package:local_markerplace/discovery/presentation/locality_page.dart';
 import 'package:local_markerplace/discovery/presentation/search_page.dart';
 import 'package:local_markerplace/discovery/presentation/zone_detail_page.dart';
+import 'package:local_markerplace/discovery/model/provider_summary.dart';
 import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
+import 'package:local_markerplace/provider/presentation/provider_profile_page.dart';
+import 'package:local_markerplace/me/model/saved_provider.dart';
+import 'package:local_markerplace/me/presentation/addresses_page.dart';
+import 'package:local_markerplace/me/presentation/edit_profile_page.dart';
+import 'package:local_markerplace/me/presentation/kyc_pages.dart';
+import 'package:local_markerplace/me/presentation/me_page.dart';
+import 'package:local_markerplace/me/presentation/picture_picker_sheet.dart';
+import 'package:local_markerplace/me/presentation/saved_providers_page.dart';
+import 'package:local_markerplace/me/presentation/sign_out.dart';
+import 'package:local_markerplace/me/repository/me_repository.dart';
+import 'package:local_markerplace/onboarding/model/seeker_profile.dart';
 import 'package:local_markerplace/onboarding/repository/onboarding_repository.dart';
 
 /// Hosts the two tabbed discovery screens and owns the state they share —
@@ -29,6 +41,7 @@ class DiscoveryShell extends StatefulWidget {
     this.initialLocality,
     this.repository = const DiscoveryRepository(),
     this.profiles,
+    this.meRepository = const MeRepository(),
   });
 
   final DiscoveryTab initialTab;
@@ -48,6 +61,9 @@ class DiscoveryShell extends StatefulWidget {
   /// means the picker opens.
   final OnboardingRepository? profiles;
 
+  /// Everything the Me tab and its screens read.
+  final MeRepository meRepository;
+
   @override
   State<DiscoveryShell> createState() => _DiscoveryShellState();
 }
@@ -59,6 +75,10 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
   /// Held back until the stored profile has been read, so the picker is not
   /// flashed at a seeker who already told onboarding where they live.
   bool _resolvingLocality = false;
+
+  /// The profile behind the Me tab. Null until it has been read, or when
+  /// there is none on file.
+  SeekerProfile? _profile;
 
   @override
   void initState() {
@@ -77,7 +97,10 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
       final profile = await profiles.readProfile();
       if (!mounted) return;
       final locality = profile?.locality ?? '';
-      setState(() => _resolvingLocality = false);
+      setState(() {
+        _resolvingLocality = false;
+        _profile = profile;
+      });
       if (locality.isNotEmpty) {
         setState(() => _localityName = locality);
         return;
@@ -138,6 +161,37 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
   void _openPostForm() =>
       GoRouter.of(context).pushAppRoute(AppRoutes.instantForm);
 
+  void _push(Widget page) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
+  }
+
+  void _notice(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: DiscoveryText.heroSubtitle.copyWith(color: AppColor.white),
+          ),
+        ),
+      );
+  }
+
+  /// Writes an edited profile back and refreshes the Me tab with it.
+  Future<void> _saveProfile(String name, Set<String> interestLabels) async {
+    final profiles = widget.profiles;
+    final current = _profile ?? const SeekerProfile();
+    final ids = seekerServiceInterests
+        .where((interest) => interestLabels.contains(interest.label))
+        .map((interest) => interest.id)
+        .toSet();
+    final updated = current.copyWith(fullName: name, interestIds: ids);
+
+    setState(() => _profile = updated);
+    await profiles?.saveProfile(updated);
+  }
+
   void _openZone(ServiceZone zone) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -157,6 +211,20 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
         builder: (_) => LocalityPage(
           localityName: locality.name,
           repository: widget.repository,
+          onProviderTap: _openProvider,
+          onTabSelected: _selectTabFromChild,
+          onPost: _openPostForm,
+        ),
+      ),
+    );
+  }
+
+  /// Every list of providers in the flow ends here.
+  void _openProvider(ProviderSummary provider) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProviderProfilePage(
+          providerName: provider.name,
           onTabSelected: _selectTabFromChild,
           onPost: _openPostForm,
         ),
@@ -172,6 +240,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
         builder: (_) => SearchPage(
           localityName: locality,
           repository: widget.repository,
+          onProviderTap: _openProvider,
           onTabSelected: _selectTabFromChild,
           onPost: _openPostForm,
         ),
@@ -202,6 +271,61 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
     );
   }
 
+  Widget _meView() {
+    final account = widget.meRepository.account(profile: _profile);
+
+    return MeView(
+      account: account,
+      onEditProfile: () => _push(
+        EditProfilePage(
+          account: account,
+          onSave: _saveProfile,
+          onChangePhoto: _pickPicture,
+          onPickLocality: _pickLocality,
+        ),
+      ),
+      onVisits: () => _notice('My visits — coming soon.'),
+      onPosts: () => GoRouter.of(context).pushAppRoute(AppRoutes.posts),
+      onChats: () => _notice('Chats — coming soon.'),
+      onIdentity: () => _push(KycListPage(repository: widget.meRepository)),
+      onSavedProviders: () => _push(
+        SavedProvidersPage(
+          localityName: _localityName ?? account.localityName,
+          repository: widget.meRepository,
+          onProviderTap: _openSavedProvider,
+          onTabSelected: _selectTabFromChild,
+          onPost: _openPostForm,
+        ),
+      ),
+      onAddresses: () => _push(
+        AddressesPage(
+          repository: widget.meRepository,
+          onTabSelected: _selectTabFromChild,
+          onPost: _openPostForm,
+        ),
+      ),
+      onNotifications: () => _notice('Notification settings — coming soon.'),
+      onBecomeProvider: () => _notice('Listing your business — coming soon.'),
+      onSignOut: () => confirmSignOut(context, everywhere: false),
+      onSignOutEverywhere: () => confirmSignOut(context, everywhere: true),
+    );
+  }
+
+  Future<void> _pickPicture() async {
+    final action = await PicturePickerSheet.show(context);
+    if (action == null || !mounted) return;
+    _notice('${action.name} — coming soon.');
+  }
+
+  void _openSavedProvider(SavedProvider provider) {
+    _push(
+      ProviderProfilePage(
+        providerName: provider.name,
+        onTabSelected: _selectTabFromChild,
+      ),
+    );
+  }
+
   Widget _body() {
     switch (_tab) {
       case DiscoveryTab.home:
@@ -212,6 +336,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
           repository: widget.repository,
           onChangeLocality: _pickLocality,
           onSearch: _openSearch,
+          onProviderTap: _openProvider,
           onSeeAllCategories: () => setState(() => _tab = DiscoveryTab.explore),
           onSeeAllProviders: () {
             final locality = _localityName;
@@ -232,13 +357,12 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
           onZoneTap: _openZone,
           onComingSoonTap: (zone) => showComingSoonNotice(context, zone),
         );
-      case DiscoveryTab.posts:
       case DiscoveryTab.me:
-        // "Me" has no design in this flow yet; the tab is here so the bar
-        // matches the mock, and says so rather than showing a blank page.
-        return Center(
-          child: Text('Coming soon', style: DiscoveryText.subtitle),
-        );
+        return _meView();
+      case DiscoveryTab.posts:
+        // Posts opens its own screen rather than rendering here; this only
+        // shows if the tab is somehow current.
+        return const SizedBox.shrink();
     }
   }
 }

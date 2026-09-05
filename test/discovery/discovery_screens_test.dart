@@ -19,16 +19,16 @@ import 'package:local_markerplace/discovery/repository/discovery_repository.dart
 /// each one at that size. An overflow inside a card only shows up at the
 /// exact height the design specifies, which is what caught the provider
 /// card's two-line name not fitting.
-/// The layouts are measured against Plus Jakarta Sans, so the real faces have
+/// The layouts are measured against Mulish, so the real faces have
 /// to be in the test binding — the fallback the test framework ships with is
 /// wider and reports overflows the app never has.
 Future<void> loadFonts() async {
   for (final path in const [
-    'assets/fonts/PlusJakartaSans-Medium.ttf',
-    'assets/fonts/PlusJakartaSans-Bold.ttf',
-    'assets/fonts/PlusJakartaSans-ExtraBold.ttf',
+    'assets/fonts/Mulish-Medium.ttf',
+    'assets/fonts/Mulish-Bold.ttf',
+    'assets/fonts/Mulish-ExtraBold.ttf',
   ]) {
-    final loader = FontLoader('Plus Jakarta Sans')
+    final loader = FontLoader('Mulish')
       ..addFont(File(path).readAsBytes().then((b) => ByteData.view(b.buffer)));
     await loader.load();
   }
@@ -257,6 +257,31 @@ void main() {
       find.text('No providers in ${empty.name} yet — coming soon.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('the post button can actually be tapped', (tester) async {
+    // It overhangs the tab bar, and a child painted outside its parent's
+    // bounds gets no hit test — drawn inside the bar it looked right and was
+    // dead everywhere in the flow.
+    var posts = 0;
+
+    await pumpScreen(
+      tester,
+      Scaffold(
+        backgroundColor: Colors.white,
+        body: const SizedBox.expand(),
+        bottomNavigationBar: DiscoveryTabBar(
+          current: DiscoveryTab.home,
+          onSelect: (_) {},
+          onPost: () => posts++,
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(DiscoveryPostButton));
+    await tester.pumpAndSettle();
+
+    expect(posts, 1);
   });
 
   test('every locality a row offers actually has providers behind it', () {

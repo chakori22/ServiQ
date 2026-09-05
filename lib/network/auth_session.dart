@@ -37,10 +37,11 @@ const authEndpointPaths = {
   '/api/v1/auth/otp/request',
   '/api/v1/auth/otp/verify',
   '/api/v1/auth/token/refresh',
-  // Logout carries the refresh token in its body. Refreshing first would
-  // rotate that token and leave the request revoking one the server has
-  // already retired, so this endpoint has to be left alone too.
+  // Both logout endpoints carry the refresh token in their body. Refreshing
+  // first would rotate that token and leave the request revoking one the
+  // server has already retired, so they have to be left alone too.
   '/api/v1/auth/logout',
+  '/api/v1/auth/logout-all',
 };
 
 /// Error codes that mean the transport failed rather than the credential
@@ -177,6 +178,20 @@ class AuthSession {
     final result = refreshToken == null
         ? const Right<Failure, Unit>(unit)
         : await repository.logout(refreshToken: refreshToken);
+    await clear();
+    return result;
+  }
+
+  /// The same, for every device the account is signed in on.
+  ///
+  /// Answers with how many sessions the server retired so the UI can say what
+  /// happened. A device holding no token has nothing to revoke and reports
+  /// zero rather than calling out to say so.
+  Future<Either<Failure, int>> signOutEverywhere() async {
+    final refreshToken = _tokens?.refreshToken;
+    final result = refreshToken == null
+        ? const Right<Failure, int>(0)
+        : await repository.logoutAll(refreshToken: refreshToken);
     await clear();
     return result;
   }

@@ -130,7 +130,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Priya Sharma');
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.chevron_left));
+    await tester.tap(find.byIcon(Icons.arrow_back_ios_rounded));
     await tester.pumpAndSettle();
     // Back on the grid, with the earlier choice still selected.
     expect(find.text('What do you usually need help with?'), findsOneWidget);

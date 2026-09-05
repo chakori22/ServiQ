@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/app_back_button.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/model/provider_summary.dart';
-import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_filter_chip.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_search_field.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
@@ -82,16 +81,8 @@ class _SearchPageState extends State<SearchPage> {
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               child: Row(
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).maybePop(),
-                    behavior: HitTestBehavior.opaque,
-                    child: SvgPicture.asset(
-                      DiscoveryAssets.backPlain,
-                      width: 32,
-                      height: 40,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
+                  const AppBackButton(),
+                  const SizedBox(width: 4),
                   Expanded(
                     child: DiscoverySearchField(
                       controller: _controller,

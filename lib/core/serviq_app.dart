@@ -24,7 +24,10 @@ class ServiqApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(useMaterial3: true),
+      // Mulish is the application typeface: set here so every screen
+      // inherits it, including the ones that build their text styles from
+      // the theme rather than naming a family.
+      theme: ThemeData(useMaterial3: true, fontFamily: 'Mulish'),
       routerConfig: GoRouter(
         navigatorKey: navigatorKey,
         initialLocation: targetLocation,
@@ -74,7 +77,8 @@ Future<Widget> appBuilder(
   // A restored session still has to have been through onboarding — a user who
   // verified but closed the app mid-setup would otherwise land on discovery
   // knowing neither their locality nor what they came for.
-  final hasProfile = bootstrap == AuthBootstrapResult.signedIn &&
+  final hasProfile =
+      bootstrap == AuthBootstrapResult.signedIn &&
       await _onboardingRepository.readProfile() != null;
 
   return MultiRepositoryProvider(

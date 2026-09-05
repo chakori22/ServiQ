@@ -67,6 +67,15 @@ class FakeLoginRepository implements LoginRepository {
   /// When set, logout comes back Left — the server unreachable, say.
   Failure? logoutFailure;
 
+  /// Refresh tokens the all-devices endpoint was asked to retire.
+  final List<String> logoutAllCalls = [];
+
+  /// How many sessions the all-devices endpoint reports revoking.
+  int revokedSessions = 1;
+
+  /// When set, the all-devices logout comes back Left.
+  Failure? logoutAllFailure;
+
   /// Tokens handed back on success, in order.
   final List<AuthTokens> responses;
   final Failure? failure;
@@ -98,6 +107,13 @@ class FakeLoginRepository implements LoginRepository {
     logoutCalls.add(refreshToken);
     final failure = logoutFailure;
     return failure == null ? const Right(unit) : Left(failure);
+  }
+
+  @override
+  Future<Either<Failure, int>> logoutAll({required String refreshToken}) async {
+    logoutAllCalls.add(refreshToken);
+    final failure = logoutAllFailure;
+    return failure == null ? Right(revokedSessions) : Left(failure);
   }
 
   @override

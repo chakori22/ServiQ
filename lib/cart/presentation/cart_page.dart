@@ -79,7 +79,7 @@ class _CartViewState extends State<_CartView> {
         title: Row(
           children: [
             IconButton(
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back_ios_rounded),
               color: AppColor.neutralGreyColor800,
               onPressed: () => Navigator.of(context).pop(),
             ),
@@ -221,7 +221,7 @@ class _CouponsRow extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
-            child: Row(
+          child: Row(
             children: [
               const Expanded(
                 child: Text(
