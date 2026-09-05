@@ -96,8 +96,11 @@ class ZonePickerCard extends StatelessWidget {
               LocalityRow(
                 title: localities[i].name,
                 providerCount: localities[i].providerCount,
+                isComingSoon: localities[i].providerCount == 0,
                 horizontalPadding: 14,
-                onTap: () => onLocalityTap(localities[i]),
+                onTap: localities[i].providerCount == 0
+                    ? null
+                    : () => onLocalityTap(localities[i]),
               ),
             ],
           ],

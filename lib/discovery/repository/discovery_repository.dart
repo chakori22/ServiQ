@@ -14,52 +14,43 @@ import 'package:local_markerplace/discovery/model/service_zone.dart';
 class DiscoveryRepository {
   const DiscoveryRepository();
 
-  static const _crossingRepublik = ServiceZone(
+  /// Built rather than declared const so a locality's provider count comes
+  /// from the providers actually on file. The count is what a row promises
+  /// before the seeker taps it, so it must never be able to drift from what
+  /// is behind it.
+  static Locality _locality(String name, LocalityKind kind) => Locality(
+    name: name,
+    providerCount: _providers
+        .where((provider) => provider.localityName == name)
+        .length,
+    kind: kind,
+  );
+
+  static final _crossingRepublik = ServiceZone(
     name: 'Crossing Republik',
     city: 'Ghaziabad, UP',
     isLive: true,
-    societyCount: 10,
-    marketCount: 6,
     localities: [
-      Locality(
-        name: 'Ajnara Gen X',
-        providerCount: 12,
-        kind: LocalityKind.society,
-      ),
-      Locality(
-        name: 'Mahagun Mascot',
-        providerCount: 8,
-        kind: LocalityKind.society,
-      ),
-      Locality(
-        name: 'Panchsheel Wellington',
-        providerCount: 5,
-        kind: LocalityKind.society,
-      ),
-      Locality(
-        name: 'Mahagun Montage',
-        providerCount: 4,
-        kind: LocalityKind.society,
-      ),
-      Locality(
-        name: 'Galleria Market 1',
-        providerCount: 9,
-        kind: LocalityKind.market,
-      ),
-      Locality(
-        name: 'Galleria Market 2',
-        providerCount: 6,
-        kind: LocalityKind.market,
-      ),
-      Locality(
-        name: 'Panchsheel Square',
-        providerCount: 3,
-        kind: LocalityKind.market,
-      ),
+      _locality('Ajnara Gen X', LocalityKind.society),
+      _locality('Mahagun Mascot', LocalityKind.society),
+      _locality('Panchsheel Wellington', LocalityKind.society),
+      _locality('Mahagun Montage', LocalityKind.society),
+      _locality('Ajnara Integrity', LocalityKind.society),
+      _locality('Panchsheel Greens', LocalityKind.society),
+      _locality('Cloud 9 Towers', LocalityKind.society),
+      _locality('Supertech Livingston', LocalityKind.society),
+      _locality('Victory Crossroads', LocalityKind.society),
+      _locality('Amrapali Princely Estate', LocalityKind.society),
+      _locality('Galleria Market 1', LocalityKind.market),
+      _locality('Galleria Market 2', LocalityKind.market),
+      _locality('Panchsheel Square', LocalityKind.market),
+      _locality('Crossing Mall', LocalityKind.market),
+      _locality('Shipra Market', LocalityKind.market),
+      _locality('Gaur City Centre', LocalityKind.market),
     ],
   );
 
-  static const _comingSoon = [
+  static const _comingSoon = <ServiceZone>[
     ServiceZone(name: 'Gaur City 1', city: 'Greater Noida, UP', isLive: false),
     ServiceZone(name: 'Gaur City 2', city: 'Greater Noida, UP', isLive: false),
     ServiceZone(
@@ -71,7 +62,7 @@ class DiscoveryRepository {
 
   /// Every zone, live ones first. The area picker and the explore list both
   /// render this in that order.
-  List<ServiceZone> zones() => const [_crossingRepublik, ..._comingSoon];
+  List<ServiceZone> zones() => [_crossingRepublik, ..._comingSoon];
 
   ServiceZone? zoneNamed(String name) {
     for (final zone in zones()) {
@@ -230,6 +221,558 @@ class DiscoveryRepository {
       localityName: 'Ajnara Gen X',
       isOpen: true,
     ),
+
+    // --- The rest of Crossing Republik's societies ------------------------
+    ProviderSummary(
+      name: 'Mascot Electrical Care',
+      trade: 'Electrician',
+      rating: 4.4,
+      reviewCount: 37,
+      localityName: 'Mahagun Mascot',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Mascot Plumbing Point',
+      trade: 'Plumber',
+      rating: 4.1,
+      reviewCount: 23,
+      localityName: 'Mahagun Mascot',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Sunrise AC Care',
+      trade: 'AC Repair',
+      rating: 4.5,
+      reviewCount: 44,
+      localityName: 'Mahagun Mascot',
+      isOpen: false,
+    ),
+    ProviderSummary(
+      name: 'Wellington Home Repairs',
+      trade: 'Carpenter',
+      rating: 4.2,
+      reviewCount: 29,
+      localityName: 'Panchsheel Wellington',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Panchsheel RO Care',
+      trade: 'RO Repair',
+      rating: 4.0,
+      reviewCount: 17,
+      localityName: 'Panchsheel Wellington',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Montage Quick Fix',
+      trade: 'Appliance',
+      rating: 4.3,
+      reviewCount: 21,
+      localityName: 'Mahagun Montage',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Integrity Electricals',
+      trade: 'Electrician',
+      rating: 4.1,
+      reviewCount: 14,
+      localityName: 'Ajnara Integrity',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Greens Cleaning Crew',
+      trade: 'Cleaning',
+      rating: 4.6,
+      reviewCount: 52,
+      localityName: 'Panchsheel Greens',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Greens Plumbing Works',
+      trade: 'Plumber',
+      rating: 3.9,
+      reviewCount: 11,
+      localityName: 'Panchsheel Greens',
+      isOpen: false,
+    ),
+    ProviderSummary(
+      name: 'Cloud 9 Appliance Hub',
+      trade: 'Appliance',
+      rating: 4.2,
+      reviewCount: 26,
+      localityName: 'Cloud 9 Towers',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Livingston Carpentry',
+      trade: 'Carpenter',
+      rating: 4.4,
+      reviewCount: 31,
+      localityName: 'Supertech Livingston',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Crossroads Pest Control',
+      trade: 'Pest control',
+      rating: 4.0,
+      reviewCount: 15,
+      localityName: 'Victory Crossroads',
+      isOpen: true,
+    ),
+
+    // --- Markets ----------------------------------------------------------
+    ProviderSummary(
+      name: 'Galleria Electricals',
+      trade: 'Electrician',
+      rating: 4.5,
+      reviewCount: 63,
+      localityName: 'Galleria Market 1',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Galleria Mobile & Appliance',
+      trade: 'Appliance',
+      rating: 4.2,
+      reviewCount: 38,
+      localityName: 'Galleria Market 1',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Sharma Hardware & Plumbing',
+      trade: 'Plumber',
+      rating: 4.3,
+      reviewCount: 41,
+      localityName: 'Galleria Market 1',
+      isOpen: false,
+    ),
+    ProviderSummary(
+      name: 'Galleria AC Point',
+      trade: 'AC Repair',
+      rating: 4.1,
+      reviewCount: 27,
+      localityName: 'Galleria Market 2',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Market Cleaning Services',
+      trade: 'Cleaning',
+      rating: 3.9,
+      reviewCount: 19,
+      localityName: 'Galleria Market 2',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Square RO Solutions',
+      trade: 'RO Repair',
+      rating: 4.4,
+      reviewCount: 34,
+      localityName: 'Panchsheel Square',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Crossing Mall Electricals',
+      trade: 'Electrician',
+      rating: 4.0,
+      reviewCount: 22,
+      localityName: 'Crossing Mall',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Shipra Appliance Repairs',
+      trade: 'Appliance',
+      rating: 4.2,
+      reviewCount: 30,
+      localityName: 'Shipra Market',
+      isOpen: true,
+    ),
+
+    // Mahagun Mascot
+    ProviderSummary(
+      name: 'Mascot Carpentry Studio',
+      trade: 'Carpenter',
+      rating: 4.2,
+      reviewCount: 28,
+      localityName: 'Mahagun Mascot',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Fresh Look Cleaners',
+      trade: 'Cleaning',
+      rating: 4.6,
+      reviewCount: 55,
+      localityName: 'Mahagun Mascot',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Mascot Pest Shield',
+      trade: 'Pest control',
+      rating: 4.0,
+      reviewCount: 16,
+      localityName: 'Mahagun Mascot',
+      isOpen: false,
+    ),
+
+    // Panchsheel Wellington
+    ProviderSummary(
+      name: 'Wellington Electric Co',
+      trade: 'Electrician',
+      rating: 4.5,
+      reviewCount: 48,
+      localityName: 'Panchsheel Wellington',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Blue Drop Plumbers',
+      trade: 'Plumber',
+      rating: 4.1,
+      reviewCount: 25,
+      localityName: 'Panchsheel Wellington',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Wellington AC Experts',
+      trade: 'AC Repair',
+      rating: 4.4,
+      reviewCount: 39,
+      localityName: 'Panchsheel Wellington',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Spotless Home Cleaning',
+      trade: 'Cleaning',
+      rating: 4.3,
+      reviewCount: 33,
+      localityName: 'Panchsheel Wellington',
+      isOpen: false,
+    ),
+
+    // Mahagun Montage
+    ProviderSummary(
+      name: 'Montage Electricals',
+      trade: 'Electrician',
+      rating: 4.3,
+      reviewCount: 30,
+      localityName: 'Mahagun Montage',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Montage Plumbing Co',
+      trade: 'Plumber',
+      rating: 4.0,
+      reviewCount: 18,
+      localityName: 'Mahagun Montage',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Cool Breeze AC Care',
+      trade: 'AC Repair',
+      rating: 4.5,
+      reviewCount: 42,
+      localityName: 'Mahagun Montage',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Montage RO Service',
+      trade: 'RO Repair',
+      rating: 4.1,
+      reviewCount: 20,
+      localityName: 'Mahagun Montage',
+      isOpen: false,
+    ),
+
+    // Ajnara Integrity
+    ProviderSummary(
+      name: 'Integrity Plumbing',
+      trade: 'Plumber',
+      rating: 4.2,
+      reviewCount: 24,
+      localityName: 'Ajnara Integrity',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Integrity AC & RO',
+      trade: 'AC Repair · RO Repair',
+      rating: 4.4,
+      reviewCount: 36,
+      localityName: 'Ajnara Integrity',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Neat Nest Cleaning',
+      trade: 'Cleaning',
+      rating: 4.5,
+      reviewCount: 47,
+      localityName: 'Ajnara Integrity',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Integrity Woodworks',
+      trade: 'Carpenter',
+      rating: 3.9,
+      reviewCount: 13,
+      localityName: 'Ajnara Integrity',
+      isOpen: false,
+    ),
+
+    // Panchsheel Greens
+    ProviderSummary(
+      name: 'Greens Electric Point',
+      trade: 'Electrician',
+      rating: 4.4,
+      reviewCount: 41,
+      localityName: 'Panchsheel Greens',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Greens AC Service',
+      trade: 'AC Repair',
+      rating: 4.2,
+      reviewCount: 29,
+      localityName: 'Panchsheel Greens',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Greens Appliance Care',
+      trade: 'Appliance',
+      rating: 4.0,
+      reviewCount: 21,
+      localityName: 'Panchsheel Greens',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Green Shield Pest Control',
+      trade: 'Pest control',
+      rating: 4.3,
+      reviewCount: 27,
+      localityName: 'Panchsheel Greens',
+      isOpen: false,
+    ),
+
+    // Cloud 9 Towers
+    ProviderSummary(
+      name: 'Cloud 9 Electricals',
+      trade: 'Electrician',
+      rating: 4.3,
+      reviewCount: 34,
+      localityName: 'Cloud 9 Towers',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Skyline Plumbing',
+      trade: 'Plumber',
+      rating: 4.1,
+      reviewCount: 22,
+      localityName: 'Cloud 9 Towers',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Cloud 9 AC Care',
+      trade: 'AC Repair',
+      rating: 4.6,
+      reviewCount: 51,
+      localityName: 'Cloud 9 Towers',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Tower Cleaning Crew',
+      trade: 'Cleaning',
+      rating: 4.2,
+      reviewCount: 26,
+      localityName: 'Cloud 9 Towers',
+      isOpen: false,
+    ),
+
+    // Supertech Livingston
+    ProviderSummary(
+      name: 'Livingston Electricals',
+      trade: 'Electrician',
+      rating: 4.2,
+      reviewCount: 31,
+      localityName: 'Supertech Livingston',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Livingston RO Care',
+      trade: 'RO Repair',
+      rating: 4.4,
+      reviewCount: 38,
+      localityName: 'Supertech Livingston',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Quick Fix Appliances',
+      trade: 'Appliance',
+      rating: 4.0,
+      reviewCount: 19,
+      localityName: 'Supertech Livingston',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Livingston Plumbers',
+      trade: 'Plumber',
+      rating: 3.9,
+      reviewCount: 14,
+      localityName: 'Supertech Livingston',
+      isOpen: false,
+    ),
+
+    // Victory Crossroads
+    ProviderSummary(
+      name: 'Victory Electricals',
+      trade: 'Electrician',
+      rating: 4.5,
+      reviewCount: 45,
+      localityName: 'Victory Crossroads',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Crossroads Plumbing',
+      trade: 'Plumber',
+      rating: 4.2,
+      reviewCount: 27,
+      localityName: 'Victory Crossroads',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Victory AC & Appliance',
+      trade: 'AC Repair · Appliance',
+      rating: 4.3,
+      reviewCount: 35,
+      localityName: 'Victory Crossroads',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Crossroads Carpentry',
+      trade: 'Carpenter',
+      rating: 4.0,
+      reviewCount: 17,
+      localityName: 'Victory Crossroads',
+      isOpen: false,
+    ),
+
+    // Galleria Market 1
+    ProviderSummary(
+      name: 'Galleria Carpentry Works',
+      trade: 'Carpenter',
+      rating: 4.1,
+      reviewCount: 24,
+      localityName: 'Galleria Market 1',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Galleria Pest Solutions',
+      trade: 'Pest control',
+      rating: 4.4,
+      reviewCount: 40,
+      localityName: 'Galleria Market 1',
+      isOpen: false,
+    ),
+
+    // Galleria Market 2
+    ProviderSummary(
+      name: 'Market Electric House',
+      trade: 'Electrician',
+      rating: 4.3,
+      reviewCount: 32,
+      localityName: 'Galleria Market 2',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Galleria RO & Purifier',
+      trade: 'RO Repair',
+      rating: 4.2,
+      reviewCount: 28,
+      localityName: 'Galleria Market 2',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Galleria Carpenters',
+      trade: 'Carpenter',
+      rating: 3.9,
+      reviewCount: 15,
+      localityName: 'Galleria Market 2',
+      isOpen: false,
+    ),
+
+    // Panchsheel Square
+    ProviderSummary(
+      name: 'Square Electricals',
+      trade: 'Electrician',
+      rating: 4.2,
+      reviewCount: 26,
+      localityName: 'Panchsheel Square',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Square Appliance Hub',
+      trade: 'Appliance',
+      rating: 4.4,
+      reviewCount: 37,
+      localityName: 'Panchsheel Square',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Square Plumbing Point',
+      trade: 'Plumber',
+      rating: 4.0,
+      reviewCount: 18,
+      localityName: 'Panchsheel Square',
+      isOpen: false,
+    ),
+
+    // Crossing Mall
+    ProviderSummary(
+      name: 'Mall AC Services',
+      trade: 'AC Repair',
+      rating: 4.5,
+      reviewCount: 49,
+      localityName: 'Crossing Mall',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Mall Appliance Repairs',
+      trade: 'Appliance',
+      rating: 4.1,
+      reviewCount: 23,
+      localityName: 'Crossing Mall',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Crossing Cleaning Co',
+      trade: 'Cleaning',
+      rating: 4.3,
+      reviewCount: 30,
+      localityName: 'Crossing Mall',
+      isOpen: false,
+    ),
+
+    // Shipra Market
+    ProviderSummary(
+      name: 'Shipra Electricals',
+      trade: 'Electrician',
+      rating: 4.4,
+      reviewCount: 43,
+      localityName: 'Shipra Market',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Shipra Plumbing Works',
+      trade: 'Plumber',
+      rating: 4.0,
+      reviewCount: 20,
+      localityName: 'Shipra Market',
+      isOpen: true,
+    ),
+    ProviderSummary(
+      name: 'Shipra RO Care',
+      trade: 'RO Repair',
+      rating: 4.2,
+      reviewCount: 25,
+      localityName: 'Shipra Market',
+      isOpen: false,
+    ),
+    // Gaur City Centre is deliberately left with nobody on file: it is the
+    // case the "coming soon" row and the empty state exist for.
   ];
 
   /// Providers working in [localityName], in the order the design lists them.
@@ -237,9 +780,10 @@ class DiscoveryRepository {
       .where((provider) => provider.localityName == localityName)
       .toList();
 
-  /// The two providers shown in home's "Near you" rail.
-  List<ProviderSummary> nearby({int limit = 2}) =>
-      _providers.take(limit).toList();
+  /// The providers shown in home's "Near you" rail — the ones working in the
+  /// seeker's own area, not simply the first on file.
+  List<ProviderSummary> nearby(String localityName, {int limit = 6}) =>
+      providersIn(localityName).take(limit).toList();
 
   /// Providers matching [query], optionally narrowed to one [trade] and to
   /// those rated at least [minRating]. Matching is a plain case-insensitive

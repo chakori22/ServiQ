@@ -8,7 +8,7 @@ class DiscoveryAssets {
   static const String _base = 'assets/images/discovery';
 
   // Area picker hero.
-  static const String heroRingOuter = '$_base/hero_ring_outer.png';
+  static const String heroRingOuter = '$_base/hero_ring_outer.svg';
   static const String heroRingInner = '$_base/hero_ring_inner.svg';
   static const String heroDotCyan = '$_base/hero_dot_a.svg';
   static const String heroDotBlue = '$_base/hero_dot_b.svg';

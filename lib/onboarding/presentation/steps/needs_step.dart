@@ -33,22 +33,31 @@ class NeedsStep extends StatelessWidget {
               'it any time.',
         ),
         const SizedBox(height: 22),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: seekerServiceInterests.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            childAspectRatio: 1.12,
-          ),
-          itemBuilder: (context, index) {
-            final interest = seekerServiceInterests[index];
-            return InterestTile(
-              interest: interest,
-              selected: selected.contains(interest.id),
-              onTap: () => bloc.add(InterestToggled(interest.id)),
+        // Three fixed-width columns whose rows take their height from what a
+        // tile actually holds. A GridView would need the height up front —
+        // as a ratio of the width, or a figure worked out here — and either
+        // way a narrower phone or a larger text setting eventually makes the
+        // cell shorter than its own label, which is what overflowed before.
+        LayoutBuilder(
+          builder: (context, constraints) {
+            const columns = 3;
+            const gap = 12.0;
+            final tileWidth =
+                (constraints.maxWidth - gap * (columns - 1)) / columns;
+            return Wrap(
+              spacing: gap,
+              runSpacing: gap,
+              children: [
+                for (final interest in seekerServiceInterests)
+                  SizedBox(
+                    width: tileWidth,
+                    child: InterestTile(
+                      interest: interest,
+                      selected: selected.contains(interest.id),
+                      onTap: () => bloc.add(InterestToggled(interest.id)),
+                    ),
+                  ),
+              ],
             );
           },
         ),

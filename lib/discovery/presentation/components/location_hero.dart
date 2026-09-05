@@ -44,7 +44,7 @@ class LocationHero extends StatelessWidget {
           _At(
             top: 78,
             size: 180,
-            child: Image.asset(
+            child: SvgPicture.asset(
               DiscoveryAssets.heroRingOuter,
               width: 180,
               height: 180,

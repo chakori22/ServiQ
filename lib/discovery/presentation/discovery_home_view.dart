@@ -4,6 +4,7 @@ import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/model/provider_summary.dart';
 import 'package:local_markerplace/discovery/model/service_category.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_note.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_search_field.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/components/category_tile.dart';
@@ -41,7 +42,7 @@ class DiscoveryHomeView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final categories = repository.categories();
-    final nearby = repository.nearby();
+    final nearby = repository.nearby(localityName);
     final booking = repository.pendingBooking();
 
     return Column(
@@ -110,19 +111,31 @@ class DiscoveryHomeView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 4),
-                SizedBox(
-                  height: 152,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
+                if (nearby.isEmpty)
+                  Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    itemCount: nearby.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 12),
-                    itemBuilder: (context, index) => ProviderCard(
-                      provider: nearby[index],
-                      onTap: () => onProviderTap?.call(nearby[index]),
+                    child: DiscoveryNote(
+                      'No providers in $localityName yet — coming soon.',
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 152,
+                    child: ListView.separated(
+                      // Keyed on the area so switching areas starts the rail
+                      // at the first card rather than keeping the offset the
+                      // previous area's list was scrolled to.
+                      key: ValueKey(localityName),
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: nearby.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 12),
+                      itemBuilder: (context, index) => ProviderCard(
+                        provider: nearby[index],
+                        onTap: () => onProviderTap?.call(nearby[index]),
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

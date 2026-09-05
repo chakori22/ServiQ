@@ -12,8 +12,6 @@ class ServiceZone extends Equatable {
     required this.city,
     required this.isLive,
     this.localities = const [],
-    this.societyCount,
-    this.marketCount,
   });
 
   final String name;
@@ -23,13 +21,9 @@ class ServiceZone extends Equatable {
 
   final bool isLive;
 
-  /// The page of localities the app has loaded. A live zone lists more than
-  /// this in total, which is what [totalSocieties] and [totalMarkets] report.
+  /// The societies and markets inside this zone. Empty for a zone that is
+  /// not open yet.
   final List<Locality> localities;
-
-  /// Totals as the backend knows them. Null falls back to what is loaded.
-  final int? societyCount;
-  final int? marketCount;
 
   List<Locality> get societies =>
       localities.where((l) => l.kind == LocalityKind.society).toList();
@@ -37,17 +31,10 @@ class ServiceZone extends Equatable {
   List<Locality> get markets =>
       localities.where((l) => l.kind == LocalityKind.market).toList();
 
-  int get totalSocieties => societyCount ?? societies.length;
+  int get totalSocieties => societies.length;
 
-  int get totalMarkets => marketCount ?? markets.length;
+  int get totalMarkets => markets.length;
 
   @override
-  List<Object?> get props => [
-    name,
-    city,
-    isLive,
-    localities,
-    societyCount,
-    marketCount,
-  ];
+  List<Object?> get props => [name, city, isLive, localities];
 }

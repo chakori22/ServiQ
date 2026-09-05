@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/model/provider_summary.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_note.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/provider_row.dart';
 import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
@@ -47,25 +48,32 @@ class LocalityPage extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                itemCount: providers.length,
-                separatorBuilder: (_, _) => const Padding(
-                  // Indented so the divider starts past the avatar, the way
-                  // the design runs it under the text only.
-                  padding: EdgeInsets.only(left: 58),
-                  child: Divider(
-                    height: 1,
-                    thickness: 1,
-                    color: AppColor.discoveryBorder,
-                  ),
-                ),
-                itemBuilder: (context, index) => ProviderRow(
-                  provider: providers[index],
-                  subtitle: providers[index].trade,
-                  onTap: () => onProviderTap?.call(providers[index]),
-                ),
-              ),
+              child: providers.isEmpty
+                  ? const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: DiscoveryNote(
+                        'No providers here yet — coming soon.',
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                      itemCount: providers.length,
+                      separatorBuilder: (_, _) => const Padding(
+                        // Indented so the divider starts past the avatar, the way
+                        // the design runs it under the text only.
+                        padding: EdgeInsets.only(left: 58),
+                        child: Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: AppColor.discoveryBorder,
+                        ),
+                      ),
+                      itemBuilder: (context, index) => ProviderRow(
+                        provider: providers[index],
+                        subtitle: providers[index].trade,
+                        onTap: () => onProviderTap?.call(providers[index]),
+                      ),
+                    ),
             ),
           ],
         ),

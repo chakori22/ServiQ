@@ -4,6 +4,7 @@ import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/model/locality.dart';
 import 'package:local_markerplace/discovery/model/service_zone.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_note.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/locality_row.dart';
 import 'package:local_markerplace/discovery/presentation/components/section_header.dart';
@@ -48,20 +49,20 @@ class ZoneDetailPage extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                 children: [
-                  if (societies.isNotEmpty)
-                    ..._group(
-                      title: 'Societies',
-                      localities: societies,
-                      total: zone.totalSocieties,
-                    ),
-                  if (markets.isNotEmpty) ...[
-                    const SizedBox(height: 28),
-                    ..._group(
-                      title: 'Markets',
-                      localities: markets,
-                      total: zone.totalMarkets,
-                    ),
-                  ],
+                  // Both headings are shown even when a zone has nothing
+                  // under one of them — the seeker is told the section is
+                  // empty rather than left to wonder if it failed to load.
+                  ..._group(
+                    title: 'Societies',
+                    localities: societies,
+                    emptyMessage: 'No societies listed here yet — coming soon.',
+                  ),
+                  const SizedBox(height: 28),
+                  ..._group(
+                    title: 'Markets',
+                    localities: markets,
+                    emptyMessage: 'No markets listed here yet — coming soon.',
+                  ),
                 ],
               ),
             ),
@@ -79,16 +80,25 @@ class ZoneDetailPage extends StatelessWidget {
   List<Widget> _group({
     required String title,
     required List<Locality> localities,
-    required int total,
+    required String emptyMessage,
   }) {
+    if (localities.isEmpty) {
+      return [GroupHeader(title: title, count: 0), DiscoveryNote(emptyMessage)];
+    }
+
     return [
-      GroupHeader(title: title, count: total),
+      GroupHeader(title: title, count: localities.length),
       const SizedBox(height: 4),
       for (final locality in localities) ...[
+        // An area with nobody on file yet reads as coming soon rather than
+        // offering a tap that lands on an empty list.
         LocalityRow(
           title: locality.name,
           providerCount: locality.providerCount,
-          onTap: () => onLocalityTap(locality),
+          isComingSoon: locality.providerCount == 0,
+          onTap: locality.providerCount == 0
+              ? null
+              : () => onLocalityTap(locality),
         ),
         const Divider(height: 1, thickness: 1, color: AppColor.discoveryBorder),
       ],

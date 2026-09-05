@@ -206,6 +206,108 @@ void main() {
     expect(find.text('Where do you need help?'), findsOneWidget);
   });
 
+  testWidgets(
+    '"Near you" shows the seeker\'s own area, not the first on file',
+    (tester) async {
+      await pumpScreen(
+        tester,
+        Scaffold(
+          body: SafeArea(
+            bottom: false,
+            child: DiscoveryHomeView(
+              localityName: 'Panchsheel Greens',
+              onChangeLocality: () {},
+              onSearch: () {},
+              onSeeAllCategories: () {},
+              onSeeAllProviders: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Greens Cleaning Crew'), findsOneWidget);
+      // Ajnara Gen X's providers head the catalogue; they must not leak onto
+      // another area's home screen.
+      expect(find.text('Shahnaz RO & Chimney Services'), findsNothing);
+    },
+  );
+
+  testWidgets('"Near you" says so when the area has nobody yet', (
+    tester,
+  ) async {
+    final empty = zone.markets.firstWhere((m) => m.providerCount == 0);
+
+    await pumpScreen(
+      tester,
+      Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: DiscoveryHomeView(
+            localityName: empty.name,
+            onChangeLocality: () {},
+            onSearch: () {},
+            onSeeAllCategories: () {},
+            onSeeAllProviders: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.text('No providers in ${empty.name} yet — coming soon.'),
+      findsOneWidget,
+    );
+  });
+
+  test('every locality a row offers actually has providers behind it', () {
+    for (final zone in repository.zones().where((zone) => zone.isLive)) {
+      for (final locality in zone.localities) {
+        final providers = repository.providersIn(locality.name);
+        expect(
+          providers.length,
+          locality.providerCount,
+          reason: '${locality.name} promises a count it cannot fill',
+        );
+      }
+    }
+  });
+
+  test('a live zone lists both societies and markets', () {
+    final zone = repository.zones().firstWhere((zone) => zone.isLive);
+
+    expect(zone.societies, isNotEmpty);
+    expect(zone.markets, isNotEmpty);
+    // Every market bar the one held back as the coming-soon case has someone
+    // working in it.
+    final staffed = zone.markets.where((m) => m.providerCount > 0);
+    expect(staffed.length, zone.markets.length - 1);
+  });
+
+  testWidgets('a market with nobody on file reads as coming soon', (
+    tester,
+  ) async {
+    await pumpScreen(tester, ZoneDetailPage(zone: zone, onLocalityTap: (_) {}));
+
+    final empty = zone.markets.firstWhere((m) => m.providerCount == 0);
+    await tester.scrollUntilVisible(find.text(empty.name), 200);
+    await tester.pumpAndSettle();
+
+    expect(find.text(empty.name), findsOneWidget);
+    // The row offers a pill instead of a count, so there is nothing to tap
+    // through to an empty list.
+    expect(find.text('COMING SOON'), findsWidgets);
+  });
+
+  testWidgets('a locality with no providers says so rather than going blank', (
+    tester,
+  ) async {
+    final empty = zone.markets.firstWhere((m) => m.providerCount == 0);
+
+    await pumpScreen(tester, LocalityPage(localityName: empty.name));
+
+    expect(find.text('No providers here yet — coming soon.'), findsOneWidget);
+  });
+
   test('a locality knows the zone it sits in', () {
     expect(
       repository.zoneOfLocality('Galleria Market 1')?.name,
