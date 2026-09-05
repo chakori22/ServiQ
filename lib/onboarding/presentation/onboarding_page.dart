@@ -30,10 +30,14 @@ class OnboardingPage extends StatelessWidget {
 class _OnboardingView extends StatelessWidget {
   const _OnboardingView();
 
-  void _leaveForDashboard(BuildContext context) {
+  void _leaveForDiscovery(BuildContext context) {
     // Replaces the stack: neither onboarding nor the auth screens behind it
     // are anywhere the user should be able to go back to.
-    GoRouter.of(context).goAppRoute(AppRoutes.home);
+    //
+    // Discovery reads the area out of the profile this flow just saved, so a
+    // seeker who finished onboarding never sees the area picker. One who
+    // skipped out early has saved nothing, and is asked there instead.
+    GoRouter.of(context).goAppRoute(AppRoutes.discovery);
   }
 
   @override
@@ -83,7 +87,7 @@ class _OnboardingView extends StatelessWidget {
                         },
                         onSkip: isReady
                             ? null
-                            : () => _leaveForDashboard(context),
+                            : () => _leaveForDiscovery(context),
                       ),
                       const SizedBox(height: 26),
                       // Keyed by step so the switcher treats each one as a new
@@ -95,14 +99,14 @@ class _OnboardingView extends StatelessWidget {
                           key: ValueKey(state.step),
                           child: switch (state.step) {
                             OnboardingStep.needs => NeedsStep(
-                              onSkip: () => _leaveForDashboard(context),
+                              onSkip: () => _leaveForDiscovery(context),
                             ),
                             OnboardingStep.about => AboutYouStep(
-                              onSkip: () => _leaveForDashboard(context),
+                              onSkip: () => _leaveForDiscovery(context),
                             ),
                             OnboardingStep.ready => ReadyStep(
                               onStartBrowsing: () =>
-                                  _leaveForDashboard(context),
+                                  _leaveForDiscovery(context),
                             ),
                           },
                         ),

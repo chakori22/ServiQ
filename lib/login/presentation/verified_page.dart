@@ -73,7 +73,7 @@ class VerifiedPage extends StatelessWidget {
                 const SizedBox(height: 16),
                 TextButton(
                   onPressed: () =>
-                      GoRouter.of(context).goAppRoute(AppRoutes.home),
+                      GoRouter.of(context).goAppRoute(AppRoutes.discovery),
                   child: const Text(
                     'Complete your profile later',
                     style: TextStyle(

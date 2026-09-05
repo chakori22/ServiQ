@@ -92,6 +92,79 @@ class AppColor {
   /// onboarding does not use.
   static const Color onboardingSuccessWashTop = Color(0xFFEAF8F3);
 
+  // --- Discovery flow ------------------------------------------------------
+  // Tokens for the "02 · Discovery" screens (area picker, home, explore,
+  // search). Kept in their own block for the same reason as auth: the flow
+  // has a colder, higher-contrast palette than the dashboard, and restyling
+  // one must not drag the other with it.
+
+  /// Headings and row titles.
+  static const Color discoveryInk = Color(0xFF0B1220);
+
+  /// Strong secondary text — chip labels, ratings, category captions.
+  static const Color discoveryInkMuted = Color(0xFF33415C);
+
+  /// Body and supporting copy.
+  static const Color discoveryTextSecondary = Color(0xFF64748B);
+
+  /// Hints, counts and captions.
+  static const Color discoveryTextTertiary = Color(0xFF94A3B8);
+
+  /// Text of a row that is not tappable yet, e.g. a coming-soon area.
+  static const Color discoveryTextDisabled = Color(0xFFA7B2C6);
+
+  /// Hairlines, card borders and dividers.
+  static const Color discoveryBorder = Color(0xFFE2E9F7);
+
+  /// Fill of a category tile, the idle search field and the header buttons.
+  static const Color discoveryTint = Color(0xFFF4F9FE);
+
+  /// Fill of a card whose content is not live yet.
+  static const Color discoverySurfaceMuted = Color(0xFFFAFCFF);
+
+  /// Fill and text of the COMING SOON pill.
+  static const Color discoveryPillMuted = Color(0xFFF1F5FB);
+  static const Color discoveryPillMutedText = Color(0xFF8FA0BC);
+
+  /// The flow's link and active-tab blue.
+  static const Color discoveryAccent = Color(0xFF1E6FE8);
+
+  /// Stops of the primary call-to-action gradient, used on the location
+  /// button, the pending-booking bar and the post FAB.
+  static const Color discoveryGradientStart = Color(0xFF3B8AF5);
+  static const Color discoveryGradientEnd = Color(0xFF1553BE);
+
+  /// Fill, text and dot of the LIVE / OPEN pill.
+  static const Color discoveryLiveTint = Color(0xFFE6F9F1);
+  static const Color discoveryLiveText = Color(0xFF059669);
+
+  /// The verified check on a provider avatar.
+  static const Color discoveryVerified = Color(0xFF10B981);
+
+  /// Rating star.
+  static const Color discoveryStar = Color(0xFFF59E0B);
+
+  /// Provider avatar: a dark navy gradient behind light initials.
+  static const Color discoveryAvatarTop = Color(0xFF1F3466);
+  static const Color discoveryAvatarBottom = Color(0xFF101A33);
+  static const Color discoveryAvatarText = Color(0xFFC9D4E5);
+
+  /// Chevron at the end of a drill-down row.
+  static const Color discoveryChevron = Color(0xFFC9D4E5);
+
+  /// Wash behind the area picker's hero, top to bottom.
+  static const Color discoveryHeroTop = Color(0xFFEDF3FF);
+  static const Color discoveryHeroMid = Color(0xFFF7FAFF);
+
+  /// Subtitle inside the blue pending-booking bar.
+  static const Color discoveryOnAccentMuted = Color(0xFFBBD4FF);
+
+  /// Fill of the search field's clear button.
+  static const Color discoveryClearFill = Color(0xFFEEF3FB);
+
+  /// Colour the flow's shadows are tinted with.
+  static const Color discoveryShadow = Color(0xFF17244A);
+
   static const Color black = Color(0xFF000000);
   static const Color white = Color(0xFFFFFFFF);
   static const Color accentColor = Color(0xFFC031C0);

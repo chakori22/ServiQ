@@ -8,6 +8,7 @@ import 'package:local_markerplace/dashboard/presentation/create_post/instant/ins
 import 'package:local_markerplace/dashboard/presentation/create_post/schedule/schedule_form.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 import 'package:local_markerplace/dashboard/presentation/dashboard_page.dart';
+import 'package:local_markerplace/discovery/presentation/discovery_shell.dart';
 
 import 'package:local_markerplace/core/launch_app.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
@@ -16,6 +17,7 @@ import 'package:local_markerplace/dashboard/presentation/your_post/presentation/
 import 'package:local_markerplace/login/presentation/login_page.dart';
 import 'package:local_markerplace/login/presentation/verified_page.dart';
 import 'package:local_markerplace/onboarding/presentation/onboarding_page.dart';
+import 'package:local_markerplace/onboarding/repository/onboarding_repository.dart';
 import 'package:local_markerplace/splash/splash_screen.dart';
 
 enum AppRoutes {
@@ -30,7 +32,8 @@ enum AppRoutes {
   services("/services"),
   posts("/posts"),
   yourPosts("/yourPosts"),
-  cart("/cart");
+  cart("/cart"),
+  discovery("/discovery");
 
   final String path;
   const AppRoutes(this.path);
@@ -121,6 +124,22 @@ List<RouteBase> createRoutes() {
       path: AppRoutes.yourPosts.path,
       builder: (context, state) => const YourPostPage(),
       name: AppRoutes.yourPosts.name,
+    ),
+    GoRoute(
+      path: AppRoutes.discovery.path,
+      // The discovery flow keeps its own navigator stack for the drill-downs
+      // (zone → locality → search), so only its shell needs a route. An area
+      // name handed over as `extra` opens straight onto that area; without
+      // one the shell reads the area onboarding recorded, and asks only if
+      // there is none.
+      builder: (context, state) {
+        final extra = state.extra;
+        return DiscoveryShell(
+          initialLocality: extra is String ? extra : null,
+          profiles: context.read<OnboardingRepository>(),
+        );
+      },
+      name: AppRoutes.discovery.name,
     ),
     GoRoute(
       path: AppRoutes.cart.path,

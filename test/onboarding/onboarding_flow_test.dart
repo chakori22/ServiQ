@@ -32,8 +32,8 @@ class _RecordingRepository implements OnboardingRepository {
 void main() {
   late _RecordingRepository repository;
 
-  // A real router, because leaving the flow navigates to the dashboard — with
-  // a stub destination so the test does not drag the whole dashboard in.
+  // A real router, because leaving the flow navigates to discovery — with a
+  // stub destination so the test does not drag the whole flow in.
   Widget harness() => RepositoryProvider<OnboardingRepository>.value(
     value: repository,
     child: MaterialApp.router(
@@ -46,9 +46,9 @@ void main() {
             builder: (_, _) => const OnboardingPage(),
           ),
           GoRoute(
-            path: '/home',
-            name: 'home',
-            builder: (_, _) => const Scaffold(body: Text('dashboard')),
+            path: '/discovery',
+            name: 'discovery',
+            builder: (_, _) => const Scaffold(body: Text('discovery')),
           ),
         ],
       ),
@@ -107,14 +107,16 @@ void main() {
     expect(find.text("You're all set"), findsOneWidget);
     expect(find.text('STEP 3 OF 3'), findsOneWidget);
     expect(
-      find.text('Showing electrical and cleaning providers in Ajnara Gen X '
-          'first.'),
+      find.text(
+        'Showing electrical and cleaning providers in Ajnara Gen X '
+        'first.',
+      ),
       findsOneWidget,
     );
 
     await tester.tap(find.text('Start browsing'));
     await tester.pumpAndSettle();
-    expect(find.text('dashboard'), findsOneWidget);
+    expect(find.text('discovery'), findsOneWidget);
   });
 
   testWidgets('stepping back keeps what was already entered', (tester) async {
@@ -156,19 +158,21 @@ void main() {
 
     // "AC & RO" must survive the sentence, not arrive as "ac & ro".
     expect(
-      find.text('Showing cleaning and AC & RO providers in Ajnara Gen X '
-          'first.'),
+      find.text(
+        'Showing cleaning and AC & RO providers in Ajnara Gen X '
+        'first.',
+      ),
       findsOneWidget,
     );
   });
 
-  testWidgets('Skip leaves for the dashboard without saving', (tester) async {
+  testWidgets('Skip leaves for discovery without saving', (tester) async {
     await pumpFlow(tester);
 
     await tester.tap(find.text('Skip'));
     await tester.pumpAndSettle();
 
-    expect(find.text('dashboard'), findsOneWidget);
+    expect(find.text('discovery'), findsOneWidget);
     expect(repository.saved, isNull);
   });
 }

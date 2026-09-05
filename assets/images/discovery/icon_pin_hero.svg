@@ -1,0 +1,23 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="122" height="122" viewBox="0 0 122 122" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Icon / Pin" filter="url(#filter0_d_0_9)">
+<rect x="24" y="12" width="74" height="74" rx="24" fill="url(#paint0_linear_0_9)"/>
+<path id="Vector" d="M61 67.75C61 67.75 74 52.15 74 44.35C74 37.525 68.15 32 61 32C53.85 32 48 37.525 48 44.35C48 52.15 61 67.75 61 67.75Z" fill="white"/>
+<circle id="Ellipse" cx="61" cy="44.025" r="4.55" fill="white"/>
+</g>
+<defs>
+<filter id="filter0_d_0_9" x="0" y="0" width="122" height="122" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feMorphology radius="4" operator="erode" in="SourceAlpha" result="effect1_dropShadow_0_9"/>
+<feOffset dy="12"/>
+<feGaussianBlur stdDeviation="14"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0.117647 0 0 0 0 0.435294 0 0 0 0 0.909804 0 0 0 0.36 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_9"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_9" result="shape"/>
+</filter>
+<linearGradient id="paint0_linear_0_9" x1="26.8025" y1="31.2396" x2="82.4082" y2="80.1725" gradientUnits="userSpaceOnUse">
+<stop stop-color="#3B8AF5"/>
+<stop offset="1" stop-color="#1553BE"/>
+</linearGradient>
+</defs>
+</svg>

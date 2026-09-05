@@ -12,6 +12,10 @@ class PrimaryButton extends StatelessWidget {
     this.isLoading = false,
     this.gradient = false,
     this.trailingIcon,
+    this.leading,
+    this.height = 52,
+    this.gradientColors,
+    this.labelStyle,
   });
 
   final String label;
@@ -26,11 +30,29 @@ class PrimaryButton extends StatelessWidget {
   /// Optional icon after the label, e.g. the arrow on "Continue".
   final IconData? trailingIcon;
 
+  /// Optional widget before the label — used where the design calls for an
+  /// exported glyph rather than a Material icon, e.g. the pin on "Use my
+  /// current location".
+  final Widget? leading;
+
+  final double height;
+
+  /// Stops of the gradient when [gradient] is on. Defaults to the auth
+  /// flow's blues; the discovery flow passes its own so both can share this
+  /// button without one restyling the other.
+  final List<Color>? gradientColors;
+
+  /// Overrides the label's type. Defaults to the button's 16pt bold.
+  final TextStyle? labelStyle;
+
   @override
   Widget build(BuildContext context) {
+    final effectiveGradient =
+        gradientColors ?? const [AppColor.authAccent, AppColor.authAccentDeep];
+
     final button = SizedBox(
       width: double.infinity,
-      height: 52,
+      height: height,
       child: ElevatedButton(
         onPressed: enabled && !isLoading ? onPressed : null,
         style: ButtonStyle(
@@ -66,11 +88,18 @@ class PrimaryButton extends StatelessWidget {
             : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                  if (leading != null) ...[leading!, const SizedBox(width: 10)],
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          labelStyle ??
+                          const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                   ),
                   if (trailingIcon != null) ...[
@@ -87,14 +116,14 @@ class PrimaryButton extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColor.authAccent, AppColor.authAccentDeep],
+          colors: effectiveGradient,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColor.authAccent.withValues(alpha: 0.32),
+            color: effectiveGradient.last.withValues(alpha: 0.32),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),

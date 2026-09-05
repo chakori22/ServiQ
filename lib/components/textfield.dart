@@ -24,6 +24,15 @@ class AppTextField extends StatelessWidget {
     this.borderColor,
     this.borderWidth = 1.0,
     this.floatingLabel = false,
+    this.fillColor,
+    this.cornerRadius = 12,
+    this.verticalPadding = 18,
+    this.textStyle,
+    this.hintStyle,
+    this.autofocus = false,
+    this.focusNode,
+    this.onSubmitted,
+    this.textInputAction,
   });
 
   final TextEditingController controller;
@@ -66,6 +75,35 @@ class AppTextField extends StatelessWidget {
   /// the label to sit on otherwise.
   final bool floatingLabel;
 
+  /// Fill behind the field. Defaults to the dashboard's grey; the discovery
+  /// flow passes its own cooler tint so its search box matches that palette
+  /// without a second field widget existing to drift from this one.
+  final Color? fillColor;
+
+  /// Corner radius of the field.
+  final double cornerRadius;
+
+  /// Space above and below the text. Lower it for a compact field such as
+  /// a search box.
+  final double verticalPadding;
+
+  /// Style of the entered text. Falls back to the theme's body style.
+  final TextStyle? textStyle;
+
+  /// Style of [hintText]. Falls back to the grey placeholder.
+  final TextStyle? hintStyle;
+
+  /// Focuses the field as soon as it is shown — used by screens whose whole
+  /// purpose is the field, e.g. search.
+  final bool autofocus;
+
+  final FocusNode? focusNode;
+
+  /// Called when the keyboard's action key is pressed.
+  final ValueChanged<String>? onSubmitted;
+
+  final TextInputAction? textInputAction;
+
   bool get _hasLabel => labelText != null && labelText!.isNotEmpty;
   bool get _hasError => errorText != null && errorText!.isNotEmpty;
 
@@ -86,14 +124,14 @@ class AppTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(12);
+    final borderRadius = BorderRadius.circular(cornerRadius);
     final hasPrefix = prefixText != null && prefixText!.isNotEmpty;
     final effectiveBorderColor = _effectiveBorderColor;
     final showFloatingLabel = floatingLabel && _hasLabel;
 
     final field = Container(
       decoration: BoxDecoration(
-        color: AppColor.neutralGreyColor60,
+        color: fillColor ?? AppColor.neutralGreyColor60,
         borderRadius: borderRadius,
         border: effectiveBorderColor != null
             ? Border.all(color: effectiveBorderColor, width: borderWidth)
@@ -115,11 +153,11 @@ class AppTextField extends StatelessWidget {
             ),
           if (hasPrefix)
             Padding(
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 20,
                 right: 12,
-                top: 18,
-                bottom: 18,
+                top: verticalPadding,
+                bottom: verticalPadding,
               ),
               child: Text(
                 prefixText!,
@@ -138,12 +176,20 @@ class AppTextField extends StatelessWidget {
               maxLength: maxLength,
               maxLines: obscureText ? 1 : maxLines,
               onChanged: onChanged,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColor.neutralGreyColor900,
-              ),
+              autofocus: autofocus,
+              focusNode: focusNode,
+              onSubmitted: onSubmitted,
+              textInputAction: textInputAction,
+              style:
+                  textStyle ??
+                  Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColor.neutralGreyColor900,
+                  ),
               decoration: InputDecoration(
                 hintText: hintText,
-                hintStyle: TextStyle(color: AppColor.neutralGreyColor300),
+                hintStyle:
+                    hintStyle ??
+                    const TextStyle(color: AppColor.neutralGreyColor300),
                 suffixIcon: suffixIcon,
                 errorText: errorText,
                 counterText: '',
@@ -151,8 +197,8 @@ class AppTextField extends StatelessWidget {
                 contentPadding: EdgeInsets.only(
                   left: hasPrefix || prefixIcon != null ? 0 : 20,
                   right: 20,
-                  top: 18,
-                  bottom: 18,
+                  top: verticalPadding,
+                  bottom: verticalPadding,
                 ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,

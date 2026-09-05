@@ -72,8 +72,8 @@ Future<Widget> appBuilder(
   final bootstrap = await authSession.bootstrap();
 
   // A restored session still has to have been through onboarding — a user who
-  // verified but closed the app mid-setup would otherwise land on a dashboard
-  // that knows neither their locality nor what they came for.
+  // verified but closed the app mid-setup would otherwise land on discovery
+  // knowing neither their locality nor what they came for.
   final hasProfile = bootstrap == AuthBootstrapResult.signedIn &&
       await _onboardingRepository.readProfile() != null;
 
@@ -89,7 +89,8 @@ Future<Widget> appBuilder(
     // rejected token lands on it.
     child: ServiqApp(
       targetLocation: switch (bootstrap) {
-        AuthBootstrapResult.signedIn when hasProfile => AppRoutes.home.path,
+        AuthBootstrapResult.signedIn when hasProfile =>
+          AppRoutes.discovery.path,
         AuthBootstrapResult.signedIn => AppRoutes.onboarding.path,
         _ => AppRoutes.login.path,
       },
