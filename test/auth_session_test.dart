@@ -129,7 +129,11 @@ void main() {
 
       // Two calls would have presented the same token twice and ended the
       // session for reuse.
-      expect(repository.refreshCalls.length, 2, reason: '1 bootstrap + 1 shared');
+      expect(
+        repository.refreshCalls.length,
+        2,
+        reason: '1 bootstrap + 1 shared',
+      );
     });
   });
 
@@ -138,7 +142,7 @@ void main() {
     final session = AuthSession(
       store: store,
       repository: FakeLoginRepository(),
-        deviceIdentity: FakeDeviceIdentity(),
+      deviceIdentity: FakeDeviceIdentity(),
     );
     await session.save(tokens: testTokens(), user: testUser);
 

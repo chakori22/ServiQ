@@ -6,6 +6,7 @@ import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/discovery/model/locality.dart';
 import 'package:local_markerplace/discovery/model/service_zone.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
+import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/discovery_home_view.dart';
@@ -13,6 +14,7 @@ import 'package:local_markerplace/discovery/presentation/explore_zones_view.dart
 import 'package:local_markerplace/discovery/presentation/location_page.dart';
 import 'package:local_markerplace/discovery/presentation/locality_page.dart';
 import 'package:local_markerplace/discovery/presentation/search_page.dart';
+import 'package:local_markerplace/discovery/presentation/services_page.dart';
 import 'package:local_markerplace/discovery/presentation/zone_detail_page.dart';
 import 'package:local_markerplace/discovery/model/provider_summary.dart';
 import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
@@ -234,12 +236,27 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
     );
   }
 
+  /// Home's category tiles are a way into the catalogue, not six screens:
+  /// "See all" opens it unfiltered, a tile opens it with that chip lit.
+  Future<void> _openServices([String? category]) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ServicesPage(
+          localityName: _localityName ?? 'Ajnara Gen X',
+          initialCategory: category,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
   /// Every list of providers in the flow ends here.
   void _openProvider(ProviderSummary provider) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ProviderProfilePage(
           providerName: provider.name,
+          localityName: _localityName ?? 'Ajnara Gen X',
           onTabSelected: _selectTabFromChild,
           onPost: _openPostForm,
         ),
@@ -278,10 +295,11 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
     return Scaffold(
       backgroundColor: AppColor.white,
       body: SafeArea(bottom: false, child: _body()),
-      bottomNavigationBar: DiscoveryTabBar(
+      bottomNavigationBar: AppBottomBar(
         current: _tab,
         onSelect: _selectTab,
         onPost: _openPostForm,
+        onCartChanged: () => setState(() {}),
       ),
     );
   }
@@ -338,6 +356,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
     _push(
       ProviderProfilePage(
         providerName: provider.name,
+        localityName: _localityName ?? 'Ajnara Gen X',
         onTabSelected: _selectTabFromChild,
       ),
     );
@@ -354,7 +373,8 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
           onChangeLocality: _pickLocality,
           onSearch: _openSearch,
           onProviderTap: _openProvider,
-          onSeeAllCategories: () => setState(() => _tab = DiscoveryTab.explore),
+          onSeeAllCategories: _openServices,
+          onCategoryTap: (category) => _openServices(category.label),
           onSeeAllProviders: () {
             final locality = _localityName;
             if (locality != null) {

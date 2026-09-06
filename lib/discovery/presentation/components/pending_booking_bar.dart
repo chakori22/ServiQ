@@ -105,7 +105,10 @@ class PendingBookingBar extends StatelessWidget {
                         ),
                         const SizedBox(height: 3),
                         Text(
-                          '${booking.providerName} · ${booking.amount}',
+                          // The amount leads: it is the half a seeker checks,
+                          // and a long business name would otherwise push it
+                          // out of the ellipsis.
+                          '${booking.amount} · ${booking.providerName}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -120,7 +123,7 @@ class PendingBookingBar extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'View',
+                    'View cart',
                     style: DiscoveryText.onAccent(13, letterSpacing: -0.13),
                   ),
                   const SizedBox(width: 6),

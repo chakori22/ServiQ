@@ -13,81 +13,93 @@ CreatePostBloc _bloc() =>
 
 /// A state with every field the instant form requires already filled.
 CreatePostState _filledState() => const CreatePostState.initial().copyWith(
-      selectedcategory: 'Plumbing',
-      description: 'Kitchen tap is dripping',
-      budget: '500',
-      imagePath: '/tmp/photo.jpg',
-    );
+  selectedcategory: 'Plumbing',
+  description: 'Kitchen tap is dripping',
+  budget: '500',
+  imagePath: '/tmp/photo.jpg',
+);
 
 void main() {
-  test('selecting a date loads the slots for that day from the repository',
-      () async {
-    final bloc = _bloc();
-    final date = DateTime.now().add(const Duration(days: 2));
+  test(
+    'selecting a date loads the slots for that day from the repository',
+    () async {
+      final bloc = _bloc();
+      final date = DateTime.now().add(const Duration(days: 2));
 
-    bloc.add(OnSelectDate(date));
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-    expect(bloc.state.timeSlotsLoading, isTrue);
-    expect(bloc.state.selectedDate, date);
+      bloc.add(OnSelectDate(date));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(bloc.state.timeSlotsLoading, isTrue);
+      expect(bloc.state.selectedDate, date);
 
-    await Future<void>.delayed(const Duration(seconds: 2));
-    expect(bloc.state.timeSlotsLoading, isFalse);
-    expect(bloc.state.timeSlots, isNotEmpty);
-    // Slots belong to the chosen day.
-    expect(bloc.state.timeSlots.first.startTime.day, date.day);
-    await bloc.close();
-  });
+      await Future<void>.delayed(const Duration(seconds: 2));
+      expect(bloc.state.timeSlotsLoading, isFalse);
+      expect(bloc.state.timeSlots, isNotEmpty);
+      // Slots belong to the chosen day.
+      expect(bloc.state.timeSlots.first.startTime.day, date.day);
+      await bloc.close();
+    },
+  );
 
-  test('picking a different date clears the slot chosen for the old one',
-      () async {
-    final bloc = _bloc();
-    final firstDate = DateTime.now().add(const Duration(days: 2));
+  test(
+    'picking a different date clears the slot chosen for the old one',
+    () async {
+      final bloc = _bloc();
+      final firstDate = DateTime.now().add(const Duration(days: 2));
 
-    bloc.add(OnSelectDate(firstDate));
-    await Future<void>.delayed(const Duration(seconds: 2));
-    final slot = bloc.state.timeSlots.firstWhere((s) => s.isAvailable);
-    bloc.add(OnSelectTimeSlot(slot.id));
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    expect(bloc.state.selectedTimeSlot, isNotNull);
+      bloc.add(OnSelectDate(firstDate));
+      await Future<void>.delayed(const Duration(seconds: 2));
+      final slot = bloc.state.timeSlots.firstWhere((s) => s.isAvailable);
+      bloc.add(OnSelectTimeSlot(slot.id));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      expect(bloc.state.selectedTimeSlot, isNotNull);
 
-    bloc.add(OnSelectDate(firstDate.add(const Duration(days: 1))));
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-    expect(bloc.state.selectedTimeSlotId, isEmpty);
-    expect(bloc.state.selectedTimeSlot, isNull);
-    await bloc.close();
-  });
+      bloc.add(OnSelectDate(firstDate.add(const Duration(days: 1))));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(bloc.state.selectedTimeSlotId, isEmpty);
+      expect(bloc.state.selectedTimeSlot, isNull);
+      await bloc.close();
+    },
+  );
 
-  test('schedule validity needs the instant fields plus a date and a slot',
-      () async {
-    final filled = _filledState();
-    expect(filled.isFormValid, isTrue, reason: 'instant form is satisfied');
-    expect(filled.isScheduleFormValid, isFalse, reason: 'no date or slot yet');
+  test(
+    'schedule validity needs the instant fields plus a date and a slot',
+    () async {
+      final filled = _filledState();
+      expect(filled.isFormValid, isTrue, reason: 'instant form is satisfied');
+      expect(
+        filled.isScheduleFormValid,
+        isFalse,
+        reason: 'no date or slot yet',
+      );
 
-    final bloc = _bloc();
-    bloc.add(OnSelectDate(DateTime.now().add(const Duration(days: 2))));
-    await Future<void>.delayed(const Duration(seconds: 2));
-    final slots = bloc.state.timeSlots;
-    await bloc.close();
+      final bloc = _bloc();
+      bloc.add(OnSelectDate(DateTime.now().add(const Duration(days: 2))));
+      await Future<void>.delayed(const Duration(seconds: 2));
+      final slots = bloc.state.timeSlots;
+      await bloc.close();
 
-    final withDateOnly = filled.copyWith(
-      selectedDate: DateTime.now(),
-      timeSlots: slots,
-    );
-    expect(withDateOnly.isScheduleFormValid, isFalse);
+      final withDateOnly = filled.copyWith(
+        selectedDate: DateTime.now(),
+        timeSlots: slots,
+      );
+      expect(withDateOnly.isScheduleFormValid, isFalse);
 
-    final withSlot = withDateOnly.copyWith(
-      selectedTimeSlotId: slots.firstWhere((s) => s.isAvailable).id,
-    );
-    expect(withSlot.isScheduleFormValid, isTrue);
-  });
+      final withSlot = withDateOnly.copyWith(
+        selectedTimeSlotId: slots.firstWhere((s) => s.isAvailable).id,
+      );
+      expect(withSlot.isScheduleFormValid, isTrue);
+    },
+  );
 
   testWidgets('form asks for a date before showing any times', (tester) async {
-    await tester.pumpWidget(MaterialApp.router(
-      routerConfig: GoRouter(
-        initialLocation: AppRoutes.scheduleForm.path,
-        routes: createRoutes(),
+    await tester.pumpWidget(
+      MaterialApp.router(
+        routerConfig: GoRouter(
+          initialLocation: AppRoutes.scheduleForm.path,
+          routes: createRoutes(),
+        ),
       ),
-    ));
+    );
     await tester.pump(const Duration(seconds: 2));
 
     expect(tester.takeException(), isNull);
@@ -98,18 +110,23 @@ void main() {
       findsOneWidget,
     );
     // Nothing is filled in, so the form can't be submitted.
-    expect(tester.widget<PrimaryButton>(find.byType(PrimaryButton)).enabled,
-        isFalse);
+    expect(
+      tester.widget<PrimaryButton>(find.byType(PrimaryButton)).enabled,
+      isFalse,
+    );
   });
 
-  testWidgets('Schedule for Later on the dashboard opens the form',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp.router(
-      routerConfig: GoRouter(
-        initialLocation: AppRoutes.home.path,
-        routes: createRoutes(),
+  testWidgets('Schedule for Later on the dashboard opens the form', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp.router(
+        routerConfig: GoRouter(
+          initialLocation: AppRoutes.home.path,
+          routes: createRoutes(),
+        ),
       ),
-    ));
+    );
     await tester.pump(const Duration(seconds: 2));
 
     await tester.tap(find.text('Schedule for\nLater'));
@@ -128,21 +145,27 @@ void main() {
 
     final all = bloc.state.timeSlots;
     final available = bloc.state.availableTimeSlots;
-    expect(all.any((slot) => !slot.isAvailable), isTrue,
-        reason: 'the day has some taken windows to filter out');
+    expect(
+      all.any((slot) => !slot.isAvailable),
+      isTrue,
+      reason: 'the day has some taken windows to filter out',
+    );
     expect(available.every((slot) => slot.isAvailable), isTrue);
     expect(available.length, lessThan(all.length));
     await bloc.close();
   });
 
-  testWidgets('date field matches the other inputs and opens the calendar',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp.router(
-      routerConfig: GoRouter(
-        initialLocation: AppRoutes.scheduleForm.path,
-        routes: createRoutes(),
+  testWidgets('date field matches the other inputs and opens the calendar', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp.router(
+        routerConfig: GoRouter(
+          initialLocation: AppRoutes.scheduleForm.path,
+          routes: createRoutes(),
+        ),
       ),
-    ));
+    );
     await tester.pump(const Duration(seconds: 2));
 
     // Still rendered through the shared component, but the composer labels

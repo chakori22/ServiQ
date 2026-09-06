@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/components/app_back_button.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
@@ -221,7 +222,7 @@ class _SearchPageState extends State<SearchPage> {
           ],
         ),
       ),
-      bottomNavigationBar: DiscoveryTabBar(
+      bottomNavigationBar: AppBottomBar(
         current: DiscoveryTab.explore,
         onSelect: (tab) => widget.onTabSelected?.call(tab),
         onPost: widget.onPost,

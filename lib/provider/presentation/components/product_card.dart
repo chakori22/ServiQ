@@ -9,13 +9,40 @@ import 'package:local_markerplace/provider/model/store_product.dart';
 /// A part on the Store tab: a placeholder photo, the name, price, stock and
 /// an Add chip.
 class ProductCard extends StatelessWidget {
-  const ProductCard({super.key, required this.product, this.onAdd});
+  const ProductCard({
+    super.key,
+    required this.product,
+    this.onAdd,
+    this.onTap,
+    this.quantityInCart = 0,
+    this.onIncrement,
+    this.onDecrement,
+  });
 
   final StoreProduct product;
   final VoidCallback? onAdd;
 
+  /// Opens the part's own screen. The Add chip goes there too — the design
+  /// asks for a quantity before anything reaches the cart.
+  final VoidCallback? onTap;
+
+  /// How many of this part are already in the cart. Above zero the Add chip
+  /// becomes the stepper that is editing that number, so the grid can be
+  /// adjusted without opening the cart.
+  final int quantityInCart;
+
+  final VoidCallback? onIncrement;
+
+  /// Steps the count down, and at one takes the part out — which is why the
+  /// button wears a bin at that point rather than a minus.
+  final VoidCallback? onDecrement;
+
   @override
   Widget build(BuildContext context) {
+    return PressableScale(onTap: onTap, pressedScale: 0.98, child: _card());
+  }
+
+  Widget _card() {
     return Container(
       padding: const EdgeInsets.all(9.2),
       decoration: BoxDecoration(
@@ -81,24 +108,101 @@ class ProductCard extends StatelessWidget {
                   ],
                 ),
               ),
-              PressableScale(
-                onTap: onAdd,
-                pressedScale: 0.9,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 7,
+              if (quantityInCart > 0)
+                _CartStepper(
+                  quantity: quantityInCart,
+                  onIncrement: onIncrement,
+                  onDecrement: onDecrement,
+                )
+              else
+                PressableScale(
+                  onTap: onAdd,
+                  pressedScale: 0.9,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColor.providerChipFill,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text('Add', style: DiscoveryText.addChip),
                   ),
-                  decoration: BoxDecoration(
-                    color: AppColor.providerChipFill,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text('Add', style: DiscoveryText.addChip),
                 ),
-              ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Bin-or-minus, the count, plus — what the Add chip becomes once the part
+/// is in the cart.
+class _CartStepper extends StatelessWidget {
+  const _CartStepper({
+    required this.quantity,
+    required this.onIncrement,
+    required this.onDecrement,
+  });
+
+  final int quantity;
+  final VoidCallback? onIncrement;
+  final VoidCallback? onDecrement;
+
+  @override
+  Widget build(BuildContext context) {
+    final isLast = quantity <= 1;
+
+    return Container(
+      height: 30,
+      decoration: BoxDecoration(
+        color: AppColor.providerChipFill,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StepperButton(
+            // The last one leaves the cart rather than becoming zero, so the
+            // button says so before it is pressed.
+            icon: isLast ? Icons.delete_outline_rounded : Icons.remove_rounded,
+            color: isLast ? AppColor.authError : AppColor.discoveryGradientEnd,
+            onTap: onDecrement,
+          ),
+          Text('$quantity', style: DiscoveryText.addChip),
+          _StepperButton(
+            icon: Icons.add_rounded,
+            color: AppColor.discoveryGradientEnd,
+            onTap: onIncrement,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  const _StepperButton({
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: onTap,
+      pressedScale: 0.82,
+      child: SizedBox(
+        width: 30,
+        height: 30,
+        child: Icon(icon, size: 15, color: color),
       ),
     );
   }

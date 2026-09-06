@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:local_markerplace/components/motion/entrance.dart';
+import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/model/post_details.dart';
@@ -276,7 +277,7 @@ class _PostScreenState extends State<PostScreenContainer> {
       // the post button riding its edge. It is reached by a push rather than
       // by the shell swapping tabs, so leaving by any other tab pops back and
       // tells the shell which one to show.
-      bottomNavigationBar: DiscoveryTabBar(
+      bottomNavigationBar: AppBottomBar(
         current: DiscoveryTab.posts,
         onSelect: (tab) {
           if (tab == DiscoveryTab.posts) return;

@@ -63,9 +63,8 @@ void main() {
           GoRoute(
             path: '/home',
             name: 'home',
-            builder: (_, _) => const Scaffold(
-              body: Center(child: AccountMenuButton()),
-            ),
+            builder: (_, _) =>
+                const Scaffold(body: Center(child: AccountMenuButton())),
           ),
           GoRoute(
             path: '/login',

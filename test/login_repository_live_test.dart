@@ -127,29 +127,32 @@ void main() {
     return verified.fold((f) => fail('verify failed: $f'), (v) => v.tokens);
   }
 
-  test('refreshTokens returns a new pair and rotates the refresh token',
-      () async {
-    const deviceId = 'integration-test-device';
-    final original = await signIn(deviceId);
+  test(
+    'refreshTokens returns a new pair and rotates the refresh token',
+    () async {
+      const deviceId = 'integration-test-device';
+      final original = await signIn(deviceId);
 
-    final result = await repository.refreshTokens(
-      refreshToken: original.refreshToken,
-      deviceId: deviceId,
-    );
+      final result = await repository.refreshTokens(
+        refreshToken: original.refreshToken,
+        deviceId: deviceId,
+      );
 
-    result.fold((failure) => fail('expected success, got: $failure'), (
-      tokens,
-    ) {
-      expect(tokens.accessToken, isNotEmpty);
-      expect(tokens.tokenType, 'Bearer');
-      // Note the access token is deliberately not asserted to differ: the JWT
-      // carries iat/exp at one-second resolution, so a refresh inside the same
-      // second re-signs an identical payload and returns the same string.
-      expect(tokens.isAccessTokenExpired, isFalse);
-      // The rotation that makes replaying the old token dangerous.
-      expect(tokens.refreshToken, isNot(original.refreshToken));
-    });
-  }, tags: 'live');
+      result.fold((failure) => fail('expected success, got: $failure'), (
+        tokens,
+      ) {
+        expect(tokens.accessToken, isNotEmpty);
+        expect(tokens.tokenType, 'Bearer');
+        // Note the access token is deliberately not asserted to differ: the JWT
+        // carries iat/exp at one-second resolution, so a refresh inside the same
+        // second re-signs an identical payload and returns the same string.
+        expect(tokens.isAccessTokenExpired, isFalse);
+        // The rotation that makes replaying the old token dangerous.
+        expect(tokens.refreshToken, isNot(original.refreshToken));
+      });
+    },
+    tags: 'live',
+  );
 
   test('replaying a spent refresh token ends the session', () async {
     const deviceId = 'integration-test-device';

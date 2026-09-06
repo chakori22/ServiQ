@@ -10,6 +10,7 @@ import 'package:local_markerplace/dashboard/presentation/posts/bloc/bloc/post_bl
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/requirement_page.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 import 'package:local_markerplace/dashboard/repository/post_offer_repository.dart';
+import 'package:local_markerplace/visit/repository/visit_repository.dart';
 
 /// A requirement posted by [author], carrying [offers] offers.
 PostDetails post({required String author, int offers = 3}) => PostDetails(
@@ -31,6 +32,7 @@ Future<void> pumpRequirement(
   required PostDetails requirement,
   required String? signedInAs,
   PostOfferRepository? offers,
+  VisitRepository? visits,
   ValueChanged<PostOffer>? onOfferMade,
   ValueChanged<PostOffer>? onOfferAccepted,
 }) async {
@@ -46,6 +48,7 @@ Future<void> pumpRequirement(
         localityName: 'Ajnara Gen X',
         currentUsername: signedInAs,
         offers: offers ?? PostOfferRepository(),
+        visits: visits ?? VisitRepository(),
         onOfferMade: onOfferMade,
         onOfferAccepted: onOfferAccepted,
       ),
@@ -134,15 +137,15 @@ void main() {
       expect(find.text('Make an offer'), findsNothing);
     });
 
-    testWidgets('accepting settles the requirement on that offer', (
-      tester,
-    ) async {
+    testWidgets('accepting books the visit outright', (tester) async {
       PostOffer? accepted;
+      final visits = VisitRepository();
 
       await pumpRequirement(
         tester,
         requirement: post(author: 'chakorichaturvedi'),
         signedInAs: 'chakorichaturvedi',
+        visits: visits,
         onOfferAccepted: (offer) => accepted = offer,
       );
 
@@ -151,7 +154,26 @@ void main() {
 
       expect(accepted, isNotNull);
       expect(accepted!.name, 'Shahnaz RO & Chimney');
-      // Settled: the pill flips and nothing is left to accept.
+
+      // The offer named the price and the time, so accepting settles both
+      // and the seeker lands on a booked visit rather than a slot picker.
+      expect(find.text('Visit booked'), findsOneWidget);
+      expect(find.text('Your visit'), findsNothing);
+      expect(visits.current, isNull);
+      expect(visits.booked, hasLength(1));
+
+      final visit = visits.booked.single;
+      expect(visit.providerName, 'Shahnaz RO & Chimney');
+      expect(visit.servicesTotal, 899);
+      expect(visit.reference, isNotNull);
+      // The provider's own wording for when they would come.
+      expect(visit.whenLabel, 'Today, 4–6 pm');
+
+      // And behind it the requirement is settled. Popped through the
+      // navigator rather than pageBack(), which looks for a Material back
+      // button — this flow uses the app's own bare chevron.
+      tester.state<NavigatorState>(find.byType(Navigator)).pop();
+      await tester.pumpAndSettle();
       expect(find.text('ACCEPTED'), findsOneWidget);
       expect(find.text('Accept'), findsNothing);
     });

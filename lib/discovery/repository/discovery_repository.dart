@@ -1,5 +1,5 @@
+import 'package:local_markerplace/discovery/model/catalogue_service.dart';
 import 'package:local_markerplace/discovery/model/locality.dart';
-import 'package:local_markerplace/discovery/model/pending_booking.dart';
 import 'package:local_markerplace/discovery/model/provider_summary.dart';
 import 'package:local_markerplace/discovery/model/service_category.dart';
 import 'package:local_markerplace/discovery/model/service_zone.dart';
@@ -107,6 +107,170 @@ class DiscoveryRepository {
   ];
 
   List<ServiceCategory> categories() => _categories;
+
+  /// Every job that can be booked in the seeker's area, with the provider
+  /// who would come and do it.
+  ///
+  /// Home's category tiles are a way in, not the content itself — the
+  /// catalogue is flat, and a category simply narrows it. Prices are the
+  /// provider's starting figure; the final one is agreed before the work,
+  /// which is what the visit flow keeps saying.
+  static const _catalogue = [
+    CatalogueService(
+      name: 'AC Servicing',
+      detail: 'Split & window, gas top-up extra',
+      fromPrice: 'from ₹499',
+      categoryLabel: 'AC Repair',
+      providerName: 'CoolAir AC Service',
+      rating: 4.5,
+    ),
+    CatalogueService(
+      name: 'AC Gas Refill',
+      detail: 'R32 or R410a, pressure tested after',
+      fromPrice: 'from ₹1,800',
+      categoryLabel: 'AC Repair',
+      providerName: 'Imran AC Works',
+      rating: 4.2,
+      isVerifiedProvider: false,
+    ),
+    CatalogueService(
+      name: 'AC Installation',
+      detail: 'Wall mount, copper up to 3 m included',
+      fromPrice: 'from ₹1,299',
+      categoryLabel: 'AC Repair',
+      providerName: 'CoolAir AC Service',
+      rating: 4.5,
+    ),
+    CatalogueService(
+      name: 'RO Filter Change',
+      detail: 'Sediment, carbon and membrane',
+      fromPrice: 'from ₹349',
+      categoryLabel: 'RO Repair',
+      providerName: 'Shahnaz RO & Chimney Services',
+      rating: 4.6,
+    ),
+    CatalogueService(
+      name: 'RO Service & Repair',
+      detail: 'Leak, low output or no water',
+      fromPrice: 'from ₹499',
+      categoryLabel: 'RO Repair',
+      providerName: 'Shahnaz RO & Chimney Services',
+      rating: 4.6,
+    ),
+    CatalogueService(
+      name: 'Chimney Deep Clean',
+      detail: 'Filter, motor and duct',
+      fromPrice: 'from ₹899',
+      categoryLabel: 'Appliance',
+      providerName: 'Shahnaz RO & Chimney Services',
+      rating: 4.6,
+    ),
+    CatalogueService(
+      name: 'Washing Machine Repair',
+      detail: 'Front and top load, drain and spin faults',
+      fromPrice: 'from ₹449',
+      categoryLabel: 'Appliance',
+      providerName: 'Mascot Appliance Care',
+      rating: 4.3,
+    ),
+    CatalogueService(
+      name: 'Fridge Repair',
+      detail: 'Cooling, compressor and gas',
+      fromPrice: 'from ₹599',
+      categoryLabel: 'Appliance',
+      providerName: 'Mascot Appliance Care',
+      rating: 4.3,
+    ),
+    CatalogueService(
+      name: 'Switchboard & Socket Fix',
+      detail: 'Loose points, tripping, new sockets',
+      fromPrice: 'from ₹249',
+      categoryLabel: 'Electrician',
+      providerName: 'RK Electricals & Repairs',
+      rating: 4.4,
+    ),
+    CatalogueService(
+      name: 'Fan Installation',
+      detail: 'Ceiling or wall, regulator included',
+      fromPrice: 'from ₹299',
+      categoryLabel: 'Electrician',
+      providerName: 'Verma Electric & Fans',
+      rating: 4.1,
+      isVerifiedProvider: false,
+    ),
+    CatalogueService(
+      name: 'Inverter & Wiring Check',
+      detail: 'Load test, battery and connections',
+      fromPrice: 'from ₹399',
+      categoryLabel: 'Electrician',
+      providerName: 'Bright Spark Electricals',
+      rating: 4.5,
+    ),
+    CatalogueService(
+      name: 'Tap & Mixer Repair',
+      detail: 'Dripping taps, cartridge replaced',
+      fromPrice: 'from ₹249',
+      categoryLabel: 'Plumber',
+      providerName: 'Verma Plumbing Works',
+      rating: 4.3,
+    ),
+    CatalogueService(
+      name: 'Blocked Drain Clearing',
+      detail: 'Kitchen, bathroom or balcony line',
+      fromPrice: 'from ₹499',
+      categoryLabel: 'Plumber',
+      providerName: 'Verma Plumbing Works',
+      rating: 4.3,
+    ),
+    CatalogueService(
+      name: 'Geyser Installation',
+      detail: 'Wall mount with inlet and outlet',
+      fromPrice: 'from ₹699',
+      categoryLabel: 'Plumber',
+      providerName: 'Gen X Quick Repairs',
+      rating: 4.0,
+      isVerifiedProvider: false,
+    ),
+    CatalogueService(
+      name: 'Furniture Repair',
+      detail: 'Hinges, drawers and loose joints',
+      fromPrice: 'from ₹399',
+      categoryLabel: 'Carpenter',
+      providerName: 'Sharma Carpentry',
+      rating: 4.7,
+    ),
+    CatalogueService(
+      name: 'Door & Lock Fitting',
+      detail: 'Alignment, handles and new locks',
+      fromPrice: 'from ₹349',
+      categoryLabel: 'Carpenter',
+      providerName: 'Sharma Carpentry',
+      rating: 4.7,
+    ),
+    CatalogueService(
+      name: 'Modular Shelf Fitting',
+      detail: 'Wall shelves and wardrobe fittings',
+      fromPrice: 'from ₹899',
+      categoryLabel: 'Carpenter',
+      providerName: 'Sharma Carpentry',
+      rating: 4.7,
+    ),
+  ];
+
+  /// The catalogue, optionally narrowed to one category.
+  ///
+  /// [categoryLabel] null is "All" — the chip the services screen opens on.
+  List<CatalogueService> services({String? categoryLabel}) =>
+      categoryLabel == null
+      ? _catalogue
+      : _catalogue
+            .where((service) => service.categoryLabel == categoryLabel)
+            .toList();
+
+  /// How many jobs sit under each category tile, for the counts on the
+  /// services screen's chips.
+  int serviceCountIn(String categoryLabel) =>
+      services(categoryLabel: categoryLabel).length;
 
   static const _providers = [
     ProviderSummary(
@@ -822,11 +986,4 @@ class DiscoveryRepository {
 
   static List<String> _tradesOf(ProviderSummary provider) =>
       provider.trade.split('·').map((trade) => trade.trim()).toList();
-
-  /// The booking waiting to be paid for, or null when there is none.
-  PendingBooking? pendingBooking() => const PendingBooking(
-    providerName: 'Shahnaz RO & Chimney',
-    summary: '2 services · 3 parts',
-    amount: '₹3,797',
-  );
 }

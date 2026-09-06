@@ -94,6 +94,23 @@ class DiscoveryText {
     height: 20 / 15,
   );
 
+  /// The estimate on a visit, and any total that closes a bill.
+  static TextStyle get visitTotal =>
+      _style(16, _extraBold, AppColor.discoveryInk, letterSpacing: -0.24);
+
+  /// The small print under a total — what is waived, what is still to be
+  /// confirmed.
+  static TextStyle get fine =>
+      _style(10.5, _medium, AppColor.discoveryTextTertiary);
+
+  /// A service's "from ₹499" where it is being added.
+  static TextStyle get fromPrice => _style(
+    15,
+    _extraBold,
+    AppColor.discoveryGradientEnd,
+    letterSpacing: -0.15,
+  );
+
   /// "20 min ago" at the foot of a requirement card.
   static TextStyle get timestamp =>
       _style(11.5, _medium, AppColor.discoveryTextDisabled);

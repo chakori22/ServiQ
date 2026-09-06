@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
@@ -111,7 +112,7 @@ class AddressesPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: DiscoveryTabBar(
+      bottomNavigationBar: AppBottomBar(
         current: DiscoveryTab.me,
         onSelect: (tab) => onTabSelected?.call(tab),
         onPost: onPost,

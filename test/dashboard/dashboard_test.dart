@@ -9,15 +9,16 @@ import 'package:local_markerplace/dashboard/presentation/your_post/presentation/
 import 'package:local_markerplace/dashboard/presentation/your_post/presentation/your_post_card.dart';
 
 Widget _app() => MaterialApp.router(
-      routerConfig: GoRouter(
-        initialLocation: AppRoutes.home.path,
-        routes: createRoutes(),
-      ),
-    );
+  routerConfig: GoRouter(
+    initialLocation: AppRoutes.home.path,
+    routes: createRoutes(),
+  ),
+);
 
 void main() {
-  testWidgets('dashboard shows shimmer while loading, then real cards',
-      (tester) async {
+  testWidgets('dashboard shows shimmer while loading, then real cards', (
+    tester,
+  ) async {
     await tester.pumpWidget(_app());
     await tester.pump(const Duration(milliseconds: 50));
 
@@ -35,35 +36,45 @@ void main() {
     expect(find.byType(ServiceCard), findsWidgets);
   });
 
-  testWidgets('View All on Services opens ServicePage without a provider error',
-      (tester) async {
-    await tester.pumpWidget(_app());
-    await tester.pump(const Duration(seconds: 2));
+  testWidgets(
+    'View All on Services opens ServicePage without a provider error',
+    (tester) async {
+      await tester.pumpWidget(_app());
+      await tester.pump(const Duration(seconds: 2));
 
-    final header = find
-        .ancestor(of: find.text('Services Near Me'), matching: find.byType(Row))
-        .first;
-    final viewAll =
-        find.descendant(of: header, matching: find.byType(TextButton));
-    expect(viewAll, findsOneWidget);
+      final header = find
+          .ancestor(
+            of: find.text('Services Near Me'),
+            matching: find.byType(Row),
+          )
+          .first;
+      final viewAll = find.descendant(
+        of: header,
+        matching: find.byType(TextButton),
+      );
+      expect(viewAll, findsOneWidget);
 
-    await tester.tap(viewAll);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(viewAll);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
-    expect(tester.takeException(), isNull);
-    expect(find.byType(ServicePage), findsOneWidget);
-    expect(find.byType(ServiceCard), findsWidgets);
-  });
+      expect(tester.takeException(), isNull);
+      expect(find.byType(ServicePage), findsOneWidget);
+      expect(find.byType(ServiceCard), findsWidgets);
+    },
+  );
 
-  testWidgets('deep link to /services stands up its own bloc and loads',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp.router(
-      routerConfig: GoRouter(
-        initialLocation: AppRoutes.services.path,
-        routes: createRoutes(),
+  testWidgets('deep link to /services stands up its own bloc and loads', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp.router(
+        routerConfig: GoRouter(
+          initialLocation: AppRoutes.services.path,
+          routes: createRoutes(),
+        ),
       ),
-    ));
+    );
     await tester.pump(const Duration(milliseconds: 50));
     expect(find.byType(ServiceGridShimmerTile), findsWidgets);
 
@@ -72,8 +83,9 @@ void main() {
     expect(find.byType(ServiceCard), findsWidgets);
   });
 
-  testWidgets('View All on Your Posts opens the full Your Posts list',
-      (tester) async {
+  testWidgets('View All on Your Posts opens the full Your Posts list', (
+    tester,
+  ) async {
     // Tall surface so the Your Posts rail is on screen without scrolling.
     tester.view.physicalSize = const Size(1200, 3000);
     tester.view.devicePixelRatio = 1.0;
@@ -85,8 +97,10 @@ void main() {
     final header = find
         .ancestor(of: find.text('Your Posts'), matching: find.byType(Row))
         .first;
-    final viewAll =
-        find.descendant(of: header, matching: find.byType(TextButton));
+    final viewAll = find.descendant(
+      of: header,
+      matching: find.byType(TextButton),
+    );
     expect(viewAll, findsOneWidget);
 
     await tester.tap(viewAll);
@@ -104,14 +118,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('tapping a description expands it to unlimited lines',
-      (tester) async {
-    await tester.pumpWidget(MaterialApp.router(
-      routerConfig: GoRouter(
-        initialLocation: AppRoutes.yourPosts.path,
-        routes: createRoutes(),
+  testWidgets('tapping a description expands it to unlimited lines', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp.router(
+        routerConfig: GoRouter(
+          initialLocation: AppRoutes.yourPosts.path,
+          routes: createRoutes(),
+        ),
       ),
-    ));
+    );
     await tester.pump(const Duration(seconds: 2));
 
     expect(find.byType(YourPostCard), findsWidgets);

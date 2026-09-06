@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:local_markerplace/discovery/model/locality.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
+import 'package:local_markerplace/discovery/presentation/components/pending_booking_bar.dart';
 import 'package:local_markerplace/discovery/presentation/discovery_home_view.dart';
 import 'package:local_markerplace/discovery/presentation/discovery_shell.dart';
 import 'package:local_markerplace/discovery/presentation/explore_zones_view.dart';
@@ -89,7 +90,9 @@ void main() {
     expect(find.text('Ajnara Gen X'), findsOneWidget);
     expect(find.text('Electrician'), findsWidgets);
     expect(find.text('Shahnaz RO & Chimney Services'), findsOneWidget);
-    expect(find.text('2 services · 3 parts'), findsOneWidget);
+    // Nothing has been added, so the basket bar is absent rather than
+    // showing an example of what one would look like.
+    expect(find.byType(PendingBookingBar), findsNothing);
   });
 
   testWidgets('explore counts a zone by its totals, not the page loaded', (

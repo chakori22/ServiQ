@@ -58,10 +58,23 @@ class ServiceSummaryRow extends StatelessWidget {
 /// A service on the Services tab — a card carrying what the job covers and a
 /// Book action.
 class ServiceCard extends StatelessWidget {
-  const ServiceCard({super.key, required this.service, this.onBook});
+  const ServiceCard({
+    super.key,
+    required this.service,
+    this.onBook,
+    this.isOnVisit = false,
+    this.onRemove,
+  });
 
   final ProviderService service;
   final VoidCallback? onBook;
+
+  /// Whether the job is already on the visit being built. A service is one
+  /// job rather than a quantity, so the row then offers to take it off
+  /// instead of booking a second one.
+  final bool isOnVisit;
+
+  final VoidCallback? onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -107,14 +120,48 @@ class ServiceCard extends StatelessWidget {
           const SizedBox(height: 4),
           Align(
             alignment: Alignment.centerRight,
-            child: PressableScale(
-              onTap: onBook,
-              pressedScale: 0.9,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                child: Text('Book', style: DiscoveryText.bookLink),
-              ),
-            ),
+            child: isOnVisit
+                ? Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'In cart',
+                        style: DiscoveryText.bookLink.copyWith(
+                          color: AppColor.discoveryLiveText,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      PressableScale(
+                        onTap: onRemove,
+                        pressedScale: 0.85,
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: AppColor.stockLowTint,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: const Icon(
+                            Icons.delete_outline_rounded,
+                            size: 17,
+                            color: AppColor.authError,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                : PressableScale(
+                    onTap: onBook,
+                    pressedScale: 0.9,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
+                      ),
+                      child: Text('Book', style: DiscoveryText.bookLink),
+                    ),
+                  ),
           ),
         ],
       ),

@@ -54,32 +54,62 @@ class ProviderRepository {
         name: 'RO Filter Set (3 stage)',
         price: '₹1,200',
         stockLabel: 'In stock',
+        detail:
+            'Sediment, pre-carbon and post-carbon. Fits most domestic RO '
+            'units. Sold as a set of three.',
+        fittingName: 'RO Filter Change',
+        fittingFrom: '₹349',
       ),
       StoreProduct(
         name: 'RO Membrane 80 GPD',
         price: '₹1,800',
         stockLabel: 'In stock',
+        detail:
+            'Replaces the membrane when output drops or the water starts '
+            'tasting flat. Lasts two to three years.',
+        fittingName: 'RO Service & Repair',
+        fittingFrom: '₹499',
       ),
       StoreProduct(
         name: 'Chimney Baffle Filter',
         price: '₹890',
         stockLabel: 'Only 2 left',
         isLow: true,
+        detail:
+            'Stainless steel baffles for a 60 cm chimney. Dishwasher safe, '
+            'sold as a pair.',
+        fittingName: 'Chimney Deep Clean',
+        fittingFrom: '₹899',
       ),
       StoreProduct(
         name: 'Sediment Filter 10"',
         price: '₹350',
         stockLabel: 'In stock',
+        detail:
+            'Spun polypropylene, 5 micron. The first stage — change it every '
+            'six months in hard water.',
+        fittingName: 'RO Filter Change',
+        fittingFrom: '₹349',
       ),
       StoreProduct(
         name: 'Carbon Filter Block',
         price: '₹450',
         stockLabel: 'In stock',
+        detail:
+            'Takes out chlorine and smell before the water reaches the '
+            'membrane.',
+        fittingName: 'RO Filter Change',
+        fittingFrom: '₹349',
       ),
       StoreProduct(
         name: 'Chimney Motor (1200 m³/hr)',
         price: '₹3,400',
         stockLabel: 'In stock',
+        detail:
+            'Copper winding, one year warranty. Suits most wall-mounted '
+            'chimneys up to 90 cm.',
+        fittingName: 'Chimney Deep Clean',
+        fittingFrom: '₹899',
       ),
     ],
     reviews: [

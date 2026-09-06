@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/components/app_back_button.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
@@ -23,6 +24,9 @@ import 'package:local_markerplace/discovery/presentation/components/discovery_ta
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/components/provider_avatar.dart';
 import 'package:local_markerplace/discovery/presentation/components/status_pill.dart';
+import 'package:local_markerplace/visit/model/visit_service.dart';
+import 'package:local_markerplace/visit/presentation/visit_booked_page.dart';
+import 'package:local_markerplace/visit/repository/visit_repository.dart';
 
 /// 09 · 03 / 04 — one requirement and the offers on it.
 ///
@@ -38,6 +42,7 @@ class RequirementPage extends StatefulWidget {
     this.onOfferMade,
     this.onOfferAccepted,
     this.offers,
+    this.visits,
   });
 
   final PostDetails post;
@@ -59,6 +64,10 @@ class RequirementPage extends StatefulWidget {
   /// the session are kept.
   final PostOfferRepository? offers;
 
+  /// Where an accepted offer's visit is built. Defaults to the shared store
+  /// so it is the same visit the category flow adds to.
+  final VisitRepository? visits;
+
   @override
   State<RequirementPage> createState() => _RequirementPageState();
 }
@@ -66,6 +75,8 @@ class RequirementPage extends StatefulWidget {
 class _RequirementPageState extends State<RequirementPage> {
   late final PostOfferRepository _offers =
       widget.offers ?? PostOfferRepository.shared;
+
+  late final VisitRepository _visits = widget.visits ?? VisitRepository.shared;
 
   /// The page's own copy, so accepting settles it here immediately rather
   /// than waiting for the board underneath to rebuild.
@@ -100,13 +111,42 @@ class _RequirementPageState extends State<RequirementPage> {
     _notice('Offer sent.');
   }
 
-  void _accept(PostOffer offer) {
+  /// Taking an offer books the visit outright.
+  ///
+  /// Everything the visit flow normally asks for was settled by the offer
+  /// itself: the provider named the price and the time, and accepting agreed
+  /// to both. Sending the seeker to the slot picker afterwards would ask
+  /// them to decide something they had just decided, so the requirement goes
+  /// straight to a booked visit.
+  Future<void> _accept(PostOffer offer) async {
     setState(
       () => _post = _post.copyWith(isAccepted: true, acceptedBy: offer.name),
     );
     widget.onOfferAccepted?.call(offer);
-    _notice('Accepted ${offer.name}.');
+
+    final booked = _visits.bookFromOffer(
+      providerName: offer.name,
+      providerLine: [?widget.localityName, 'agreed ${offer.price}'].join(' · '),
+      isVerifiedProvider: offer.badge == OfferBadge.verified,
+      agreedWhen: _capitalised(offer.timing),
+      service: VisitService(
+        name: requirementHeadline(_post.description),
+        detail: requirementDetail(_post.description) ?? '',
+        unitPrice: rupeesFrom(offer.price),
+      ),
+    );
+    if (!mounted) return;
+
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => VisitBookedPage(visit: booked)));
+    if (mounted) setState(() {});
   }
+
+  /// Offers are written mid-sentence ("today, 4 – 6 pm"); the booked screen
+  /// shows the timing as a heading of its own.
+  static String _capitalised(String text) =>
+      text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +228,7 @@ class _RequirementPageState extends State<RequirementPage> {
           ),
         ),
       ),
-      bottomNavigationBar: DiscoveryTabBar(
+      bottomNavigationBar: AppBottomBar(
         current: DiscoveryTab.posts,
         onSelect: (tab) {
           // Popping twice would be needed to reach the shell from here, so

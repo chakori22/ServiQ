@@ -87,9 +87,7 @@ Dio buildDio(AuthSession session, HttpClientAdapter adapter) {
   final dio = Dio(BaseOptions(baseUrl: 'http://example.invalid'))
     ..httpClientAdapter = adapter;
   dio.interceptors.add(AuthInterceptor(session));
-  dio.interceptors.add(
-    TokenRefreshInterceptor(session: session, dio: dio),
-  );
+  dio.interceptors.add(TokenRefreshInterceptor(session: session, dio: dio));
   return dio;
 }
 
@@ -134,26 +132,36 @@ Future<AuthSession> staleSession({
 
 void main() {
   group('an access token that has already expired', () {
-    test('is renewed before the request goes out, with no wasted 401', () async {
-      final store = FakePersistentStore();
-      final repository = FakeLoginRepository(
-        responses: [testTokens(accessToken: 'fresh-access', refreshToken: 'r2')],
-      );
-      final session = await staleSession(store: store, repository: repository);
-      final adapter = RecordingAdapter();
+    test(
+      'is renewed before the request goes out, with no wasted 401',
+      () async {
+        final store = FakePersistentStore();
+        final repository = FakeLoginRepository(
+          responses: [
+            testTokens(accessToken: 'fresh-access', refreshToken: 'r2'),
+          ],
+        );
+        final session = await staleSession(
+          store: store,
+          repository: repository,
+        );
+        final adapter = RecordingAdapter();
 
-      await buildDio(session, adapter).get('/api/v1/profile');
+        await buildDio(session, adapter).get('/api/v1/profile');
 
-      expect(repository.refreshCalls, ['r1']);
-      // One call, already carrying the new token: the old one was never sent.
-      expect(adapter.calls, 1);
-      expect(adapter.authorizationHeaders, ['Bearer fresh-access']);
-    });
+        expect(repository.refreshCalls, ['r1']);
+        // One call, already carrying the new token: the old one was never sent.
+        expect(adapter.calls, 1);
+        expect(adapter.authorizationHeaders, ['Bearer fresh-access']);
+      },
+    );
 
     test('does not make the refresh endpoint refresh itself', () async {
       final store = FakePersistentStore();
       final repository = FakeLoginRepository(
-        responses: [testTokens(accessToken: 'fresh-access', refreshToken: 'r2')],
+        responses: [
+          testTokens(accessToken: 'fresh-access', refreshToken: 'r2'),
+        ],
       );
       final session = await staleSession(store: store, repository: repository);
       final adapter = RecordingAdapter();
@@ -167,7 +175,9 @@ void main() {
     test('is renewed once even when several requests wake together', () async {
       final store = FakePersistentStore();
       final repository = FakeLoginRepository(
-        responses: [testTokens(accessToken: 'fresh-access', refreshToken: 'r2')],
+        responses: [
+          testTokens(accessToken: 'fresh-access', refreshToken: 'r2'),
+        ],
       );
       final session = await staleSession(store: store, repository: repository);
       final gate = Completer<void>();
@@ -190,26 +200,35 @@ void main() {
       ]);
     });
 
-    test('a request still succeeds when the pre-emptive renewal fails', () async {
-      final store = FakePersistentStore();
-      // No scripted response and no failure set: the refresh comes back Left,
-      // modelling the network being down at exactly the wrong moment.
-      final repository = FakeLoginRepository(
-        failure: const Failure(
-          errorMessage: 'no signal',
-          errorCode: 'CONNECTION_ERROR',
-        ),
-      );
-      final session = await staleSession(store: store, repository: repository);
-      final adapter = RecordingAdapter();
+    test(
+      'a request still succeeds when the pre-emptive renewal fails',
+      () async {
+        final store = FakePersistentStore();
+        // No scripted response and no failure set: the refresh comes back Left,
+        // modelling the network being down at exactly the wrong moment.
+        final repository = FakeLoginRepository(
+          failure: const Failure(
+            errorMessage: 'no signal',
+            errorCode: 'CONNECTION_ERROR',
+          ),
+        );
+        final session = await staleSession(
+          store: store,
+          repository: repository,
+        );
+        final adapter = RecordingAdapter();
 
-      final response = await buildDio(session, adapter).get('/api/v1/profile');
+        final response = await buildDio(
+          session,
+          adapter,
+        ).get('/api/v1/profile');
 
-      // A transport failure keeps the credential, so the stale token is still
-      // sent rather than the request being abandoned.
-      expect(response.statusCode, 200);
-      expect(adapter.authorizationHeaders, ['Bearer stale-access']);
-    });
+        // A transport failure keeps the credential, so the stale token is still
+        // sent rather than the request being abandoned.
+        expect(response.statusCode, 200);
+        expect(adapter.authorizationHeaders, ['Bearer stale-access']);
+      },
+    );
   });
 
   test('a 401 renews the token and replays the request', () async {
@@ -285,7 +304,10 @@ void main() {
     final adapter = ExpiringAdapter(failuresBeforeSuccess: 99);
     final dio = buildDio(session, adapter);
 
-    await expectLater(dio.get('/api/v1/users/me'), throwsA(isA<DioException>()));
+    await expectLater(
+      dio.get('/api/v1/users/me'),
+      throwsA(isA<DioException>()),
+    );
     expect(adapter.calls, 2, reason: 'original + one replay, then give up');
   });
 
@@ -317,10 +339,7 @@ void main() {
     final adapter = ExpiringAdapter();
     final dio = buildDio(session, adapter);
 
-    await Future.wait([
-      dio.get('/api/v1/users/me'),
-      dio.get('/api/v1/posts'),
-    ]);
+    await Future.wait([dio.get('/api/v1/users/me'), dio.get('/api/v1/posts')]);
 
     // Two refreshes would present the same token twice and, on the real
     // backend, end the session for reuse.

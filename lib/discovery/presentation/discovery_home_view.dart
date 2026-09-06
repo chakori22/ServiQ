@@ -9,7 +9,6 @@ import 'package:local_markerplace/discovery/presentation/components/discovery_no
 import 'package:local_markerplace/discovery/presentation/components/discovery_search_field.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/components/category_tile.dart';
-import 'package:local_markerplace/discovery/presentation/components/pending_booking_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/provider_card.dart';
 import 'package:local_markerplace/discovery/presentation/components/section_header.dart';
 import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
@@ -32,7 +31,6 @@ class DiscoveryHomeView extends StatelessWidget {
     required this.onSeeAllProviders,
     this.onCategoryTap,
     this.onProviderTap,
-    this.onViewBooking,
     this.repository = const DiscoveryRepository(),
   });
 
@@ -43,7 +41,6 @@ class DiscoveryHomeView extends StatelessWidget {
   final VoidCallback onSeeAllProviders;
   final ValueChanged<ServiceCategory>? onCategoryTap;
   final ValueChanged<ProviderSummary>? onProviderTap;
-  final VoidCallback? onViewBooking;
   final DiscoveryRepository repository;
 
   /// The rail's cards are a fixed height, because a horizontal list has to be
@@ -58,7 +55,6 @@ class DiscoveryHomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     final categories = repository.categories();
     final nearby = repository.nearby(localityName);
-    final booking = repository.pendingBooking();
 
     return Column(
       children: [
@@ -174,11 +170,6 @@ class DiscoveryHomeView extends StatelessWidget {
             ),
           ),
         ),
-        if (booking != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-            child: PendingBookingBar(booking: booking, onView: onViewBooking),
-          ),
       ],
     );
   }

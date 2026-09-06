@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
@@ -140,7 +141,7 @@ class _SavedProvidersPageState extends State<SavedProvidersPage> {
           ],
         ),
       ),
-      bottomNavigationBar: DiscoveryTabBar(
+      bottomNavigationBar: AppBottomBar(
         current: DiscoveryTab.me,
         onSelect: (tab) => widget.onTabSelected?.call(tab),
         onPost: widget.onPost,

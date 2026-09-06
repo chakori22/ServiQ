@@ -212,6 +212,14 @@ class AppColor {
   /// A primary button that cannot be pressed yet.
   static const Color buttonDisabledFill = Color(0xFFE7ECF6);
 
+  // --- Visit & booking -----------------------------------------------------
+
+  /// Wash behind the "arrives in about 40 minutes" card on an instant visit.
+  static const Color visitEtaTint = Color(0xFFEEF4FF);
+
+  /// Behind a "only 2 left" stock pill, where in stock uses the live tint.
+  static const Color stockLowTint = Color(0xFFFDECEC);
+
   // --- Generated artwork ----------------------------------------------------
   // The flow has no photography behind it, so cards, tiles and heroes carry
   // artwork painted in code instead: a gradient plate with bézier ribbons

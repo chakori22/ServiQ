@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/model/locality.dart';
 import 'package:local_markerplace/discovery/model/service_zone.dart';
@@ -69,7 +70,7 @@ class ZoneDetailPage extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: DiscoveryTabBar(
+      bottomNavigationBar: AppBottomBar(
         current: DiscoveryTab.explore,
         onSelect: (tab) => onTabSelected?.call(tab),
         onPost: onPost,
