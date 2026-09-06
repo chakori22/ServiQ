@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/presentation/components/dashboard_shimmer.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
+import 'package:local_markerplace/me/presentation/components/me_components.dart';
 
 import '../bloc/your_post_bloc.dart';
 import 'your_post_card.dart';
 
 /// Full list behind "View All" on the dashboard's Your Posts rail.
 ///
-/// The rail shows a horizontal preview; this page stacks the same cards
-/// vertically so every post is reachable, with edit/delete actions per card.
+/// The rail shows a horizontal preview; this page stacks the same requirement
+/// cards the public board draws, with the owner's edit and delete actions on
+/// each.
 class YourPostPage extends StatelessWidget {
   const YourPostPage({super.key});
 
@@ -46,62 +52,75 @@ class _YourPostViewState extends State<YourPostView> {
     });
   }
 
+  void _notice(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: DiscoveryText.heroSubtitle.copyWith(color: AppColor.white),
+          ),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColor.white,
-      appBar: AppBar(
-        elevation: 2,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded),
-            color: AppColor.indicativeBlueColor700,
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
-        backgroundColor: AppColor.indicativeBlueColor50,
-        surfaceTintColor: AppColor.neutralGreyColor100,
-        title: const Text(
-          'Your Posts',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColor.indicativeBlueColor700,
-          ),
+      body: SafeArea(
+        bottom: false,
+        child: BlocBuilder<YourPostBloc, YourPostState>(
+          builder: (context, state) {
+            final posts = state.yourPostDetails;
+
+            return Column(
+              children: [
+                DiscoveryHeader(
+                  title: 'Your posts',
+                  subtitle: state.yourPostsLoading
+                      ? null
+                      : '${posts.length} '
+                            '${posts.length == 1 ? 'post' : 'posts'}',
+                ),
+                const SizedBox(height: 14),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColor.discoveryBorder,
+                ),
+                const SizedBox(height: 16),
+                Expanded(child: _body(context, state)),
+              ],
+            );
+          },
         ),
       ),
-      body: BlocBuilder<YourPostBloc, YourPostState>(
-        builder: (context, state) {
-          if (state.yourPostsLoading) {
-            return const YourPostListShimmer();
-          }
-          if (state.isEmpty) {
-            return const _EmptyYourPosts();
-          }
-          return RefreshIndicator(
-            color: AppColor.indicativeBlueColor600,
-            onRefresh: () async {
-              context.read<YourPostBloc>().add(const OnFetchPostDetails());
-            },
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              itemCount: state.yourPostDetails.length,
-              separatorBuilder: (context, index) => Divider(
-                height: 32,
-                thickness: 1,
-                color: AppColor.neutralGreyColor100,
-              ),
-              itemBuilder: (context, index) {
-                final post = state.yourPostDetails[index];
-                return YourPostCard(
-                  post: post.copyWith(
-                    isExpanded: _expandedPosts.contains(index),
-                  ),
-                  onToggleExpanded: () => _toggleExpanded(index),
-                );
-              },
-            ),
+    );
+  }
+
+  Widget _body(BuildContext context, YourPostState state) {
+    if (state.yourPostsLoading) return const YourPostListShimmer();
+    if (state.isEmpty) return const _EmptyYourPosts();
+
+    return RefreshIndicator(
+      color: AppColor.discoveryAccent,
+      onRefresh: () async {
+        context.read<YourPostBloc>().add(const OnFetchPostDetails());
+      },
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        itemCount: state.yourPostDetails.length,
+        separatorBuilder: (_, _) => const SizedBox(height: 14),
+        itemBuilder: (context, index) {
+          final post = state.yourPostDetails[index];
+          return YourPostCard(
+            post: post.copyWith(isExpanded: _expandedPosts.contains(index)),
+            index: index,
+            onToggleExpanded: () => _toggleExpanded(index),
+            onEdit: () => _notice('Editing a post — coming soon.'),
+            onDelete: () => _notice('Deleting a post — coming soon.'),
           );
         },
       ),
@@ -119,55 +138,49 @@ class _EmptyYourPosts extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: AppColor.indicativeBlueColor50,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.post_add_rounded,
-                size: 48,
-                color: AppColor.indicativeBlueColor400,
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "You haven't posted anything yet",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColor.neutralGreyColor700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Post a request and helpers around you can respond to it.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColor.neutralGreyColor500,
-              ),
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColor.indicativeBlueColor600,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 14,
+        child: FadeSlideIn(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                alignment: Alignment.center,
+                decoration: const BoxDecoration(
+                  color: AppColor.discoveryTint,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.post_add_rounded,
+                  size: 40,
+                  color: AppColor.discoveryAccent,
                 ),
               ),
-              onPressed: () =>
-                  GoRouter.of(context).pushAppRoute(AppRoutes.instantForm),
-              icon: const Icon(Icons.bolt_rounded),
-              label: const Text('Post a request'),
-            ),
-          ],
+              const SizedBox(height: 22),
+              Text(
+                "You haven't posted anything yet",
+                textAlign: TextAlign.center,
+                style: DiscoveryText.sectionTitle,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Post a requirement and providers around you can answer it.',
+                textAlign: TextAlign.center,
+                style: DiscoveryText.footnoteStrong.copyWith(height: 18 / 12),
+              ),
+              const SizedBox(height: 26),
+              OutlinedActionButton(
+                label: 'Post a requirement',
+                leading: const Icon(
+                  Icons.bolt_rounded,
+                  size: 18,
+                  color: AppColor.discoveryGradientEnd,
+                ),
+                onTap: () =>
+                    GoRouter.of(context).pushAppRoute(AppRoutes.instantForm),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,44 +1,115 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
+import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/model/post_details.dart';
 import 'package:local_markerplace/dashboard/model/post_draft.dart';
+import 'package:local_markerplace/dashboard/presentation/components/dashboard_shimmer.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/components/requirement_card.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/requirement_page.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/components/post_upload_banner.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_filter_chip.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_note.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
+import 'package:local_markerplace/network/auth_session.dart';
+import 'package:local_markerplace/notifications/presentation/notifications_sheet.dart';
+import 'package:local_markerplace/notifications/repository/notification_repository.dart';
+
 import '../bloc/bloc/post_bloc.dart';
 
+/// How the board can be narrowed. All three stay on the board and swap the
+/// list underneath; none of them leaves the screen.
+enum BoardFilter { all, open, mine }
+
+/// What the posts route is opened with.
+///
+/// The board is reached from several places that each know something
+/// different — the composer knows the draft it just built, discovery knows
+/// the area, Me knows the seeker wants their own — so they travel together
+/// rather than fighting over a single `extra`.
+class PostsArgs {
+  const PostsArgs({
+    this.draft,
+    this.localityName,
+    this.initialFilter = BoardFilter.all,
+  });
+
+  /// A post that has just been shared and still has to be uploaded.
+  final PostDraft? draft;
+
+  /// The area whose board this is.
+  final String? localityName;
+
+  /// Which chip is on when the board opens.
+  final BoardFilter initialFilter;
+}
+
 class PostPage extends StatelessWidget {
-  const PostPage({super.key, this.uploadingDraft});
+  const PostPage({
+    super.key,
+    this.uploadingDraft,
+    this.localityName,
+    this.initialFilter = BoardFilter.all,
+  });
 
   /// Set when the page was opened straight from a create-post form: the post
   /// the user just shared, whose upload this page runs and reports on.
   final PostDraft? uploadingDraft;
 
+  /// The area whose board this is, shown in the locality bar. Null where the
+  /// caller does not know it — a deep link, or a test — in which case the bar
+  /// is left off rather than naming somewhere the user is not.
+  final String? localityName;
+
+  /// Which chip the board opens on. Me sends the seeker straight to their
+  /// own requirements rather than to a screen of everybody's.
+  final BoardFilter initialFilter;
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) => PostBloc(dashboardRepository: const DashboardRepository()),
-      child: PostScreenContainer(uploadingDraft: uploadingDraft),
+      child: PostScreenContainer(
+        uploadingDraft: uploadingDraft,
+        localityName: localityName,
+        initialFilter: initialFilter,
+      ),
     );
   }
 }
 
+/// 09 · 01 — the requirements board: what people nearby need done.
 class PostScreenContainer extends StatefulWidget {
-  const PostScreenContainer({super.key, this.uploadingDraft});
+  const PostScreenContainer({
+    super.key,
+    this.uploadingDraft,
+    this.localityName,
+    this.initialFilter = BoardFilter.all,
+  });
 
   final PostDraft? uploadingDraft;
+  final String? localityName;
+  final BoardFilter initialFilter;
 
   @override
   State<PostScreenContainer> createState() => _PostScreenState();
 }
 
 class _PostScreenState extends State<PostScreenContainer> {
+  late BoardFilter _filter = widget.initialFilter;
+
   @override
   void initState() {
-    context.read<PostBloc>().add(const OnFetchPostDetails());
+    context.read<PostBloc>().add(
+      OnFetchPostDetails(currentUsername: _signedInUsername),
+    );
     final draft = widget.uploadingDraft;
     if (draft != null) {
       context.read<PostBloc>().add(OnStartPostUpload(draft));
@@ -46,463 +117,328 @@ class _PostScreenState extends State<PostScreenContainer> {
     super.initState();
   }
 
-  void _toggleExpanded(int index) {
-    setState(() {
-      final postDetails = context.read<PostBloc>().state.postDetails;
-      postDetails[index] = postDetails[index].copyWith(
-        isExpanded: !postDetails[index].isExpanded,
-      );
-    });
+  /// Opens the drawer, then refreshes so the bell's badge agrees with what
+  /// was just read in it.
+  Future<void> _openNotifications() async {
+    await showNotificationsSheet(context);
+    if (mounted) setState(() {});
   }
+
+  /// Opens one requirement. If its own tab bar is used to leave, the tab it
+  /// popped with is passed on up to the shell.
+  Future<void> _openRequirement(PostDetails post) async {
+    final bloc = context.read<PostBloc>();
+    final next = await Navigator.of(context).push<DiscoveryTab>(
+      MaterialPageRoute(
+        builder: (_) => RequirementPage(
+          post: post,
+          localityName: widget.localityName,
+          currentUsername: _signedInUsername,
+          onOfferMade: (_) => bloc.add(OnOfferMade(post)),
+          onOfferAccepted: (offer) => bloc.add(OnOfferAccepted(post, offer)),
+        ),
+      ),
+    );
+    if (!mounted || next == null) return;
+    if (context.mounted) Navigator.of(context).pop(next);
+  }
+
+  void _selectFilter(BoardFilter filter) => setState(() => _filter = filter);
+
+  /// The signed-in user's handle, which is what a post records as its
+  /// author. Null where no session is in the tree — a preview, or a widget
+  /// test pumping this screen on its own — and then nothing is "mine".
+  String? get _signedInUsername {
+    try {
+      return context.read<AuthSession>().user?.username;
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  List<PostDetails> _visible(List<PostDetails> posts) {
+    switch (_filter) {
+      case BoardFilter.open:
+        return posts.where((post) => !post.isAccepted).toList();
+      case BoardFilter.mine:
+        final me = _signedInUsername;
+        if (me == null) return const [];
+        return posts.where((post) => post.username == me).toList();
+      case BoardFilter.all:
+        return posts;
+    }
+  }
+
+  /// What to say when a filter leaves nothing behind. Each one has its own
+  /// reason for being empty, and "nothing here" would explain none of them.
+  String get _emptyMessage => switch (_filter) {
+    BoardFilter.open => 'Every requirement here has been accepted.',
+    BoardFilter.mine => "You haven't posted anything here yet.",
+    BoardFilter.all => 'Nothing on the board yet — post the first requirement.',
+  };
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
-      appBar: AppBar(
-        elevation: 2,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_rounded),
-            color: AppColor.indicativeBlueColor700,
-            onPressed: () => Navigator.of(context).pop(),
-          ),
-        ),
-        animateColor: true,
-        backgroundColor: AppColor.indicativeBlueColor50,
-        surfaceTintColor: AppColor.neutralGreyColor100,
-
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Post',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColor.indicativeBlueColor700,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: BlocConsumer<PostBloc, PostState>(
-        listenWhen: (previous, current) =>
-            current.errorMessage.isNotEmpty &&
-            previous.errorMessage != current.errorMessage,
-        listener: (context, state) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.errorMessage)));
-          context.read<PostBloc>().add(const OnDismissAlertMessage());
-        },
-        builder: (context, state) {
-          // if (state.postDetails.isEmpty) {
-          //   return const SizedBox.shrink();
-          // }
-
-          final content = state.postsLoading
-              ? Shimmer.fromColors(
-                  baseColor: AppColor.indicativeBlueColor100,
-                  highlightColor: AppColor.indicativeBlueColor50,
-                  child: ListView.builder(
-                    scrollDirection: Axis.vertical,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
+      backgroundColor: AppColor.white,
+      body: SafeArea(
+        bottom: false,
+        child: BlocConsumer<PostBloc, PostState>(
+          listenWhen: (previous, current) =>
+              current.errorMessage.isNotEmpty &&
+              previous.errorMessage != current.errorMessage,
+          listener: (context, state) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(
+                    state.errorMessage,
+                    style: DiscoveryText.heroSubtitle.copyWith(
+                      color: AppColor.white,
                     ),
-                    itemCount: 5,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 12,
-                                  backgroundColor: Colors.white,
-                                ),
-                                SizedBox(width: 4),
-
-                                SizedBox(
-                                  height: 12,
-                                  width: screenWidth * 0.86,
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              width: screenWidth * 0.95,
-                              height: 240,
-                              child: Container(color: Colors.white),
-                            ),
-                            const SizedBox(height: 6),
-                            SizedBox(
-                              height: 12,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
                   ),
-                )
-              : SizedBox(
-                  //height: 304,
-                  child: ListView.builder(
-                    scrollDirection: Axis.vertical,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 12,
+                ),
+              );
+            context.read<PostBloc>().add(const OnDismissAlertMessage());
+          },
+          builder: (context, state) {
+            final posts = _visible(state.postDetails);
+
+            return Column(
+              children: [
+                _BoardHeader(
+                  localityName: widget.localityName,
+                  unreadNotifications:
+                      NotificationRepository.shared.unreadCount,
+                  onNotifications: _openNotifications,
+                ),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColor.discoveryBorder,
+                ),
+                if (state.uploadingDraft != null)
+                  PostUploadBanner(
+                    draft: state.uploadingDraft!,
+                    progress: state.uploadProgress,
+                    progressText: state.uploadProgressText,
+                  ),
+                const SizedBox(height: 16),
+                FadeSlideIn(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          'What people need here',
+                          style: DiscoveryText.meName,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Answer one, or post your own',
+                          style: DiscoveryText.footnoteStrong,
+                        ),
+                      ],
                     ),
-                    itemCount: state.postDetails.length,
-                    itemBuilder: (context, index) {
-                      final post = state.postDetails[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: SizedBox(
-                          width: 380,
-                          child: postCard(
-                            post: post,
-                            onToggleExpanded: () => _toggleExpanded(index),
-                            context: context,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _BoardFilters(current: _filter, onSelect: _selectFilter),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: state.postsLoading
+                      ? const RequirementBoardShimmer()
+                      : posts.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: DiscoveryNote(_emptyMessage),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                          itemCount: posts.length,
+                          separatorBuilder: (_, _) =>
+                              const SizedBox(height: 14),
+                          itemBuilder: (context, index) => RequirementCard(
+                            post: posts[index],
+                            index: index,
+                            onTap: () => _openRequirement(posts[index]),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                );
-
-          return Column(
-            children: [
-              if (state.uploadingDraft != null)
-                PostUploadBanner(
-                  draft: state.uploadingDraft!,
-                  progress: state.uploadProgress,
-                  progressText: state.uploadProgressText,
                 ),
-              Expanded(child: content),
-            ],
-          );
+              ],
+            );
+          },
+        ),
+      ),
+      // The design draws the board as a tab, with the flow's bar under it and
+      // the post button riding its edge. It is reached by a push rather than
+      // by the shell swapping tabs, so leaving by any other tab pops back and
+      // tells the shell which one to show.
+      bottomNavigationBar: DiscoveryTabBar(
+        current: DiscoveryTab.posts,
+        onSelect: (tab) {
+          if (tab == DiscoveryTab.posts) return;
+          Navigator.of(context).pop(tab);
         },
+        onPost: () => GoRouter.of(
+          context,
+        ).pushAppRoute(AppRoutes.instantForm, extra: widget.localityName),
       ),
     );
   }
 }
 
-Widget postCard({
-  required PostDetails post,
-  required VoidCallback onToggleExpanded,
-  required BuildContext context,
-}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.center,
+/// The board's top bar: the area it covers, and notifications.
+///
+/// The design draws this as a locality bar with no back affordance, because
+/// there it is a tab. Here the board is pushed on top of whatever opened it,
+/// so it keeps the app's back control on the left.
+class _BoardHeader extends StatelessWidget {
+  const _BoardHeader({
+    required this.localityName,
+    required this.unreadNotifications,
+    required this.onNotifications,
+  });
+
+  final String? localityName;
+  final int unreadNotifications;
+  final VoidCallback onNotifications;
+
+  @override
+  Widget build(BuildContext context) {
+    final locality = localityName;
+
+    return SizedBox(
+      height: 52,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+        child: Row(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                CircleAvatar(backgroundColor: Colors.grey[300], radius: 20),
-                SizedBox(width: 8),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      post.username,
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: AppColor.neutralGreyColor700,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      getTimeAgo(post.postedAt),
-                      style: TextStyle(
-                        color: AppColor.neutralGreyColor600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            GestureDetector(
-              onTap: () {
-                showDetailsBottomSheet(
-                  context,
-                  isInstant: post.isInstant,
-                  budgetAmount: post.budgetAmount,
-                  timing:
-                      post.scheduledTime ??
-                      DateTime.now(), // Provide a default value if null
-                );
-                // Handle more options tap
-              },
-              child: Icon(Icons.more_vert),
-            ),
-          ],
-        ),
-        SizedBox(height: 8),
-        postImage(post.imageUrl),
-        SizedBox(height: 8),
-        Row(
-          // Changed to start so the username stays at the top if the description wraps to multiple lines
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 2. Wrap description in Expanded to prevent overflow errors
-            Flexible(
-              // 3. GestureDetector allows the user to tap the text to expand/collapse
-              child: GestureDetector(
-                onTap: onToggleExpanded,
+            if (locality == null)
+              Expanded(child: Text('Posts', style: DiscoveryText.appBarTitle))
+            else ...[
+              SvgPicture.asset(
+                DiscoveryAssets.pinHeader,
+                width: 14,
+                height: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
                 child: Text(
-                  // The description text
-                  post.description,
-                  // 4. Toggle max lines based on state
-                  maxLines: post.isExpanded ? null : 2,
-                  // 5. Show standard '...' ellipsis if not expanded
-                  overflow: post.isExpanded
-                      ? TextOverflow.visible
-                      : TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: AppColor.neutralGreyColor700,
-                    fontSize: 14,
+                  locality,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: DiscoveryText.rowTitle.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
+            ],
+            const SizedBox(width: 10),
+            _BellButton(
+              badgeCount: unreadNotifications,
+              onTap: onNotifications,
             ),
           ],
         ),
-        SizedBox(height: 8),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.add_task_rounded,
-                  size: 24,
-                  color: AppColor.neutralGreyColor700,
-                ),
-                SizedBox(width: 4),
-                Text(
-                  'Accept',
-                  style: TextStyle(
-                    color: AppColor.neutralGreyColor700,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(width: 8),
-            Row(
-              children: [
-                Icon(
-                  Icons.chat_bubble_outline,
-                  size: 24,
-                  color: AppColor.neutralGreyColor700,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Chat',
-                  style: TextStyle(
-                    color: AppColor.neutralGreyColor700,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
-
-/// A post's picture, which is a bundled asset for posts that came from the
-/// API but a file on disk for one this device just created and uploaded.
-Widget postImage(String imageUrl) {
-  const double height = 160;
-  if (imageUrl.startsWith('assets/')) {
-    return Image.asset(
-      imageUrl,
-      width: double.infinity,
-      height: height,
-      fit: BoxFit.cover,
+      ),
     );
   }
-  return Image.file(
-    File(imageUrl),
-    width: double.infinity,
-    height: height,
-    fit: BoxFit.cover,
-    errorBuilder: (context, error, stackTrace) => Container(
-      width: double.infinity,
-      height: height,
-      color: AppColor.neutralGreyColor100,
-      child: const Icon(
-        Icons.image_outlined,
-        color: AppColor.neutralGreyColor400,
-      ),
-    ),
-  );
 }
 
-String getTimeAgo(DateTime postedAt) {
-  final now = DateTime.now();
-  final difference = now.difference(postedAt);
+/// The notification bell and its unread count.
+class _BellButton extends StatelessWidget {
+  const _BellButton({required this.badgeCount, required this.onTap});
 
-  if (difference.inSeconds < 60) {
-    return 'Just now';
-  } else if (difference.inMinutes < 60) {
-    return '${difference.inMinutes} mins ago';
-  } else if (difference.inHours < 24) {
-    return '${difference.inHours} hours ago';
-  } else if (difference.inDays < 7) {
-    return '${difference.inDays} days ago';
-  } else if (difference.inDays < 30) {
-    return '${difference.inDays ~/ 7} weeks ago';
-  } else if (difference.inDays < 365) {
-    return '${difference.inDays ~/ 30} months ago';
-  } else {
-    return '${difference.inDays ~/ 365} years ago';
+  final int badgeCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      pressedScale: 0.88,
+      onTap: onTap,
+      child: SizedBox(
+        width: 34,
+        height: 34,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: 0,
+              top: 3,
+              child: SvgPicture.asset(
+                DiscoveryAssets.bell,
+                width: 30,
+                height: 30,
+              ),
+            ),
+            if (badgeCount > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: AppColor.authError,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '$badgeCount',
+                    style: const TextStyle(
+                      fontFamily: DiscoveryText.family,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      color: AppColor.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
-void showDetailsBottomSheet(
-  BuildContext context, {
-  required bool isInstant,
-  required double budgetAmount,
-  required DateTime timing,
-}) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true, // Allows the sheet to size itself properly
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (BuildContext context) {
-      return Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min, // Wraps content tightly
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Handle bar at the top for modern look
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+/// All / Open / Mine, in the flow's chip.
+class _BoardFilters extends StatelessWidget {
+  const _BoardFilters({required this.current, required this.onSelect});
 
-            const Text(
-              'Task Requirements',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
+  final BoardFilter current;
+  final ValueChanged<BoardFilter> onSelect;
 
-            // Budget Section
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.payments_outlined,
-                    color: Colors.green,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Budget',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
-                    Text(
-                      '₹${budgetAmount.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
-
-            // Timing Section
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    isInstant ? Icons.flash_on : Icons.schedule,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Timing',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                    ),
-                    Text(
-                      isInstant
-                          ? 'Instant Service Needed'
-                          : 'Scheduled: ${timing.day}/${timing.month}/${timing.year}, ${timing.hour}:${timing.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
-      );
-    },
-  );
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 38,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        children: [
+          DiscoveryFilterChip(
+            label: 'All',
+            isSelected: current == BoardFilter.all,
+            onTap: () => onSelect(BoardFilter.all),
+          ),
+          const SizedBox(width: 8),
+          DiscoveryFilterChip(
+            label: 'Open',
+            isSelected: current == BoardFilter.open,
+            onTap: () => onSelect(BoardFilter.open),
+          ),
+          const SizedBox(width: 8),
+          DiscoveryFilterChip(
+            label: 'Mine',
+            isSelected: current == BoardFilter.mine,
+            onTap: () => onSelect(BoardFilter.mine),
+          ),
+        ],
+      ),
+    );
+  }
 }

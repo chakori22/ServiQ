@@ -35,6 +35,7 @@ class PostState extends Equatable {
     List<PostDetails>? filteredPostDetails,
     bool? postsLoading,
     PostDraft? uploadingDraft,
+
     /// Set when the upload has finished or failed — a null [uploadingDraft]
     /// otherwise means "unchanged", which would leave the banner up forever.
     bool clearUploadingDraft = false,

@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:local_markerplace/dashboard/model/post_details.dart';
 import 'package:local_markerplace/dashboard/model/post_draft.dart';
+import 'package:local_markerplace/dashboard/model/post_offer.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 part 'post_event.dart';
 part 'post_state.dart';
@@ -13,15 +14,50 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<OnFetchPostDetails>(_onFetchPostDetails);
     on<OnStartPostUpload>(_onStartPostUpload);
     on<OnDismissAlertMessage>(_onDismissAlertMessage);
+    on<OnOfferMade>(_onOfferMade);
+    on<OnOfferAccepted>(_onOfferAccepted);
   }
   final DashboardRepository _dashboardRepository;
+
+  /// Bumps the offer count on the post that was offered on. The offer's own
+  /// details live in the offer store; the board only needs the number.
+  void _onOfferMade(OnOfferMade event, Emitter<PostState> emit) {
+    emit(
+      state.copyWith(
+        postDetails: [
+          for (final post in state.postDetails)
+            if (post.key == event.post.key)
+              post.copyWith(acceptCount: post.acceptCount + 1)
+            else
+              post,
+        ],
+      ),
+    );
+  }
+
+  /// Settles a requirement on the offer its owner picked.
+  void _onOfferAccepted(OnOfferAccepted event, Emitter<PostState> emit) {
+    emit(
+      state.copyWith(
+        postDetails: [
+          for (final post in state.postDetails)
+            if (post.key == event.post.key)
+              post.copyWith(isAccepted: true, acceptedBy: event.offer.name)
+            else
+              post,
+        ],
+      ),
+    );
+  }
 
   Future<void> _onFetchPostDetails(
     OnFetchPostDetails event,
     Emitter<PostState> emit,
   ) async {
     emit(state.copyWith(postsLoading: true));
-    final result = await _dashboardRepository.getPostDetails();
+    final result = await _dashboardRepository.getPostDetails(
+      currentUsername: event.currentUsername,
+    );
     result.fold(
       (failure) {
         emit(

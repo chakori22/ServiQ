@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:local_markerplace/core/app_color.dart';
 
-/// Type scale for the discovery, provider and Me screens.
+/// Type scale for the discovery, provider, Me and posts screens.
 ///
 /// The designs set half-point sizes and negative tracking throughout;
 /// collecting the styles here keeps every screen on the same ramp and keeps
@@ -54,6 +54,49 @@ class DiscoveryText {
   /// A zone's name inside the area picker's grouped card.
   static TextStyle get groupTitle =>
       _style(15.5, _extraBold, AppColor.discoveryInk, letterSpacing: -0.155);
+
+  /// A requirement's own headline, on the screen devoted to it.
+  static TextStyle get requirementTitle => _style(
+    23,
+    _extraBold,
+    AppColor.discoveryInk,
+    letterSpacing: -0.46,
+    height: 29 / 23,
+  );
+
+  /// Who made an offer.
+  static TextStyle get offerName =>
+      _style(14, _extraBold, AppColor.discoveryInk, letterSpacing: -0.14);
+
+  /// What they are asking for the job.
+  static TextStyle get offerPrice => _style(
+    17,
+    _extraBold,
+    AppColor.discoveryGradientEnd,
+    letterSpacing: -0.255,
+  );
+
+  /// What they said about it.
+  static TextStyle get offerNote =>
+      _style(12, _medium, AppColor.discoveryInkMuted);
+
+  /// The heading inside an empty panel, e.g. "No offers yet".
+  static TextStyle get emptyTitle =>
+      _style(15, _extraBold, AppColor.discoveryInkMuted, letterSpacing: -0.15);
+
+  /// A requirement's headline on the posts board, which wraps to two lines
+  /// at the design's 20pt leading.
+  static TextStyle get postTitle => _style(
+    15,
+    _extraBold,
+    AppColor.discoveryInk,
+    letterSpacing: -0.15,
+    height: 20 / 15,
+  );
+
+  /// "20 min ago" at the foot of a requirement card.
+  static TextStyle get timestamp =>
+      _style(11.5, _medium, AppColor.discoveryTextDisabled);
 
   /// "Societies" / "Markets".
   static TextStyle get groupHeading =>

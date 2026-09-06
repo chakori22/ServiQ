@@ -1,293 +1,240 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/dashboard/model/your_post.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/components/requirement_card.dart'
+    show scheduledLabel;
+import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
+import 'package:local_markerplace/discovery/presentation/components/status_pill.dart';
 
-/// One of the user's own posts, as shown on the full Your Posts list.
+/// One of the user's own posts, on the full Your Posts list.
 ///
-/// Visually the same card as the dashboard rail's, but owned by this module so
-/// the page can evolve — different actions, a different layout — without
-/// touching the dashboard component.
+/// The same requirement card the public board draws, with two things the
+/// board's has not: the photo the user attached, which is theirs to check,
+/// and the edit and delete actions. Owned by this module rather than shared
+/// with the board, so the two can drift apart as the owner's view grows.
 class YourPostCard extends StatelessWidget {
   const YourPostCard({
     super.key,
     required this.post,
     required this.onToggleExpanded,
+    this.index = 0,
+    this.onEdit,
+    this.onDelete,
   });
 
   final YourPostDetails post;
 
-  /// Fired when the description is tapped, to expand or collapse it.
+  /// Fired when the requirement text is tapped, to expand or collapse it.
   final VoidCallback onToggleExpanded;
+
+  /// Position in the list, which staggers the card's entrance.
+  final int index;
+
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: [
-                  CircleAvatar(backgroundColor: Colors.grey[300], radius: 20),
-                  const SizedBox(width: 8),
-                  Column(
+    return FadeSlideIn(
+      index: index,
+      child: Container(
+        padding: const EdgeInsets.all(14.6),
+        decoration: BoxDecoration(
+          color: AppColor.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: AppColor.discoveryBorder, width: 1.4),
+          boxShadow: [
+            BoxShadow(
+              color: AppColor.discoveryShadow.withValues(alpha: 0.05),
+              blurRadius: 7,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _PostThumbnail(imageUrl: post.imageUrl),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        post.username,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppColor.neutralGreyColor700,
-                          fontSize: 14,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: onToggleExpanded,
+                              child: Text(
+                                post.description,
+                                // Expanded means no limit — a line cap
+                                // cannot be lifted by the overflow mode
+                                // alone, so it has to go to null here.
+                                maxLines: post.isExpanded ? null : 2,
+                                overflow: post.isExpanded
+                                    ? TextOverflow.visible
+                                    : TextOverflow.ellipsis,
+                                style: DiscoveryText.postTitle,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const StatusPill.open(),
+                        ],
                       ),
+                      const SizedBox(height: 6),
                       Text(
-                        timeAgo(post.postedAt),
-                        style: const TextStyle(
-                          color: AppColor.neutralGreyColor600,
-                          fontSize: 12,
-                        ),
+                        _meta(post),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: DiscoveryText.footnoteStrong,
                       ),
                     ],
                   ),
-                ],
-              ),
-              GestureDetector(
-                onTap: () => showYourPostDetailsSheet(
-                  context,
-                  isInstant: post.isInstant,
-                  budgetAmount: post.budgetAmount,
-                  timing: post.scheduledTime ?? DateTime.now(),
                 ),
-                child: const Icon(Icons.more_vert),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Image.asset(
-            post.imageUrl,
-            width: double.infinity,
-            height: 160,
-            fit: BoxFit.cover,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            // Start-aligned so the row keeps its top edge when the description
-            // wraps to several lines.
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Flexible(
-                child: GestureDetector(
-                  onTap: onToggleExpanded,
+              ],
+            ),
+            const SizedBox(height: 14),
+            const Divider(
+              height: 1,
+              thickness: 1,
+              color: AppColor.discoveryBorder,
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
                   child: Text(
-                    post.description,
-                    // Expanded means no limit — a line cap can't be lifted by
-                    // the overflow mode alone, so it has to go to null here.
-                    maxLines: post.isExpanded ? null : 2,
-                    overflow: post.isExpanded
-                        ? TextOverflow.visible
-                        : TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColor.neutralGreyColor700,
-                      fontSize: 14,
-                    ),
+                    post.chatCount == 0
+                        ? 'No offers yet'
+                        : '${post.chatCount} '
+                              '${post.chatCount == 1 ? 'person' : 'people'} '
+                              'responded',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: post.chatCount == 0
+                        ? DiscoveryText.link.copyWith(
+                            color: AppColor.discoveryTextTertiary,
+                          )
+                        : DiscoveryText.link,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.people_alt_outlined,
-                size: 16,
-                color: AppColor.neutralGreyColor700,
-              ),
-              Text(
-                ' ${post.chatCount} people responded',
-                style: const TextStyle(
-                  color: AppColor.neutralGreyColor700,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              _PostAction(icon: Icons.edit_note_outlined, label: 'Edit'),
-              SizedBox(width: 8),
-              _PostAction(icon: Icons.delete_outline, label: 'Delete'),
-            ],
-          ),
-        ],
+                const SizedBox(width: 10),
+                Text(post.timeAgoText, style: DiscoveryText.timestamp),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _PostAction(label: 'Edit', onTap: onEdit),
+                const SizedBox(width: 10),
+                _PostAction(label: 'Delete', isDanger: true, onTap: onDelete),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Edit / Delete action at the foot of a card.
-class _PostAction extends StatelessWidget {
-  const _PostAction({required this.icon, required this.label});
+/// "₹500 · Cash · needed now", the same line the public board carries.
+String _meta(YourPostDetails post) => [
+  '₹${post.budgetAmount.toStringAsFixed(0)}',
+  post.paymentMode,
+  post.isInstant ? 'needed now' : scheduledLabel(post.scheduledTime),
+].join(' · ');
 
-  final IconData icon;
-  final String label;
+/// The photo the user attached, which is a bundled asset for posts from the
+/// API but a file on disk for one this device created.
+class _PostThumbnail extends StatelessWidget {
+  const _PostThumbnail({required this.imageUrl});
+
+  final String imageUrl;
+
+  static const double _size = 56;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 24, color: AppColor.neutralGreyColor700),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: AppColor.neutralGreyColor700,
-            fontWeight: FontWeight.w700,
-            fontSize: 14,
-          ),
-        ),
-      ],
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: SizedBox(
+        width: _size,
+        height: _size,
+        child: imageUrl.isEmpty
+            ? const _ThumbnailPlaceholder()
+            : imageUrl.startsWith('assets/')
+            ? Image.asset(
+                imageUrl,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const _ThumbnailPlaceholder(),
+              )
+            : Image.file(
+                File(imageUrl),
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    const _ThumbnailPlaceholder(),
+              ),
+      ),
     );
   }
 }
 
-/// "15 mins ago" style stamp for a post's header.
-String timeAgo(DateTime postedAt) {
-  final difference = DateTime.now().difference(postedAt);
-
-  if (difference.inSeconds < 60) {
-    return 'Just now';
-  } else if (difference.inMinutes < 60) {
-    return '${difference.inMinutes} mins ago';
-  } else if (difference.inHours < 24) {
-    return '${difference.inHours} hours ago';
-  } else if (difference.inDays < 7) {
-    return '${difference.inDays} days ago';
-  } else if (difference.inDays < 30) {
-    return '${difference.inDays ~/ 7} weeks ago';
-  } else if (difference.inDays < 365) {
-    return '${difference.inDays ~/ 30} months ago';
-  } else {
-    return '${difference.inDays ~/ 365} years ago';
-  }
-}
-
-/// Budget and timing for a post, opened from the card's overflow icon.
-void showYourPostDetailsSheet(
-  BuildContext context, {
-  required bool isInstant,
-  required double budgetAmount,
-  required DateTime timing,
-}) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (BuildContext context) {
-      return Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              'Task Requirements',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-            _DetailRow(
-              icon: Icons.payments_outlined,
-              iconColor: Colors.green,
-              label: 'Budget',
-              value: '₹${budgetAmount.toStringAsFixed(2)}',
-            ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
-            _DetailRow(
-              icon: isInstant ? Icons.flash_on : Icons.schedule,
-              iconColor: Colors.blue,
-              label: 'Timing',
-              value: isInstant
-                  ? 'Instant Service Needed'
-                  : 'Scheduled: ${timing.day}/${timing.month}/${timing.year}, '
-                        '${timing.hour}:${timing.minute.toString().padLeft(2, '0')}',
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-/// One labelled row of the details sheet.
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String value;
+class _ThumbnailPlaceholder extends StatelessWidget {
+  const _ThumbnailPlaceholder();
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.1),
-            shape: BoxShape.circle,
+    return const ColoredBox(
+      color: AppColor.providerMapFill,
+      child: Center(
+        child: Icon(
+          Icons.image_outlined,
+          size: 20,
+          color: AppColor.discoveryTextDisabled,
+        ),
+      ),
+    );
+  }
+}
+
+/// Edit / Delete at the foot of a card, drawn as the flow's small chips.
+class _PostAction extends StatelessWidget {
+  const _PostAction({required this.label, this.onTap, this.isDanger = false});
+
+  final String label;
+  final VoidCallback? onTap;
+  final bool isDanger;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: onTap,
+      pressedScale: 0.92,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isDanger ? AppColor.kycRejectTint : AppColor.providerChipFill,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          label,
+          style: DiscoveryText.addChip.copyWith(
+            color: isDanger
+                ? AppColor.kycRejectText
+                : AppColor.discoveryGradientEnd,
           ),
-          child: Icon(icon, color: iconColor),
         ),
-        const SizedBox(width: 16),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
-            Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
     );
   }
 }

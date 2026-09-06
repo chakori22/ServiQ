@@ -78,10 +78,9 @@ class CartSummaryBar extends StatelessWidget {
               ),
             ),
             ElevatedButton(
-              onPressed: () => GoRouter.of(context).pushAppRoute(
-                AppRoutes.cart,
-                extra: state.selectedServices,
-              ),
+              onPressed: () => GoRouter.of(
+                context,
+              ).pushAppRoute(AppRoutes.cart, extra: state.selectedServices),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColor.indicativeBlueColor400,
                 foregroundColor: AppColor.white,

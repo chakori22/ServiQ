@@ -5,13 +5,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:local_markerplace/components/dropdown.dart';
-import 'package:local_markerplace/components/primary_button.dart';
 import 'package:local_markerplace/components/textfield.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/model/time_slot.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/bloc/create_post_bloc.dart';
+import 'package:local_markerplace/dashboard/model/post_priority.dart';
+import 'package:local_markerplace/dashboard/presentation/create_post/priority/priority_page.dart';
+import 'package:local_markerplace/dashboard/presentation/create_post/components/composer_fields.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
+import 'package:local_markerplace/network/auth_session.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:shimmer/shimmer.dart';
 
 /// "Schedule for Later" form.
@@ -21,20 +27,26 @@ import 'package:shimmer/shimmer.dart';
 /// freehand: choosing a date fetches that day's windows from the API, and the
 /// user picks one of those.
 class ScheduleFormPage extends StatelessWidget {
-  const ScheduleFormPage({super.key});
+  const ScheduleFormPage({super.key, this.localityName});
+
+  /// The area the requirement is for. Travels on so the board the post
+  /// lands on can still name it.
+  final String? localityName;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
           CreatePostBloc(dashboardRepository: const DashboardRepository()),
-      child: const _ScheduleForm(),
+      child: _ScheduleForm(localityName: localityName),
     );
   }
 }
 
 class _ScheduleForm extends StatefulWidget {
-  const _ScheduleForm();
+  const _ScheduleForm({this.localityName});
+
+  final String? localityName;
 
   @override
   State<_ScheduleForm> createState() => _ScheduleFormState();
@@ -115,267 +127,211 @@ class _ScheduleFormState extends State<_ScheduleForm> {
     context.read<CreatePostBloc>().add(OnSelectDate(picked));
   }
 
-  void _showImageSourceSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  Future<void> _showImageSourceSheet() async {
+    final source = await showPhotoSourceSheet(context);
+    if (source == null) return;
+    await _pickImage(source);
+  }
+
+  /// How far the post will be pushed. Presentational for now — nothing
+  /// takes a payment and the choice does not travel with the draft.
+  PostPriority _priority = PostPriority.standard;
+
+  /// The signed-in user's handle, stamped onto whatever they post so the
+  /// board's "Mine" filter can find it again. Null where no session is in
+  /// the tree, and the draft falls back to its own placeholder.
+  String? get _signedInUsername {
+    try {
+      return context.read<AuthSession>().user?.username;
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  Future<void> _pickPriority() async {
+    final chosen = await Navigator.of(context).push<PostPriority>(
+      MaterialPageRoute(
+        builder: (_) => PriorityPage(
+          requirement: _descriptionController.text,
+          selected: _priority,
+        ),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColor.neutralGreyColor300,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Take a photo'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose from gallery'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
     );
+    if (chosen == null || !mounted) return;
+    setState(() => _priority = chosen);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColor.neutralGreyColor60,
-      appBar: AppBar(
-        elevation: 4,
-        automaticallyImplyLeading: false,
-        backgroundColor: AppColor.white,
-        surfaceTintColor: AppColor.white,
-        title: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded),
-              onPressed: () => Navigator.pop(context),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Schedule for Later',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColor.neutralGreyColor700,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: BlocConsumer<CreatePostBloc, CreatePostState>(
-        listenWhen: (previous, current) =>
-            current.errorMessage.isNotEmpty &&
-            previous.errorMessage != current.errorMessage,
-        listener: (context, state) {
-          ScaffoldMessenger.of(context)
-            ..hideCurrentSnackBar()
-            ..showSnackBar(SnackBar(content: Text(state.errorMessage)));
-          context.read<CreatePostBloc>().add(const OnDismissAlertMessage());
-        },
-        builder: (context, state) {
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppDropdownField<String>(
-                    labelText: 'Category',
-                    hintText: 'Select category',
-                    value: state.selectedcategory.isNotEmpty
-                        ? state.selectedcategory
-                        : "Others",
-                    floatingLabel: true,
-                    enabledLabelColor: AppColor.indicativeBlueColor700,
-                    borderColor: AppColor.neutralGreyColor300,
-                    items: state.category.map((category) {
-                      return AppDropdownItem(value: category, label: category);
-                    }).toList(),
-                    onChanged: (value) {
-                      context.read<CreatePostBloc>().add(
-                        OnSelectCategory(value ?? "Others"),
-                      );
-                    },
-                  ),
-                  Visibility(
-                    visible: state.selectedcategory == "Others",
-                    child: const SizedBox(height: 12),
-                  ),
-                  Visibility(
-                    visible: state.selectedcategory == "Others",
-                    child: AppTextField(
-                      labelText: 'If others(please specify)',
-                      floatingLabel: true,
-                      controller: _otherCategoryController,
-                      hintText: 'Enter description',
-                      prefixText: '',
-                      keyboardType: TextInputType.text,
-                      maxLines: 1,
-                      maxLength: 200,
-                      enabledLabelColor: AppColor.indicativeBlueColor700,
-                      borderColor: AppColor.neutralGreyColor300,
-                      onChanged: (value) {
-                        context.read<CreatePostBloc>().add(
-                          OnChangeOtherCategory(value),
-                        );
-                      },
+      backgroundColor: AppColor.white,
+      body: SafeArea(
+        bottom: false,
+        child: BlocConsumer<CreatePostBloc, CreatePostState>(
+          listenWhen: (previous, current) =>
+              current.errorMessage.isNotEmpty &&
+              previous.errorMessage != current.errorMessage,
+          listener: (context, state) {
+            ScaffoldMessenger.of(context)
+              ..hideCurrentSnackBar()
+              ..showSnackBar(SnackBar(content: Text(state.errorMessage)));
+            context.read<CreatePostBloc>().add(const OnDismissAlertMessage());
+          },
+          builder: (context, state) {
+            return Column(
+              children: [
+                const DiscoveryHeader(title: 'Schedule a requirement'),
+                const SizedBox(height: 14),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColor.discoveryBorder,
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ComposerField(
+                          label: 'WHAT DO YOU NEED',
+                          child: AppTextField(
+                            controller: _descriptionController,
+                            hintText: 'Chimney deep clean before Diwali',
+                            keyboardType: TextInputType.text,
+                            maxLines: 4,
+                            maxLength: 200,
+                            fillColor: AppColor.white,
+                            borderColor: AppColor.discoveryBorder,
+                            borderWidth: 1.4,
+                            cornerRadius: 16,
+                            verticalPadding: 14.2,
+                            textStyle: DiscoveryText.fieldInput,
+                            hintStyle: DiscoveryText.searchHint,
+                            onChanged: (value) => context
+                                .read<CreatePostBloc>()
+                                .add(OnChangeDescription(value)),
+                          ),
+                        ),
+                        ComposerField(
+                          label: 'CATEGORY',
+                          child: AppDropdownField<String>(
+                            hintText: 'Pick a category',
+                            fillColor: AppColor.white,
+                            value: state.selectedcategory.isEmpty
+                                ? null
+                                : state.selectedcategory,
+                            borderColor: AppColor.discoveryBorder,
+                            borderWidth: 1.4,
+                            cornerRadius: 16,
+                            items: state.category
+                                .map(
+                                  (category) => AppDropdownItem(
+                                    value: category,
+                                    label: category,
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) => context
+                                .read<CreatePostBloc>()
+                                .add(OnSelectCategory(value ?? '')),
+                          ),
+                        ),
+                        if (state.selectedcategory == 'Others')
+                          ComposerField(
+                            label: 'WHICH TRADE',
+                            child: AppTextField(
+                              controller: _otherCategoryController,
+                              hintText: 'Tell us what you need',
+                              keyboardType: TextInputType.text,
+                              maxLines: 1,
+                              maxLength: 200,
+                              fillColor: AppColor.white,
+                              borderColor: AppColor.discoveryBorder,
+                              borderWidth: 1.4,
+                              cornerRadius: 16,
+                              verticalPadding: 14.2,
+                              textStyle: DiscoveryText.fieldInput,
+                              hintStyle: DiscoveryText.searchHint,
+                              onChanged: (value) => context
+                                  .read<CreatePostBloc>()
+                                  .add(OnChangeOtherCategory(value)),
+                            ),
+                          ),
+                        ComposerField(
+                          label: 'BUDGET',
+                          child: AppTextField(
+                            controller: _budgetController,
+                            hintText: '500',
+                            prefixText: '₹',
+                            keyboardType: TextInputType.number,
+                            maxLines: 1,
+                            maxLength: 20,
+                            fillColor: AppColor.white,
+                            borderColor: AppColor.discoveryBorder,
+                            borderWidth: 1.4,
+                            cornerRadius: 16,
+                            verticalPadding: 14.2,
+                            textStyle: DiscoveryText.fieldInput,
+                            hintStyle: DiscoveryText.searchHint,
+                            onChanged: (value) => context
+                                .read<CreatePostBloc>()
+                                .add(OnChangeBudget(value)),
+                          ),
+                        ),
+                        ComposerField(
+                          label: 'DATE',
+                          child: _DateField(
+                            controller: _dateController,
+                            onTap: () => _pickDate(state.selectedDate),
+                          ),
+                        ),
+                        ComposerField(
+                          label: 'TIME',
+                          child: _TimeSlotSection(state: state),
+                        ),
+                        ComposerField(
+                          label: 'PHOTO',
+                          child: PhotoUploadTile(
+                            image: _pickedImage,
+                            onPick: _showImageSourceSheet,
+                            onRemove: _removeImage,
+                          ),
+                        ),
+                        ComposerField(
+                          label: 'HOW URGENT',
+                          child: PriorityRow(
+                            priority: _priority,
+                            onTap: _pickPriority,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Your number stays hidden until you accept an offer.',
+                          style: DiscoveryText.smallPrint.copyWith(
+                            color: AppColor.discoveryTextTertiary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    labelText: 'Description',
-                    floatingLabel: true,
-                    controller: _descriptionController,
-                    hintText: 'Enter description',
-                    prefixText: '',
-                    keyboardType: TextInputType.text,
-                    maxLines: 4,
-                    maxLength: 200,
-                    enabledLabelColor: AppColor.indicativeBlueColor700,
-                    borderColor: AppColor.neutralGreyColor300,
-                    onChanged: (value) {
-                      context.read<CreatePostBloc>().add(
-                        OnChangeDescription(value),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    labelText: 'Budget',
-                    floatingLabel: true,
-                    controller: _budgetController,
-                    hintText: 'Enter budget',
-                    prefixText: '₹',
-                    keyboardType: TextInputType.number,
-                    maxLines: 1,
-                    maxLength: 20,
-                    enabledLabelColor: AppColor.indicativeBlueColor700,
-                    borderColor: AppColor.neutralGreyColor300,
-                    onChanged: (value) {
-                      context.read<CreatePostBloc>().add(OnChangeBudget(value));
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _DateField(
-                    controller: _dateController,
-                    onTap: () => _pickDate(state.selectedDate),
-                  ),
-                  const SizedBox(height: 20),
-                  _TimeSlotSection(state: state),
-                  const SizedBox(height: 20),
-                  _buildPhotosSection(),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-      bottomNavigationBar: BlocBuilder<CreatePostBloc, CreatePostState>(
-        builder: (context, state) => _buildBottomBar(context, state),
-      ),
-    );
-  }
-
-  /// Fixed Post button, pinned to the bottom of the screen regardless of
-  /// scroll position. SafeArea keeps it clear of the home indicator on
-  /// devices with a gesture bar.
-  Widget _buildBottomBar(BuildContext context, CreatePostState state) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: PrimaryButton(
-          label: "Share",
-          enabled: state.isScheduleFormValid,
-          onPressed: () {
-            // The upload belongs to the posts page, not this form: sharing
-            // replaces the form with the feed, which shows the post's
-            // progress banner while it uploads.
-            GoRouter.of(context).pushReplacementAppRoute(
-              AppRoutes.posts,
-              extra: state.toDraft(isInstant: false),
+                ),
+              ],
             );
           },
         ),
       ),
-    );
-  }
-
-  Widget _buildPhotosSection() {
-    return _FloatingLabelBox(
-      label: 'Photo',
-      child: SizedBox(
-        width: double.infinity,
-        height: 90,
-        child: _pickedImage == null
-            ? GestureDetector(
-                onTap: _showImageSourceSheet,
-                behavior: HitTestBehavior.opaque,
-                child: const Icon(
-                  Icons.add_a_photo_outlined,
-                  color: AppColor.neutralGreyColor700,
-                ),
-              )
-            : Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.file(_pickedImage!, fit: BoxFit.cover),
-                  Positioned(
-                    top: 4,
-                    right: 4,
-                    child: GestureDetector(
-                      onTap: _removeImage,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: Colors.black87,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.close,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+      bottomNavigationBar: BlocBuilder<CreatePostBloc, CreatePostState>(
+        builder: (context, state) => ComposerFooter(
+          enabled: state.isScheduleFormValid,
+          // The upload belongs to the posts page, not this form: posting
+          // replaces the form with the board, which shows the post's
+          // progress banner while it uploads.
+          onPost: () => GoRouter.of(context).pushReplacementAppRoute(
+            AppRoutes.posts,
+            extra: state.toDraft(isInstant: false, username: _signedInUsername),
+          ),
+        ),
       ),
     );
   }
@@ -399,15 +355,18 @@ class _DateField extends StatelessWidget {
       child: AbsorbPointer(
         child: AppTextField(
           controller: controller,
-          labelText: 'Date',
           hintText: 'Select date',
-          floatingLabel: true,
-          enabledLabelColor: AppColor.indicativeBlueColor700,
-          borderColor: AppColor.neutralGreyColor300,
+          fillColor: AppColor.white,
+          borderColor: AppColor.discoveryBorder,
+          borderWidth: 1.4,
+          cornerRadius: 16,
+          verticalPadding: 14.2,
+          textStyle: DiscoveryText.fieldInput,
+          hintStyle: DiscoveryText.searchHint,
           suffixIcon: const Icon(
             Icons.calendar_month_rounded,
             size: 20,
-            color: AppColor.neutralGreyColor500,
+            color: AppColor.discoveryTextTertiary,
           ),
         ),
       ),
@@ -445,59 +404,6 @@ String formatScheduleDate(DateTime date) {
   return '$weekday, ${date.day} ${_months[date.month - 1]} ${date.year}';
 }
 
-/// A field-styled box with a floating label notched into its border, matching
-/// [AppTextField]'s outlined look for content that isn't a text field.
-class _FloatingLabelBox extends StatelessWidget {
-  const _FloatingLabelBox({required this.label, required this.child});
-
-  final String label;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Container(
-          // Full width so the box lines up with the text fields above it
-          // rather than shrinking to fit its content.
-          width: double.infinity,
-          // Top margin leaves room for the label notch, exactly as the
-          // shared text field does.
-          margin: const EdgeInsets.only(top: 10),
-          decoration: BoxDecoration(
-            color: AppColor.neutralGreyColor60,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColor.neutralGreyColor300),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: child,
-        ),
-        Positioned(
-          left: 16,
-          top: 0,
-          child: Container(
-            // Page-coloured background cuts the notch out of the border line.
-            color: Theme.of(context).scaffoldBackgroundColor,
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              label,
-              softWrap: false,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColor.indicativeBlueColor700,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// The day's bookable windows, in whichever of its four states applies: no
 /// date chosen yet, loading, nothing left on that day, or the choices.
 ///
@@ -510,12 +416,15 @@ class _TimeSlotSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _FloatingLabelBox(
-      label: 'Time',
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: _buildContent(context),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColor.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColor.discoveryBorder, width: 1.4),
       ),
+      child: _buildContent(context),
     );
   }
 

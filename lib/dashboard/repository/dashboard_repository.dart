@@ -15,80 +15,105 @@ class DashboardRepository {
     return mobileNumber.isNotEmpty;
   }
 
-  Future<Either<Failure, List<PostDetails>>> getPostDetails() async {
+  Future<Either<Failure, List<PostDetails>>> getPostDetails({
+    String? currentUsername,
+  }) async {
     // TODO: replace with a real API call (e.g. GET /posts).
     await Future.delayed(const Duration(seconds: 1));
 
+    // The board is the one screen where the states have to be visible side
+    // by side — open with offers, open with none, and already settled — so
+    // the seed carries one of each rather than five of the same. Three are
+    // posted by the same handle, which is what the "Mine" filter matches
+    // against once somebody is signed in as them.
+    final now = DateTime.now();
+
+    // Three of these are the seeker's own, so the board's "Mine" chip shows
+    // the same spread of states the full board does — one taking offers,
+    // one settled, one still waiting. A real endpoint would say who owns
+    // what; until then they follow whoever is signed in.
+    final me = currentUsername?.trim().isNotEmpty ?? false
+        ? currentUsername!.trim()
+        : 'chakorichaturvedi';
+
     final post = [
       PostDetails(
-        username: 'chakorichaturvedi',
+        username: me,
         userAvatarUrl: 'assets/images/avatar1.png',
-        postedAt: DateTime(2026, 1, 1),
+        postedAt: now.subtract(const Duration(minutes: 20)),
         imageUrl: 'assets/images/marketplace.png',
         description:
-            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash. Should take about an hour.',
-        budgetAmount: 500,
+            'AC not cooling, makes noise. Split AC in the bedroom is running '
+            'but not cooling, and there is a rattling sound from the outdoor '
+            'unit. Bought in 2023, last serviced a year ago.',
+        budgetAmount: 1500,
         paymentMode: 'Cash',
         isInstant: true,
-        scheduledTime: DateTime.now(),
+        scheduledTime: null,
         acceptCount: 3,
         chatCount: 2,
       ),
       PostDetails(
         username: 'rahul_verma',
         userAvatarUrl: 'assets/images/avatar2.png',
-        postedAt: DateTime(2026, 4, 26),
-        imageUrl: 'assets/images/marketplace.png',
+        postedAt: now.subtract(const Duration(hours: 2)),
+        imageUrl: 'assets/images/marketplace2.png',
         description:
-            'Need help assembling a new wardrobe delivered yesterday. Should take about an hour.',
-        budgetAmount: 350,
+            'Chimney deep clean before Diwali. Kitchen chimney has not been '
+            'serviced in two years and the suction has dropped.',
+        budgetAmount: 800,
         paymentMode: 'UPI',
         isInstant: false,
-        scheduledTime: DateTime.now().add(const Duration(hours: 4)),
+        scheduledTime: now.add(const Duration(days: 3)),
+        acceptCount: 0,
+        chatCount: 0,
+      ),
+      PostDetails(
+        username: me,
+        userAvatarUrl: 'assets/images/avatar1.png',
+        postedAt: now.subtract(const Duration(days: 1)),
+        imageUrl: 'assets/images/marketplace.png',
+        description:
+            'Need a carpenter for wardrobe repair. One of the sliding doors '
+            'has come off its runner and does not close.',
+        budgetAmount: 1200,
+        paymentMode: 'Cash',
+        isInstant: false,
+        scheduledTime: now.add(const Duration(days: 1)),
+        acceptCount: 2,
+        chatCount: 1,
+        isAccepted: true,
+        acceptedBy: 'Sharma Carpentry',
+      ),
+      PostDetails(
+        username: 'neha_s',
+        userAvatarUrl: 'assets/images/avatar2.png',
+        postedAt: now.subtract(const Duration(days: 1, hours: 4)),
+        imageUrl: 'assets/images/marketplace2.png',
+        description:
+            'RO service, water tastes off. Filters were last changed around '
+            'eight months ago.',
+        budgetAmount: 800,
+        paymentMode: 'UPI',
+        isInstant: true,
+        scheduledTime: null,
         acceptCount: 1,
         chatCount: 0,
       ),
       PostDetails(
-        username: 'chakorichaturvedi',
+        username: me,
         userAvatarUrl: 'assets/images/avatar1.png',
-        postedAt: DateTime(2026, 9, 20),
+        postedAt: now.subtract(const Duration(hours: 5)),
         imageUrl: 'assets/images/marketplace.png',
         description:
-            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash.',
-        budgetAmount: 500,
+            'Washing machine not draining. It fills and spins but the water '
+            'stays in the drum at the end of the cycle.',
+        budgetAmount: 600,
         paymentMode: 'Cash',
         isInstant: true,
-        scheduledTime: DateTime(2026, 9, 21),
-        acceptCount: 3,
-        chatCount: 2,
-      ),
-      PostDetails(
-        username: 'chakorichaturvedi',
-        userAvatarUrl: 'assets/images/avatar1.png',
-        postedAt: DateTime(2026, 1, 3),
-        imageUrl: 'assets/images/marketplace.png',
-        description:
-            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash.',
-        budgetAmount: 500,
-        paymentMode: 'Cash',
-        isInstant: true,
-        scheduledTime: DateTime(2026, 1, 4),
-        acceptCount: 3,
-        chatCount: 2,
-      ),
-      PostDetails(
-        username: 'chakorichaturvedi',
-        userAvatarUrl: 'assets/images/avatar1.png',
-        postedAt: DateTime(2026, 1, 4),
-        imageUrl: 'assets/images/marketplace.png',
-        description:
-            'Kitchen sink is leaking from underneath, need someone today to come fix the pipe. Will pay in cash.',
-        budgetAmount: 500,
-        paymentMode: 'Cash',
-        isInstant: false,
-        scheduledTime: DateTime(2026, 1, 5),
-        acceptCount: 3,
-        chatCount: 2,
+        scheduledTime: null,
+        acceptCount: 0,
+        chatCount: 0,
       ),
     ];
     return Right(post);

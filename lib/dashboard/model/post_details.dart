@@ -34,6 +34,10 @@ class PostDetails {
   final int acceptCount;
   final bool isAccepted;
 
+  /// Who the job went to, once [isAccepted]. Null while it is still open, and
+  /// on an accepted post whose provider is not known.
+  final String? acceptedBy;
+
   /// Number of chat messages / replies on this post
   final int chatCount;
 
@@ -53,17 +57,34 @@ class PostDetails {
     required this.chatCount,
     this.isExpanded = false,
     this.isAccepted = false,
+    this.acceptedBy,
   });
+
+  /// Identifies this post for the session's in-memory stores.
+  ///
+  /// The API's payload carries no id yet, so this stands in: an author plus
+  /// the instant they posted plus what they wrote is unique in practice, and
+  /// it survives the list being rebuilt.
+  String get key => '$username|${postedAt.toIso8601String()}|$description';
+
+  /// Whether [handle] is the person who posted this. An empty handle — no
+  /// session — owns nothing.
+  bool isPostedBy(String? handle) =>
+      handle != null && handle.isNotEmpty && handle == username;
 
   /// Human-readable "time ago" string for the post card header,
   /// e.g. "15 mins ago", "2 hours ago", "3 days ago".
   String get timeAgoText {
     final Duration diff = DateTime.now().difference(postedAt);
     if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inMinutes < 60) return '${diff.inMinutes} mins ago';
-    if (diff.inHours < 24) return '${diff.inHours} hours ago';
-    return '${diff.inDays} days ago';
+    if (diff.inMinutes < 60) return _ago(diff.inMinutes, 'min');
+    if (diff.inHours < 24) return _ago(diff.inHours, 'hour');
+    return _ago(diff.inDays, 'day');
   }
+
+  /// "1 day ago" / "3 days ago" — the count with its unit pluralised.
+  static String _ago(int count, String unit) =>
+      '$count $unit${count == 1 ? '' : 's'} ago';
 
   /// Formatted budget string for display, e.g. "₹500 (Cash)"
   String get budgetText => '₹${budgetAmount.toStringAsFixed(0)} ($paymentMode)';
@@ -97,6 +118,7 @@ class PostDetails {
       chatCount: json['chatCount'] as int,
       isExpanded: json['isExpanded'] as bool? ?? false,
       isAccepted: json['isAccepted'] as bool? ?? false,
+      acceptedBy: json['acceptedBy'] as String?,
     );
   }
 
@@ -115,6 +137,7 @@ class PostDetails {
       'chatCount': chatCount,
       'isExpanded': isExpanded,
       'isAccepted': isAccepted,
+      'acceptedBy': acceptedBy,
     };
   }
 
@@ -132,6 +155,7 @@ class PostDetails {
     int? chatCount,
     bool? isExpanded,
     bool? isAccepted,
+    String? acceptedBy,
   }) {
     return PostDetails(
       username: username ?? this.username,
@@ -147,6 +171,7 @@ class PostDetails {
       chatCount: chatCount ?? this.chatCount,
       isExpanded: isExpanded ?? this.isExpanded,
       isAccepted: isAccepted ?? this.isAccepted,
+      acceptedBy: acceptedBy ?? this.acceptedBy,
     );
   }
 }

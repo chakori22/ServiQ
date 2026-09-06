@@ -77,7 +77,12 @@ List<RouteBase> createRoutes() {
     ),
     GoRoute(
       path: AppRoutes.instantForm.path,
-      builder: (context, state) => const InstantFormPage(),
+      // The area travels so a posted requirement lands back on its own
+      // board rather than on a nameless one.
+      builder: (context, state) {
+        final extra = state.extra;
+        return InstantFormPage(localityName: extra is String ? extra : null);
+      },
       name: AppRoutes.instantForm.name,
     ),
     GoRoute(
@@ -111,12 +116,17 @@ List<RouteBase> createRoutes() {
     ),
     GoRoute(
       path: AppRoutes.posts.path,
-      // Reached either from the home rail, with nothing extra, or straight
-      // from a create-post form, which hands over the post the user just
-      // shared so this page can run the upload and show its progress.
+      // Everything the board can be opened with travels in one [PostsArgs]:
+      // a freshly shared post to upload, the area it belongs to, and which
+      // chip to open on. A deep link arrives with none of them.
       builder: (context, state) {
-        final extra = state.extra;
-        return PostPage(uploadingDraft: extra is PostDraft ? extra : null);
+        final args = state.extra;
+        if (args is! PostsArgs) return const PostPage();
+        return PostPage(
+          uploadingDraft: args.draft,
+          localityName: args.localityName,
+          initialFilter: args.initialFilter,
+        );
       },
       name: AppRoutes.posts.name,
     ),
@@ -175,8 +185,14 @@ extension GoRouterExt on GoRouter {
     }
   }
 
-  void pushAppRoute(AppRoutes routeName, {Object? extra}) {
-    pushNamed(routeName.name, extra: extra);
+  /// Pushes [routeName], and hands back whatever the pushed screen pops
+  /// with. The posts board uses that to tell discovery which tab to show
+  /// when its tab bar is used to leave.
+  Future<T?> pushAppRoute<T extends Object?>(
+    AppRoutes routeName, {
+    Object? extra,
+  }) {
+    return pushNamed<T>(routeName.name, extra: extra);
   }
 
   /// Replaces the whole stack with [routeName]. Used after sign-in and

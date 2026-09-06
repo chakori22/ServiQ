@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/dashboard/model/post_draft.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 
 /// The strip that sits above the feed while a post is being uploaded.
 ///
@@ -26,19 +27,17 @@ class PostUploadBanner extends StatelessWidget {
   final String progressText;
 
   /// Height of the thumbnail; the width keeps a portrait 3:4 crop.
-  static const double _thumbnailHeight = 64;
+  static const double _thumbnailHeight = 56;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       // Extra room up top so the banner reads as its own strip rather than
       // running straight into the app bar, which shares its background.
-      padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
       decoration: const BoxDecoration(
-        //color: AppColor.indicativeBlueColor50,
-        border: Border(
-          bottom: BorderSide(color: AppColor.neutralGreyColor100),
-        ),
+        color: AppColor.discoveryTint,
+        border: Border(bottom: BorderSide(color: AppColor.discoveryBorder)),
       ),
       child: Row(
         children: [
@@ -53,11 +52,7 @@ class PostUploadBanner extends StatelessWidget {
                   'Keep ServiQ open to finish posting  •  $progressText',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColor.neutralGreyColor600,
-                  ),
+                  style: DiscoveryText.footnoteStrong,
                 ),
                 const SizedBox(height: 10),
                 _ProgressBar(progress: progress),
@@ -82,7 +77,7 @@ class _Thumbnail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: SizedBox(
         width: height * 3 / 4,
         height: height,
@@ -105,11 +100,11 @@ class _ThumbnailPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColor.neutralGreyColor100,
+      color: AppColor.providerMapFill,
       child: const Icon(
         Icons.image_outlined,
         size: 20,
-        color: AppColor.neutralGreyColor400,
+        color: AppColor.discoveryTextDisabled,
       ),
     );
   }
@@ -135,7 +130,7 @@ class _ProgressBar extends StatelessWidget {
         width: double.infinity,
         child: Stack(
           children: [
-            Container(color: AppColor.neutralGreyColor100),
+            Container(color: AppColor.discoveryClearFill),
             TweenAnimationBuilder<double>(
               tween: Tween<double>(begin: 0, end: progress.clamp(0.0, 1.0)),
               duration: const Duration(milliseconds: 200),
@@ -154,9 +149,8 @@ class _ProgressBar extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColor.indicativeBlueColor500,
-                        AppColor.indicativePurpleColor500,
-                        AppColor.accentColor,
+                        AppColor.discoveryGradientStart,
+                        AppColor.discoveryGradientEnd,
                       ],
                     ),
                   ),

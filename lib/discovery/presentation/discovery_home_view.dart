@@ -13,6 +13,8 @@ import 'package:local_markerplace/discovery/presentation/components/pending_book
 import 'package:local_markerplace/discovery/presentation/components/provider_card.dart';
 import 'package:local_markerplace/discovery/presentation/components/section_header.dart';
 import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
+import 'package:local_markerplace/notifications/presentation/notifications_sheet.dart';
+import 'package:local_markerplace/notifications/repository/notification_repository.dart';
 
 /// 02 · Home — the seeker's starting point: where they are, what they can
 /// search for, the trades on offer and who is working nearby.
@@ -67,8 +69,9 @@ class DiscoveryHomeView extends StatelessWidget {
               HomeHeader(
                 localityName: localityName,
                 onChangeLocality: onChangeLocality,
+                onNotifications: () => showNotificationsSheet(context),
                 unreadChats: 2,
-                unreadNotifications: 3,
+                unreadNotifications: NotificationRepository.shared.unreadCount,
               ),
               const SizedBox(height: 14),
               FadeSlideIn(

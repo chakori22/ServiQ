@@ -69,8 +69,10 @@ class _ShimmerRail extends StatelessWidget {
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 4),
           itemCount: itemCount,
-          itemBuilder: (context, index) =>
-              SizedBox(width: itemWidth, child: ShimmerCardBox(padding: itemPadding)),
+          itemBuilder: (context, index) => SizedBox(
+            width: itemWidth,
+            child: ShimmerCardBox(padding: itemPadding),
+          ),
         ),
       ),
     );
@@ -159,55 +161,96 @@ class YourPostListShimmer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DashboardShimmer(
-      child: ListView.builder(
+      child: ListView.separated(
         physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
         itemCount: itemCount,
-        itemBuilder: (context, index) => const _YourPostSkeleton(),
+        separatorBuilder: (_, _) => const SizedBox(height: 14),
+        itemBuilder: (context, index) =>
+            const _RequirementSkeleton(hasActions: true),
       ),
     );
   }
 }
 
-class _YourPostSkeleton extends StatelessWidget {
-  const _YourPostSkeleton();
+/// Placeholder for the posts board, which stacks the same requirement cards
+/// without the owner's edit and delete actions.
+class RequirementBoardShimmer extends StatelessWidget {
+  const RequirementBoardShimmer({super.key, this.itemCount = 4});
+
+  final int itemCount;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    return DashboardShimmer(
+      child: ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+        itemCount: itemCount,
+        separatorBuilder: (_, _) => const SizedBox(height: 14),
+        itemBuilder: (context, index) => const _RequirementSkeleton(),
+      ),
+    );
+  }
+}
+
+/// One requirement card, drawn as blank bars.
+///
+/// Kept to the real card's radius, padding and rhythm so nothing jumps when
+/// the posts land.
+class _RequirementSkeleton extends StatelessWidget {
+  const _RequirementSkeleton({this.hasActions = false});
+
+  /// Your Posts adds an Edit / Delete row under the footer.
+  final bool hasActions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14.6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const CircleAvatar(radius: 20, backgroundColor: Colors.white),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  _ShimmerLine(width: 120, height: 12),
-                  SizedBox(height: 6),
-                  _ShimmerLine(width: 80, height: 10),
-                ],
+              const Expanded(child: _ShimmerLine(width: 200, height: 15)),
+              const SizedBox(width: 10),
+              Container(
+                width: 60,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            height: 160,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
+          const SizedBox(height: 12),
+          const _ShimmerLine(width: 180, height: 12),
+          const SizedBox(height: 18),
+          const _ShimmerLine(width: double.infinity, height: 1),
+          const SizedBox(height: 12),
+          const Row(
+            children: [
+              _ShimmerLine(width: 70, height: 12),
+              Spacer(),
+              _ShimmerLine(width: 60, height: 11),
+            ],
           ),
-          const SizedBox(height: 12),
-          const _ShimmerLine(width: double.infinity, height: 12),
-          const SizedBox(height: 6),
-          const _ShimmerLine(width: 220, height: 12),
-          const SizedBox(height: 12),
-          const _ShimmerLine(width: 160, height: 12),
+          if (hasActions) ...[
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                _ShimmerLine(width: 62, height: 30),
+                SizedBox(width: 10),
+                _ShimmerLine(width: 74, height: 30),
+              ],
+            ),
+          ],
         ],
       ),
     );

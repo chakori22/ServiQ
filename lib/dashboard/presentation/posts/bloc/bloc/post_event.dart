@@ -5,10 +5,15 @@ sealed class PostEvent extends Equatable {
 }
 
 final class OnFetchPostDetails extends PostEvent {
-  const OnFetchPostDetails();
+  const OnFetchPostDetails({this.currentUsername});
+
+  /// The signed-in user's handle. The stub repository puts a few of its
+  /// requirements under it so the board's "Mine" chip has something to show
+  /// whoever is looking; a real endpoint would return them already owned.
+  final String? currentUsername;
 
   @override
-  List<Object> get props => [];
+  List<Object> get props => [currentUsername ?? ''];
 }
 
 /// The user tapped "Share" on one of the create-post forms. The posts page
@@ -30,4 +35,27 @@ final class OnDismissAlertMessage extends PostEvent {
 
   @override
   List<Object> get props => [];
+}
+
+/// Somebody offered on a requirement from this device. Only the count lives
+/// on the post; the offer itself goes to the offer store.
+final class OnOfferMade extends PostEvent {
+  final PostDetails post;
+
+  const OnOfferMade(this.post);
+
+  @override
+  List<Object> get props => [post.key];
+}
+
+/// The seeker who posted a requirement took one of its offers. Nobody else
+/// can raise this — the screen only offers the action on your own post.
+final class OnOfferAccepted extends PostEvent {
+  final PostDetails post;
+  final PostOffer offer;
+
+  const OnOfferAccepted(this.post, this.offer);
+
+  @override
+  List<Object> get props => [post.key, offer];
 }

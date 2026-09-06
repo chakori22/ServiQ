@@ -1,9 +1,9 @@
 import 'package:equatable/equatable.dart';
 import 'package:local_markerplace/dashboard/model/post_details.dart';
 
-/// Username stamped on posts this device creates.
-///
-/// TODO: read the signed-in user from the session once auth is wired up.
+/// Stands in for the author where no session is available — a preview, or a
+/// widget test pumping a form on its own. The real app passes the signed-in
+/// handle through [PostDraft.username] instead.
 const String kCurrentUsername = 'chakorichaturvedi';
 
 /// A post the user has finished filling in on one of the create-post forms
@@ -31,6 +31,10 @@ class PostDraft extends Equatable {
   /// Start of the booked window; null on instant posts.
   final DateTime? scheduledTime;
 
+  /// The signed-in user's handle, stamped so the board can tell the seeker's
+  /// own requirements from everybody else's.
+  final String username;
+
   const PostDraft({
     required this.category,
     required this.description,
@@ -38,6 +42,7 @@ class PostDraft extends Equatable {
     required this.imagePath,
     required this.isInstant,
     this.scheduledTime,
+    this.username = kCurrentUsername,
   });
 
   double get budgetAmount => double.tryParse(budget.trim()) ?? 0;
@@ -45,7 +50,7 @@ class PostDraft extends Equatable {
   /// The feed entry this draft becomes once the upload finishes.
   PostDetails toPostDetails() {
     return PostDetails(
-      username: kCurrentUsername,
+      username: username,
       userAvatarUrl: '',
       postedAt: DateTime.now(),
       imageUrl: imagePath,

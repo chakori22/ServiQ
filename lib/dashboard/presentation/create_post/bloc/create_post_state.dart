@@ -111,8 +111,9 @@ class CreatePostState extends Equatable {
   /// [isInstant] is what separates the two forms: the scheduled one also
   /// carries the start of the window the user picked, while an instant post
   /// has no timing of its own.
-  PostDraft toDraft({required bool isInstant}) {
+  PostDraft toDraft({required bool isInstant, String? username}) {
     return PostDraft(
+      username: username ?? kCurrentUsername,
       category: selectedcategory == 'Others'
           ? otherCategory.trim()
           : selectedcategory,

@@ -4,29 +4,44 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+
+import 'package:local_markerplace/components/dropdown.dart';
+import 'package:local_markerplace/components/motion/entrance.dart';
+import 'package:local_markerplace/components/textfield.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
-import 'package:local_markerplace/components/dropdown.dart';
-import 'package:local_markerplace/components/primary_button.dart';
-import 'package:local_markerplace/components/textfield.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/bloc/create_post_bloc.dart';
+import 'package:local_markerplace/dashboard/model/post_priority.dart';
+import 'package:local_markerplace/dashboard/presentation/create_post/priority/priority_page.dart';
+import 'package:local_markerplace/dashboard/presentation/create_post/components/composer_fields.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
+import 'package:local_markerplace/network/auth_session.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 
+/// 09 · 02 — the composer. The only screen that creates supply.
 class InstantFormPage extends StatelessWidget {
-  const InstantFormPage({super.key});
+  const InstantFormPage({super.key, this.localityName});
+
+  /// The area the requirement is for. Travels on so the board the post
+  /// lands on can still name it.
+  final String? localityName;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (_) =>
           CreatePostBloc(dashboardRepository: const DashboardRepository()),
-      child: const _InstantForm(),
+      child: _InstantForm(localityName: localityName),
     );
   }
 }
 
 class _InstantForm extends StatefulWidget {
-  const _InstantForm();
+  const _InstantForm({this.localityName});
+
+  final String? localityName;
 
   @override
   State<_InstantForm> createState() => _InstantFormState();
@@ -65,301 +80,218 @@ class _InstantFormState extends State<_InstantForm> {
       maxWidth: 1600,
     );
 
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
 
-    setState(() {
-      _pickedImage = File(picked.path);
-    });
+    setState(() => _pickedImage = File(picked.path));
     context.read<CreatePostBloc>().add(OnChangeImage(picked.path));
   }
 
   void _removeImage() {
-    setState(() {
-      _pickedImage = null;
-    });
+    setState(() => _pickedImage = null);
     context.read<CreatePostBloc>().add(const OnChangeImage(''));
   }
 
-  void _showImageSourceSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  /// How far the post will be pushed. Presentational for now — nothing
+  /// takes a payment and the choice does not travel with the draft.
+  PostPriority _priority = PostPriority.standard;
+
+  /// The signed-in user's handle, stamped onto whatever they post so the
+  /// board's "Mine" filter can find it again. Null where no session is in
+  /// the tree, and the draft falls back to its own placeholder.
+  String? get _signedInUsername {
+    try {
+      return context.read<AuthSession>().user?.username;
+    } on ProviderNotFoundException {
+      return null;
+    }
+  }
+
+  Future<void> _pickPriority() async {
+    final chosen = await Navigator.of(context).push<PostPriority>(
+      MaterialPageRoute(
+        builder: (_) => PriorityPage(
+          requirement: _descriptionController.text,
+          selected: _priority,
+        ),
       ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColor.neutralGreyColor300,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Take a photo'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.camera);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Choose from gallery'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickImage(ImageSource.gallery);
-                },
-              ),
-              const SizedBox(height: 8),
-            ],
-          ),
-        );
-      },
     );
+    if (chosen == null || !mounted) return;
+    setState(() => _priority = chosen);
+  }
+
+  Future<void> _showImageSourceSheet() async {
+    final source = await showPhotoSourceSheet(context);
+    if (source == null) return;
+    await _pickImage(source);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColor.neutralGreyColor60,
-      appBar: AppBar(
-        elevation: 4,
-        animateColor: true,
-        automaticallyImplyLeading: false,
-        backgroundColor: AppColor.white,
-        surfaceTintColor: AppColor.white,
-        title: Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              'Instant Service',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColor.neutralGreyColor700,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: BlocConsumer<CreatePostBloc, CreatePostState>(
-        listener: (context, state) {
-          // TODO: implement listener
-        },
-        builder: (context, state) {
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AppDropdownField<String>(
-                    labelText: 'Category',
-                    hintText: 'Select category',
-                    value: state.selectedcategory.isNotEmpty
-                        ? state.selectedcategory
-                        : "Others",
-                    floatingLabel: true,
-                    enabledLabelColor: AppColor.indicativeBlueColor700,
-                    borderColor: AppColor.neutralGreyColor300,
-                    items: state.category.map((category) {
-                      return AppDropdownItem(value: category, label: category);
-                    }).toList(),
-                    onChanged: (value) {
-                      context.read<CreatePostBloc>().add(
-                        OnSelectCategory(value ?? "Others"),
-                      );
-                    },
-                  ),
-                  Visibility(
-                    visible: state.selectedcategory == "Others",
-                    child: const SizedBox(height: 12),
-                  ),
-                  Visibility(
-                    visible: state.selectedcategory == "Others",
-                    child: AppTextField(
-                      labelText: 'If others(please specify)',
-                      floatingLabel: true,
-                      controller: _otherCategoryController,
-                      hintText: 'Enter description',
-                      prefixText: '',
-                      keyboardType: TextInputType.text,
-                      maxLines: 1,
-                      maxLength: 200,
-                      enabledLabelColor: AppColor.indicativeBlueColor700,
-                      borderColor: AppColor.neutralGreyColor300,
-                      onChanged: (value) {
-                        context.read<CreatePostBloc>().add(
-                          OnChangeOtherCategory(value),
-                        );
-                      },
+      backgroundColor: AppColor.white,
+      body: SafeArea(
+        bottom: false,
+        child: BlocBuilder<CreatePostBloc, CreatePostState>(
+          builder: (context, state) {
+            return Column(
+              children: [
+                const DiscoveryHeader(title: 'Post a requirement'),
+                const SizedBox(height: 14),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColor.discoveryBorder,
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        FadeSlideIn(
+                          child: ComposerField(
+                            label: 'WHAT DO YOU NEED',
+                            child: AppTextField(
+                              controller: _descriptionController,
+                              hintText: 'AC not cooling, makes noise',
+                              keyboardType: TextInputType.text,
+                              maxLines: 4,
+                              maxLength: 200,
+                              fillColor: AppColor.white,
+                              borderColor: AppColor.discoveryBorder,
+                              borderWidth: 1.4,
+                              cornerRadius: 16,
+                              verticalPadding: 14.2,
+                              textStyle: DiscoveryText.fieldInput,
+                              hintStyle: DiscoveryText.searchHint,
+                              onChanged: (value) => context
+                                  .read<CreatePostBloc>()
+                                  .add(OnChangeDescription(value)),
+                            ),
+                          ),
+                        ),
+                        FadeSlideIn(
+                          index: 1,
+                          child: ComposerField(
+                            label: 'CATEGORY',
+                            child: AppDropdownField<String>(
+                              hintText: 'Pick a category',
+                              fillColor: AppColor.white,
+                              value: state.selectedcategory.isEmpty
+                                  ? null
+                                  : state.selectedcategory,
+                              borderColor: AppColor.discoveryBorder,
+                              borderWidth: 1.4,
+                              cornerRadius: 16,
+                              items: state.category
+                                  .map(
+                                    (category) => AppDropdownItem(
+                                      value: category,
+                                      label: category,
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) => context
+                                  .read<CreatePostBloc>()
+                                  .add(OnSelectCategory(value ?? '')),
+                            ),
+                          ),
+                        ),
+                        if (state.selectedcategory == 'Others')
+                          ComposerField(
+                            label: 'WHICH TRADE',
+                            child: AppTextField(
+                              controller: _otherCategoryController,
+                              hintText: 'Tell us what you need',
+                              keyboardType: TextInputType.text,
+                              maxLines: 1,
+                              maxLength: 200,
+                              fillColor: AppColor.white,
+                              borderColor: AppColor.discoveryBorder,
+                              borderWidth: 1.4,
+                              cornerRadius: 16,
+                              verticalPadding: 14.2,
+                              textStyle: DiscoveryText.fieldInput,
+                              hintStyle: DiscoveryText.searchHint,
+                              onChanged: (value) => context
+                                  .read<CreatePostBloc>()
+                                  .add(OnChangeOtherCategory(value)),
+                            ),
+                          ),
+                        FadeSlideIn(
+                          index: 2,
+                          child: ComposerField(
+                            label: 'BUDGET',
+                            child: AppTextField(
+                              controller: _budgetController,
+                              hintText: '500',
+                              prefixText: '₹',
+                              keyboardType: TextInputType.number,
+                              maxLines: 1,
+                              maxLength: 20,
+                              fillColor: AppColor.white,
+                              borderColor: AppColor.discoveryBorder,
+                              borderWidth: 1.4,
+                              cornerRadius: 16,
+                              verticalPadding: 14.2,
+                              textStyle: DiscoveryText.fieldInput,
+                              hintStyle: DiscoveryText.searchHint,
+                              onChanged: (value) => context
+                                  .read<CreatePostBloc>()
+                                  .add(OnChangeBudget(value)),
+                            ),
+                          ),
+                        ),
+                        FadeSlideIn(
+                          index: 3,
+                          child: ComposerField(
+                            label: 'PHOTO',
+                            child: PhotoUploadTile(
+                              image: _pickedImage,
+                              onPick: _showImageSourceSheet,
+                              onRemove: _removeImage,
+                            ),
+                          ),
+                        ),
+                        FadeSlideIn(
+                          index: 4,
+                          child: ComposerField(
+                            label: 'HOW URGENT',
+                            child: PriorityRow(
+                              priority: _priority,
+                              onTap: _pickPriority,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Your number stays hidden until you accept an '
+                          'offer.',
+                          style: DiscoveryText.smallPrint.copyWith(
+                            color: AppColor.discoveryTextTertiary,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    labelText: 'Description',
-                    floatingLabel: true,
-                    controller: _descriptionController,
-                    hintText: 'Enter description',
-                    prefixText: '',
-                    keyboardType: TextInputType.text,
-                    maxLines: 4,
-                    maxLength: 200,
-                    enabledLabelColor: AppColor.indicativeBlueColor700,
-                    borderColor: AppColor.neutralGreyColor300,
-                    onChanged: (value) {
-                      context.read<CreatePostBloc>().add(
-                        OnChangeDescription(value),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  AppTextField(
-                    labelText: 'Budget',
-                    floatingLabel: true,
-                    controller: _budgetController,
-                    hintText: 'Enter budget',
-                    prefixText: '₹',
-                    keyboardType: TextInputType.number,
-                    maxLines: 1,
-                    maxLength: 20,
-                    enabledLabelColor: AppColor.indicativeBlueColor700,
-                    borderColor: AppColor.neutralGreyColor300,
-                    onChanged: (value) {
-                      context.read<CreatePostBloc>().add(OnChangeBudget(value));
-                    },
-                  ),
-                  const SizedBox(height: 12),
-
-                  _buildPhotosSection(),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-      bottomNavigationBar: BlocBuilder<CreatePostBloc, CreatePostState>(
-        builder: (context, state) => _buildBottomBar(context, state),
-      ),
-    );
-  }
-
-  /// Fixed Post button, pinned to the bottom of the screen regardless of
-  /// scroll position. SafeArea keeps it clear of the home indicator on
-  /// devices with a gesture bar; the extra bottom padding stops it from
-  /// sitting flush against the screen edge.
-  Widget _buildBottomBar(BuildContext context, CreatePostState state) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        decoration: BoxDecoration(
-          // color: AppColor.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: PrimaryButton(
-          label: "Share",
-          enabled: state.isFormValid,
-          onPressed: () {
-            // The upload belongs to the posts page, not this form: sharing
-            // replaces the form with the feed, which shows the post's
-            // progress banner while it uploads.
-            GoRouter.of(context).pushReplacementAppRoute(
-              AppRoutes.posts,
-              extra: state.toDraft(isInstant: true),
+                ),
+              ],
             );
           },
         ),
       ),
-    );
-  }
-
-  Widget _buildPhotosSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Photo',
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: AppColor.indicativeBlueColor700,
+      bottomNavigationBar: BlocBuilder<CreatePostBloc, CreatePostState>(
+        builder: (context, state) => ComposerFooter(
+          enabled: state.isFormValid,
+          // The upload belongs to the posts page, not this form: posting
+          // replaces the form with the board, which shows the post's
+          // progress banner while it uploads.
+          onPost: () => GoRouter.of(context).pushReplacementAppRoute(
+            AppRoutes.posts,
+            extra: state.toDraft(isInstant: true, username: _signedInUsername),
           ),
         ),
-        const SizedBox(height: 8),
-        if (_pickedImage == null)
-          GestureDetector(
-            onTap: _showImageSourceSheet,
-            child: Container(
-              width: double.infinity,
-              height: 90,
-              decoration: BoxDecoration(
-                color: AppColor.neutralGreyColor60,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppColor.neutralGreyColor300),
-              ),
-              child: Icon(
-                Icons.add_a_photo_outlined,
-                color: AppColor.neutralGreyColor700,
-              ),
-            ),
-          )
-        else
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.file(
-                  _pickedImage!,
-                  width: double.infinity,
-                  height: 90,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: -6,
-                right: -6,
-                child: GestureDetector(
-                  onTap: _removeImage,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: Colors.black87,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.close,
-                      size: 14,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-      ],
+      ),
     );
   }
 }

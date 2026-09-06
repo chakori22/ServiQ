@@ -145,18 +145,19 @@ void main() {
     ));
     await tester.pump(const Duration(seconds: 2));
 
-    // Rendered through the shared component, with a floating label like the
-    // category / description / budget fields above it.
+    // Still rendered through the shared component, but the composer labels
+    // each field with a small-caps heading above it rather than notching a
+    // floating label into the border.
     final dateField = find.ancestor(
       of: find.text('Select date'),
       matching: find.byType(AppTextField),
     );
     expect(dateField, findsOneWidget);
-    expect(tester.widget<AppTextField>(dateField).floatingLabel, isTrue);
-    expect(tester.widget<AppTextField>(dateField).labelText, 'Date');
+    expect(tester.widget<AppTextField>(dateField).floatingLabel, isFalse);
+    expect(find.text('DATE'), findsOneWidget);
 
-    // The photo picker carries a floating label too.
-    expect(find.text('Photo'), findsOneWidget);
+    // The photo target is labelled the same way.
+    expect(find.text('PHOTO'), findsOneWidget);
 
     // Tap through the field's own area: the inner TextField is wrapped in an
     // AbsorbPointer, so the gesture belongs to the wrapper around it.

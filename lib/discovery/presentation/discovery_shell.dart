@@ -5,6 +5,7 @@ import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/discovery/model/locality.dart';
 import 'package:local_markerplace/discovery/model/service_zone.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/discovery_home_view.dart';
@@ -142,24 +143,38 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
       case DiscoveryTab.me:
         setState(() => _tab = tab);
       case DiscoveryTab.posts:
-        // Posts already has a screen of its own outside this flow, so the
-        // tab opens it rather than duplicating it here.
-        GoRouter.of(context).pushAppRoute(AppRoutes.posts);
+        _openPosts();
     }
+  }
+
+  /// Opens the posts board.
+  ///
+  /// Posts already has a screen of its own outside this flow, so the tab
+  /// pushes it rather than duplicating it here. The area travels with it so
+  /// the board can name whose neighbourhood it is showing, and the board
+  /// pops back with the tab its own bar was used to leave by.
+  Future<void> _openPosts({BoardFilter filter = BoardFilter.all}) async {
+    final next = await GoRouter.of(context).pushAppRoute<DiscoveryTab>(
+      AppRoutes.posts,
+      extra: PostsArgs(localityName: _localityName, initialFilter: filter),
+    );
+    if (!mounted || next == null) return;
+    setState(() => _tab = next);
   }
 
   /// Sends a drill-down screen's tab tap back to the shell underneath it.
   void _selectTabFromChild(DiscoveryTab tab) {
     if (tab == DiscoveryTab.posts) {
-      GoRouter.of(context).pushAppRoute(AppRoutes.posts);
+      _openPosts();
       return;
     }
     Navigator.of(context).popUntil((route) => route.isFirst);
     setState(() => _tab = tab);
   }
 
-  void _openPostForm() =>
-      GoRouter.of(context).pushAppRoute(AppRoutes.instantForm);
+  void _openPostForm() => GoRouter.of(
+    context,
+  ).pushAppRoute(AppRoutes.instantForm, extra: _localityName);
 
   void _push(Widget page) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => page));
@@ -285,7 +300,9 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
         ),
       ),
       onVisits: () => _notice('My visits — coming soon.'),
-      onPosts: () => GoRouter.of(context).pushAppRoute(AppRoutes.posts),
+      // "My posts" is about the seeker's own requirements, so the board
+      // opens with that chip already on rather than on everybody's.
+      onPosts: () => _openPosts(filter: BoardFilter.mine),
       onChats: () => _notice('Chats — coming soon.'),
       onIdentity: () => _push(KycListPage(repository: widget.meRepository)),
       onSavedProviders: () => _push(

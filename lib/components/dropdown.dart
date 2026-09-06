@@ -29,6 +29,8 @@ class AppDropdownField<T> extends StatefulWidget {
     this.borderColor,
     this.borderWidth = 1.0,
     this.floatingLabel = false,
+    this.cornerRadius = 12,
+    this.fillColor,
   });
 
   /// Initial selected value. After the first build, selection is tracked
@@ -52,6 +54,14 @@ class AppDropdownField<T> extends StatefulWidget {
   final Color? borderColor;
   final double borderWidth;
   final bool floatingLabel;
+
+  /// Corner radius of the field and of the menu it opens. Defaults to the
+  /// dashboard's 12; the composer's fields are drawn at 16.
+  final double cornerRadius;
+
+  /// Fill behind the field. Defaults to the dashboard's grey; the composer
+  /// sits its fields on white so they match the text inputs beside them.
+  final Color? fillColor;
 
   @override
   State<AppDropdownField<T>> createState() => _AppDropdownFieldState<T>();
@@ -122,7 +132,9 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
         minWidth: fieldSize.width,
         maxWidth: fieldSize.width,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(widget.cornerRadius),
+      ),
       color: Colors.white,
       elevation: 4,
       items: widget.items
@@ -161,7 +173,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius = BorderRadius.circular(12);
+    final borderRadius = BorderRadius.circular(widget.cornerRadius);
     final hasPrefix =
         widget.prefixText != null && widget.prefixText!.isNotEmpty;
     final effectiveBorderColor = _effectiveBorderColor;
@@ -180,7 +192,7 @@ class _AppDropdownFieldState<T> extends State<AppDropdownField<T>> {
         borderRadius: borderRadius,
         child: Container(
           decoration: BoxDecoration(
-            color: AppColor.neutralGreyColor60,
+            color: widget.fillColor ?? AppColor.neutralGreyColor60,
             borderRadius: borderRadius,
             border: effectiveBorderColor != null
                 ? Border.all(
