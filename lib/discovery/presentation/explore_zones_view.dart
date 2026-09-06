@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/model/service_zone.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
@@ -30,24 +31,38 @@ class ExploreZonesView extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text('Explore', style: DiscoveryText.appBarTitle),
-          const SizedBox(height: 22),
-          Text(
-            'Pick an area to see who works there',
-            style: DiscoveryText.subtitle,
+          FadeSlideIn(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text('Explore', style: DiscoveryText.appBarTitle),
+                const SizedBox(height: 22),
+                Text(
+                  'Pick an area to see who works there',
+                  style: DiscoveryText.subtitle,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 18),
-          for (final zone in live) ...[
-            ZoneSummaryCard(zone: zone, onTap: () => onZoneTap(zone)),
+          // The two lists share one run of stagger indices, so the whole page
+          // arrives as a single sweep rather than as two separate ones.
+          for (final (index, zone) in live.indexed) ...[
+            ZoneSummaryCard(
+              zone: zone,
+              index: index + 1,
+              onTap: () => onZoneTap(zone),
+            ),
             const SizedBox(height: 16),
           ],
           if (comingSoon.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text('COMING SOON', style: DiscoveryText.overline),
             const SizedBox(height: 14),
-            for (final zone in comingSoon) ...[
+            for (final (index, zone) in comingSoon.indexed) ...[
               ComingSoonZoneCard(
                 zone: zone,
+                index: live.length + index + 1,
                 onTap: () => onComingSoonTap?.call(zone),
               ),
               const SizedBox(height: 12),

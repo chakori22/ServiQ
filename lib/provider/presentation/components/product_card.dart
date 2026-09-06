@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:local_markerplace/components/art/seeded_artwork.dart';
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/provider/model/store_product.dart';
@@ -31,26 +33,16 @@ class ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // No product photography exists yet, so the design draws a shape on
-          // a tinted plate. It stays until real images land.
-          Container(
+          // No product photography exists yet. Rather than the grey plate
+          // with a shape on it that the design falls back to, each part gets
+          // artwork generated from its own name — so a grid of eight parts
+          // is eight distinguishable tiles instead of eight identical ones.
+          SizedBox(
             height: 84,
             width: double.infinity,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColor.providerMapFill,
+            child: SeededArtwork(
+              seed: product.name,
               borderRadius: BorderRadius.circular(12),
-            ),
-            child: Container(
-              width: 44,
-              height: 34,
-              decoration: BoxDecoration(
-                color: AppColor.providerImageShape,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Center(
-                child: Container(height: 1.2, color: AppColor.white),
-              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -89,9 +81,9 @@ class ProductCard extends StatelessWidget {
                   ],
                 ),
               ),
-              GestureDetector(
+              PressableScale(
                 onTap: onAdd,
-                behavior: HitTestBehavior.opaque,
+                pressedScale: 0.9,
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,

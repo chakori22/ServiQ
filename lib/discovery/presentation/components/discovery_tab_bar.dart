@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/motion/app_motion.dart';
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
@@ -143,13 +145,32 @@ class _Tab extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(width: 20, height: 20, child: _icon(isActive)),
-          const SizedBox(height: 6),
-          Text(
-            label,
+          // The current tab's glyph sits on a tinted lozenge and stands a
+          // little larger than the others, so which tab is which is legible
+          // from the shape of the bar and not only from the label's colour.
+          AnimatedContainer(
+            duration: AppMotion.quick,
+            curve: AppMotion.emphasized,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: isActive ? AppColor.discoveryTint : AppColor.white,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: AnimatedScale(
+              scale: isActive ? 1.1 : 1,
+              duration: AppMotion.quick,
+              curve: AppMotion.overshoot,
+              child: SizedBox(width: 20, height: 20, child: _icon(isActive)),
+            ),
+          ),
+          const SizedBox(height: 4),
+          AnimatedDefaultTextStyle(
+            duration: AppMotion.quick,
+            curve: AppMotion.emphasized,
             style: isActive
                 ? DiscoveryText.tabActive
                 : DiscoveryText.tabInactive,
+            child: Text(label),
           ),
         ],
       ),
@@ -243,32 +264,40 @@ class DiscoveryPostButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return PressableScale(
       onTap: onTap,
-      child: Container(
-        width: 56,
-        height: 56,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColor.discoveryGradientStart,
-              AppColor.discoveryGradientEnd,
+      pressedScale: 0.88,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.6, end: 1),
+        duration: AppMotion.entrance,
+        curve: AppMotion.overshoot,
+        builder: (context, scale, child) =>
+            Transform.scale(scale: scale, child: child),
+        child: Container(
+          width: 56,
+          height: 56,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColor.discoveryGradientStart,
+                AppColor.discoveryGradientEnd,
+              ],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColor.discoveryGradientEnd.withValues(alpha: 0.42),
+                blurRadius: 20,
+                spreadRadius: -2,
+                offset: const Offset(0, 8),
+              ),
             ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColor.discoveryGradientEnd.withValues(alpha: 0.42),
-              blurRadius: 20,
-              spreadRadius: -2,
-              offset: const Offset(0, 8),
-            ),
-          ],
+          child: SvgPicture.asset(DiscoveryAssets.plus, width: 18, height: 18),
         ),
-        child: SvgPicture.asset(DiscoveryAssets.plus, width: 18, height: 18),
       ),
     );
   }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
+import 'package:local_markerplace/discovery/presentation/components/provider_avatar.dart';
 import 'package:local_markerplace/provider/model/provider_review.dart';
 import 'package:local_markerplace/provider/presentation/components/star_row.dart';
 
@@ -16,25 +16,13 @@ class ReviewRow extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: 36,
-          height: 36,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10.8),
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColor.discoveryAvatarTop,
-                AppColor.discoveryAvatarBottom,
-              ],
-            ),
-          ),
-          child: Text(
-            review.initials,
-            style: DiscoveryText.avatarInitials(12.24),
-          ),
+        // Tinted from the reviewer's own name, so a column of reviews is not
+        // a column of identical dark squares.
+        ProviderAvatar(
+          initials: review.initials,
+          seed: review.author,
+          size: 36,
+          isVerified: false,
         ),
         const SizedBox(width: 12),
         Expanded(

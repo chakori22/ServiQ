@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/art/art_palette.dart';
+import 'package:local_markerplace/components/art/seeded_artwork.dart';
+import 'package:local_markerplace/components/motion/entrance.dart';
+
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/model/locality.dart';
 import 'package:local_markerplace/discovery/model/service_zone.dart';
@@ -66,9 +70,10 @@ class ZonePickerCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Flexible(
+                ZoneEmblem(zone: zone),
+                const SizedBox(width: 12),
+                Expanded(
                   child: Text(
                     zone.name,
                     maxLines: 1,
@@ -98,6 +103,7 @@ class ZonePickerCard extends StatelessWidget {
                 providerCount: localities[i].providerCount,
                 isComingSoon: localities[i].providerCount == 0,
                 horizontalPadding: 14,
+                index: i,
                 onTap: localities[i].providerCount == 0
                     ? null
                     : () => onLocalityTap(localities[i]),
@@ -140,6 +146,7 @@ class ComingSoonPickerCard extends StatelessWidget {
               LocalityRow(
                 title: zones[i].name,
                 isComingSoon: true,
+                index: i,
                 onTap: () => onZoneTap(zones[i]),
               ),
             ],
@@ -153,66 +160,82 @@ class ComingSoonPickerCard extends StatelessWidget {
 /// The explore list's card for a live zone: its name and city, then a footer
 /// counting the societies and markets waiting inside.
 class ZoneSummaryCard extends StatelessWidget {
-  const ZoneSummaryCard({super.key, required this.zone, this.onTap});
+  const ZoneSummaryCard({
+    super.key,
+    required this.zone,
+    this.onTap,
+    this.index = 0,
+  });
 
   final ServiceZone zone;
   final VoidCallback? onTap;
 
+  /// Position in the explore list, which staggers the card's entrance.
+  final int index;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: _ZoneCardShell(
-        child: Padding(
-          padding: const EdgeInsets.all(14.6),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(
-                      zone.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: DiscoveryText.sectionTitle,
+    return FadeSlideIn(
+      index: index,
+      child: PressableScale(
+        onTap: onTap,
+        child: _ZoneCardShell(
+          child: Padding(
+            padding: const EdgeInsets.all(14.6),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ZoneEmblem(zone: zone, size: 52),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            zone.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: DiscoveryText.sectionTitle,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(zone.city, style: DiscoveryText.footnote),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  const StatusPill.live(),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Text(zone.city, style: DiscoveryText.footnote),
-              const SizedBox(height: 8),
-              const Divider(
-                height: 1,
-                thickness: 1,
-                color: AppColor.discoveryBorder,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text(
-                    '${zone.totalSocieties} societies',
-                    style: DiscoveryText.link,
-                  ),
-                  const SizedBox(width: 14),
-                  Text(
-                    '${zone.totalMarkets} markets',
-                    style: DiscoveryText.link,
-                  ),
-                  const Spacer(),
-                  SvgPicture.asset(
-                    DiscoveryAssets.chevronRight,
-                    width: 6.9,
-                    height: 12.9,
-                  ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 10),
+                    const StatusPill.live(),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: AppColor.discoveryBorder,
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Text(
+                      '${zone.totalSocieties} societies',
+                      style: DiscoveryText.link,
+                    ),
+                    const SizedBox(width: 14),
+                    Text(
+                      '${zone.totalMarkets} markets',
+                      style: DiscoveryText.link,
+                    ),
+                    const Spacer(),
+                    SvgPicture.asset(
+                      DiscoveryAssets.chevronRight,
+                      width: 6.9,
+                      height: 12.9,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -222,36 +245,90 @@ class ZoneSummaryCard extends StatelessWidget {
 
 /// The explore list's card for a zone that is not open yet.
 class ComingSoonZoneCard extends StatelessWidget {
-  const ComingSoonZoneCard({super.key, required this.zone, this.onTap});
+  const ComingSoonZoneCard({
+    super.key,
+    required this.zone,
+    this.onTap,
+    this.index = 0,
+  });
 
   final ServiceZone zone;
   final VoidCallback? onTap;
 
+  /// Position in the coming-soon list, which staggers the entrance.
+  final int index;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: _ZoneCardShell(
-        isMuted: true,
-        child: SizedBox(
-          height: 60,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14.6),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Flexible(
-                  child: Text(
-                    zone.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DiscoveryText.rowTitleDisabled,
+    return FadeSlideIn(
+      index: index,
+      child: PressableScale(
+        onTap: onTap,
+        child: _ZoneCardShell(
+          isMuted: true,
+          child: SizedBox(
+            height: 64,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14.6),
+              child: Row(
+                children: [
+                  ZoneEmblem(zone: zone, size: 38),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      zone.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DiscoveryText.rowTitleDisabled,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                const StatusPill.comingSoon(),
-              ],
+                  const SizedBox(width: 10),
+                  const StatusPill.comingSoon(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The square of artwork that stands in for an area.
+///
+/// A zone has no photograph and no logo, so it gets a plate generated from
+/// its name with a pin on it — enough for the eye to tell Crossing Republik
+/// from Gaur City without reading either label. An area that is not open yet
+/// is drawn in the flow's greys instead of its own colours, so the list reads
+/// as live-then-waiting at a glance.
+class ZoneEmblem extends StatelessWidget {
+  const ZoneEmblem({super.key, required this.zone, this.size = 44});
+
+  final ServiceZone zone;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: SeededArtwork(
+        seed: zone.name,
+        palette: zone.isLive ? null : ArtPalette.dormant,
+        borderRadius: BorderRadius.circular(size * 0.32),
+        intensity: 0.9,
+        child: Center(
+          child: SvgPicture.asset(
+            DiscoveryAssets.pinHeader,
+            width: size * 0.30,
+            height: size * 0.42,
+            colorFilter: ColorFilter.mode(
+              // The plate is pale, so the pin is drawn in the family's
+              // saturated member — white disappeared into it.
+              zone.isLive
+                  ? ArtPalette.forSeed(zone.name).deep
+                  : AppColor.discoveryTextDisabled,
+              BlendMode.srcIn,
             ),
           ),
         ),

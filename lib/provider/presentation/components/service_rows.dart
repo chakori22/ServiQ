@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/provider/model/provider_service.dart';
@@ -106,10 +107,13 @@ class ServiceCard extends StatelessWidget {
           const SizedBox(height: 4),
           Align(
             alignment: Alignment.centerRight,
-            child: GestureDetector(
+            child: PressableScale(
               onTap: onBook,
-              behavior: HitTestBehavior.opaque,
-              child: Text('Book', style: DiscoveryText.bookLink),
+              pressedScale: 0.9,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                child: Text('Book', style: DiscoveryText.bookLink),
+              ),
             ),
           ),
         ],

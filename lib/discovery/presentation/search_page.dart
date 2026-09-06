@@ -175,6 +175,7 @@ class _SearchPageState extends State<SearchPage> {
                   final provider = results[index];
                   return ProviderRow(
                     provider: provider,
+                    index: index,
                     showReviewCount: false,
                     subtitle:
                         '${provider.localityName} · '

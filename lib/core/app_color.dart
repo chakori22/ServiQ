@@ -212,6 +212,38 @@ class AppColor {
   /// A primary button that cannot be pressed yet.
   static const Color buttonDisabledFill = Color(0xFFE7ECF6);
 
+  // --- Generated artwork ----------------------------------------------------
+  // The flow has no photography behind it, so cards, tiles and heroes carry
+  // artwork painted in code instead: a gradient plate with bézier ribbons
+  // over it. Six families keep a list of providers or products from reading
+  // as one grey block, while staying inside the discovery palette — each is
+  // pale enough for the flow's ink to sit on it, and the deep stop is only
+  // ever used at low alpha for the curves themselves.
+
+  static const Color artBlueLight = Color(0xFFDCEAFF);
+  static const Color artBlueMid = Color(0xFFB9D4FF);
+  static const Color artBlueDeep = Color(0xFF2F6BFF);
+
+  static const Color artTealLight = Color(0xFFD6F4EE);
+  static const Color artTealMid = Color(0xFFAEE6DA);
+  static const Color artTealDeep = Color(0xFF0E9384);
+
+  static const Color artVioletLight = Color(0xFFE9E3FF);
+  static const Color artVioletMid = Color(0xFFCFC4FB);
+  static const Color artVioletDeep = Color(0xFF6941C6);
+
+  static const Color artAmberLight = Color(0xFFFDEEDA);
+  static const Color artAmberMid = Color(0xFFF8DCB4);
+  static const Color artAmberDeep = Color(0xFFB54708);
+
+  static const Color artRoseLight = Color(0xFFFDE4E8);
+  static const Color artRoseMid = Color(0xFFF8C6D0);
+  static const Color artRoseDeep = Color(0xFFC01048);
+
+  static const Color artGreenLight = Color(0xFFE3F3D9);
+  static const Color artGreenMid = Color(0xFFC4E4B4);
+  static const Color artGreenDeep = Color(0xFF3B7C0F);
+
   static const Color black = Color(0xFF000000);
   static const Color white = Color(0xFFFFFFFF);
   static const Color accentColor = Color(0xFFC031C0);

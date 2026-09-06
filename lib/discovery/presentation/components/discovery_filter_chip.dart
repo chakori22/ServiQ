@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/motion/app_motion.dart';
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
@@ -26,10 +28,12 @@ class DiscoveryFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return PressableScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
+      pressedScale: 0.93,
+      child: AnimatedContainer(
+        duration: AppMotion.quick,
+        curve: AppMotion.emphasized,
         padding: EdgeInsets.only(
           left: 14,
           right: hasCaret ? 11 : 14,
@@ -39,18 +43,32 @@ class DiscoveryFilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? AppColor.discoveryAccent : AppColor.white,
           borderRadius: BorderRadius.circular(999),
-          border: isSelected
-              ? null
-              : Border.all(color: AppColor.discoveryBorder, width: 1.4),
+          border: Border.all(
+            color: isSelected
+                ? AppColor.discoveryAccent
+                : AppColor.discoveryBorder,
+            width: 1.4,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: AppColor.discoveryAccent.withValues(alpha: 0.30),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              label,
+            AnimatedDefaultTextStyle(
+              duration: AppMotion.quick,
+              curve: AppMotion.emphasized,
               style: isSelected
                   ? DiscoveryText.chipSelected
                   : DiscoveryText.chip,
+              child: Text(label),
             ),
             if (hasCaret) ...[
               const SizedBox(width: 6),

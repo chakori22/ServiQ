@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/art/bezier_wash.dart';
+import 'package:local_markerplace/components/motion/app_motion.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
@@ -20,27 +22,11 @@ class LocationHero extends StatelessWidget {
       height: 366,
       child: Stack(
         children: [
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColor.discoveryHeroTop,
-                    AppColor.discoveryHeroMid,
-                    AppColor.white,
-                  ],
-                  stops: [0, 0.65, 1],
-                ),
-              ),
-            ),
-          ),
-          // Figma paints these as blurred circles. A Gaussian blur is not a
-          // primitive here, so the same falloff is drawn as a radial fade —
-          // visually equivalent and far cheaper than a real blur pass.
-          const _At(top: -30, x: -0.154, size: 250, child: _Glow(size: 250)),
-          const _At(top: 90, x: 0.692, size: 200, child: _Glow(size: 200)),
+          // Bézier ribbons drifting up behind the pin, which is what gives
+          // the picker a horizon rather than a flat sheet of pale blue. The
+          // wash paints its own glows, so the two the design draws as
+          // blurred circles come from it rather than being stacked here.
+          const Positioned.fill(child: BezierWash()),
           _At(
             top: 78,
             size: 180,
@@ -155,36 +141,27 @@ class _At extends StatelessWidget {
   }
 }
 
-class _Glow extends StatelessWidget {
-  const _Glow({required this.size});
-
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      height: size,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              AppColor.discoveryAccent.withValues(alpha: 0.10),
-              AppColor.discoveryAccent.withValues(alpha: 0),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+/// The gradient tile at the centre of the hero.
+///
+/// It scales up past its resting size and comes back, once, so the screen
+/// lands with something moving on it. A pin that simply appeared read as a
+/// static illustration.
 class _HeroPin extends StatelessWidget {
   const _HeroPin();
 
   @override
   Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.72, end: 1),
+      duration: AppMotion.entrance,
+      curve: AppMotion.overshoot,
+      builder: (context, scale, child) =>
+          Transform.scale(scale: scale, child: child),
+      child: _pin(),
+    );
+  }
+
+  Widget _pin() {
     return Container(
       width: 74,
       height: 74,

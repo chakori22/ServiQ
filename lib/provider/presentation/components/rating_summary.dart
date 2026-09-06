@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:local_markerplace/components/motion/app_motion.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/provider/presentation/components/star_row.dart';
@@ -94,11 +95,21 @@ class _BreakdownBar extends StatelessWidget {
                     color: AppColor.discoveryClearFill,
                     child: SizedBox.expand(),
                   ),
-                  FractionallySizedBox(
-                    // A share of zero still shows a stub, matching the
-                    // design's 2% rows, which are drawn as a dot rather than
-                    // nothing at all.
-                    widthFactor: share.clamp(0.017, 1.0),
+                  // The bar fills from nothing to its share when the tab is
+                  // first drawn, so the distribution is something the eye
+                  // follows rather than a static chart it has to read.
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(
+                      begin: 0,
+                      // A share of zero still shows a stub, matching the
+                      // design's 2% rows, which are drawn as a dot rather
+                      // than nothing at all.
+                      end: share.clamp(0.017, 1.0),
+                    ),
+                    duration: AppMotion.ambient,
+                    curve: AppMotion.emphasized,
+                    builder: (context, width, child) =>
+                        FractionallySizedBox(widthFactor: width, child: child),
                     child: const ColoredBox(
                       color: AppColor.discoveryStar,
                       child: SizedBox.expand(),

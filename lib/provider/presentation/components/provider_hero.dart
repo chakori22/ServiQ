@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/art/art_palette.dart';
+import 'package:local_markerplace/components/art/bezier_wash.dart';
+import 'package:local_markerplace/components/motion/app_motion.dart';
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/components/app_back_button.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
+import 'package:local_markerplace/discovery/presentation/components/provider_avatar.dart';
+import 'package:local_markerplace/discovery/presentation/components/trade_glyph.dart';
 import 'package:local_markerplace/provider/model/provider_profile.dart';
 
 /// The head of a provider's page: their avatar, name, what vouches for them,
 /// and the two actions.
+///
+/// The backdrop is painted in the provider's own colour — the same one their
+/// card carries in the "Near you" rail — so arriving here reads as opening
+/// the card rather than as landing on a new, unrelated screen. The avatar
+/// scales in and the rest of the head follows it, one line after the next.
 ///
 /// The actions read differently for a signed-out visitor — the page is public
 /// but connecting and messaging are not — which is the only difference
@@ -33,91 +44,103 @@ class ProviderHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.hardEdge,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppColor.discoveryHeroTop,
-            AppColor.providerHeroMid,
-            AppColor.white,
-          ],
-          stops: [0, 0.7, 1],
-        ),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: 60,
-            top: -40,
-            child: Container(
-              width: 240,
-              height: 240,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    AppColor.discoveryAccent.withValues(alpha: 0.10),
-                    AppColor.discoveryAccent.withValues(alpha: 0),
-                  ],
+    final palette = ArtPalette.forSeed(profile.name);
+    // The trade is not a field on a profile, so it is read off the first
+    // service they list, falling back to their name — which is usually where
+    // a one-trade business says what it does anyway.
+    final trade = profile.services.isEmpty
+        ? profile.name
+        : profile.services.first.name;
+
+    return ClipRect(
+      child: BezierWash(
+        accent: palette.deep,
+        colors: const [
+          AppColor.discoveryHeroTop,
+          AppColor.providerHeroMid,
+          AppColor.white,
+        ],
+        child: Stack(
+          children: [
+            // The trade, drawn oversized and pale behind the head — the same
+            // watermark the provider's card carries, at hero scale.
+            Positioned(
+              left: -30,
+              top: 30,
+              child: Opacity(
+                opacity: 0.10,
+                child: SvgPicture.asset(
+                  TradeGlyph.forTrade(trade),
+                  width: 150,
+                  height: 150,
+                  colorFilter: ColorFilter.mode(palette.deep, BlendMode.srcIn),
                 ),
               ),
             ),
-          ),
-          Column(
-            children: [
-              _HeaderRow(onBack: onBack, onMore: onMore),
-              const SizedBox(height: 8),
-              _Avatar(profile: profile),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  profile.name,
-                  textAlign: TextAlign.center,
-                  style: DiscoveryText.providerName,
-                ),
-              ),
-              const SizedBox(height: 14),
-              _TrustRow(profile: profile),
-              const SizedBox(height: 12),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Text(
-                  profile.locationLine,
-                  textAlign: TextAlign.center,
-                  style: DiscoveryText.caption,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _Action(
-                        label: isSignedIn ? 'Connect' : 'Sign in to connect',
-                        isPrimary: true,
-                        onTap: onConnect,
-                      ),
+            Column(
+              children: [
+                _HeaderRow(onBack: onBack, onMore: onMore),
+                const SizedBox(height: 8),
+                _Avatar(profile: profile),
+                const SizedBox(height: 16),
+                FadeSlideIn(
+                  index: 1,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 40),
+                    child: Text(
+                      profile.name,
+                      textAlign: TextAlign.center,
+                      style: DiscoveryText.providerName,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _Action(
-                        label: isSignedIn ? 'Chat' : 'Sign in to chat',
-                        isPrimary: false,
-                        onTap: onChat,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-            ],
-          ),
-        ],
+                const SizedBox(height: 14),
+                FadeSlideIn(index: 2, child: _TrustRow(profile: profile)),
+                const SizedBox(height: 12),
+                FadeSlideIn(
+                  index: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      profile.locationLine,
+                      textAlign: TextAlign.center,
+                      style: DiscoveryText.caption,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                FadeSlideIn(
+                  index: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _Action(
+                            label: isSignedIn
+                                ? 'Connect'
+                                : 'Sign in to connect',
+                            isPrimary: true,
+                            onTap: onConnect,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _Action(
+                            label: isSignedIn ? 'Chat' : 'Sign in to chat',
+                            isPrimary: false,
+                            onTap: onChat,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -159,6 +182,7 @@ class _HeaderRow extends StatelessWidget {
   }
 }
 
+/// The provider's square, which scales up into place when the page opens.
 class _Avatar extends StatelessWidget {
   const _Avatar({required this.profile});
 
@@ -166,43 +190,18 @@ class _Avatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 88,
-      height: 88,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            width: 88,
-            height: 88,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(26.4),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColor.discoveryAvatarTop,
-                  AppColor.discoveryAvatarBottom,
-                ],
-              ),
-            ),
-            child: Text(
-              profile.initials,
-              style: DiscoveryText.avatarInitials(29.92),
-            ),
-          ),
-          if (profile.isVerified)
-            Positioned(
-              right: -6.6,
-              bottom: -6.6,
-              child: SvgPicture.asset(
-                DiscoveryAssets.verified,
-                width: 26.4,
-                height: 26.4,
-              ),
-            ),
-        ],
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.7, end: 1),
+      duration: AppMotion.entrance,
+      curve: AppMotion.overshoot,
+      builder: (context, scale, child) =>
+          Transform.scale(scale: scale, child: child),
+      child: ProviderAvatar(
+        initials: profile.initials,
+        seed: profile.name,
+        size: 88,
+        isVerified: profile.isVerified,
+        hasRing: true,
       ),
     );
   }
@@ -249,9 +248,9 @@ class _Action extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return PressableScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      pressedScale: 0.96,
       child: Container(
         height: 52,
         alignment: Alignment.center,

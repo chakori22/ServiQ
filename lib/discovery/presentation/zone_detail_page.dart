@@ -89,13 +89,14 @@ class ZoneDetailPage extends StatelessWidget {
     return [
       GroupHeader(title: title, count: localities.length),
       const SizedBox(height: 4),
-      for (final locality in localities) ...[
+      for (final (index, locality) in localities.indexed) ...[
         // An area with nobody on file yet reads as coming soon rather than
         // offering a tap that lands on an empty list.
         LocalityRow(
           title: locality.name,
           providerCount: locality.providerCount,
           isComingSoon: locality.providerCount == 0,
+          index: index,
           onTap: locality.providerCount == 0
               ? null
               : () => onLocalityTap(locality),

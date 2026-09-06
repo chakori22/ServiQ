@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_filter_chip.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
+import 'package:local_markerplace/discovery/presentation/components/provider_avatar.dart';
 import 'package:local_markerplace/me/model/saved_provider.dart';
 import 'package:local_markerplace/me/repository/me_repository.dart';
 
@@ -117,6 +119,7 @@ class _SavedProvidersPageState extends State<SavedProvidersPage> {
                   }
                   return _SavedCard(
                     provider: shown[index],
+                    index: index,
                     onTap: () => widget.onProviderTap?.call(shown[index]),
                     onUnsave: () => ScaffoldMessenger.of(context)
                       ..hideCurrentSnackBar()
@@ -150,134 +153,113 @@ class _SavedProvidersPageState extends State<SavedProvidersPage> {
 /// carries a save toggle and how often they have been used, which that row
 /// has no room for.
 class _SavedCard extends StatelessWidget {
-  const _SavedCard({required this.provider, this.onTap, this.onUnsave});
+  const _SavedCard({
+    required this.provider,
+    this.onTap,
+    this.onUnsave,
+    this.index = 0,
+  });
 
   final SavedProvider provider;
   final VoidCallback? onTap;
   final VoidCallback? onUnsave;
 
+  /// Position in the list, which staggers the card's entrance.
+  final int index;
+
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.all(13.2),
-        decoration: BoxDecoration(
-          color: AppColor.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColor.discoveryBorder, width: 1.4),
-          boxShadow: [
-            BoxShadow(
-              color: AppColor.discoveryShadow.withValues(alpha: 0.05),
-              blurRadius: 7,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 52,
-              height: 52,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15.6),
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColor.discoveryAvatarTop,
-                          AppColor.discoveryAvatarBottom,
-                        ],
-                      ),
-                    ),
-                    child: Text(
-                      provider.initials,
-                      style: DiscoveryText.avatarInitials(17.68),
-                    ),
-                  ),
-                  Positioned(
-                    right: -4,
-                    bottom: -4,
-                    child: SvgPicture.asset(
-                      DiscoveryAssets.verified,
-                      width: 15.6,
-                      height: 15.6,
-                    ),
-                  ),
-                ],
+    return FadeSlideIn(
+      index: index,
+      child: PressableScale(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(13.2),
+          decoration: BoxDecoration(
+            color: AppColor.white,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColor.discoveryBorder, width: 1.4),
+            boxShadow: [
+              BoxShadow(
+                color: AppColor.discoveryShadow.withValues(alpha: 0.05),
+                blurRadius: 7,
+                offset: const Offset(0, 4),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          provider.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: DiscoveryText.reviewAuthor,
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Tinted from the provider's name, so a saved provider looks the
+              // same here as they do on their card in the "Near you" rail.
+              ProviderAvatar(
+                initials: provider.initials,
+                seed: provider.name,
+                size: 52,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            provider.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: DiscoveryText.reviewAuthor,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      _OpenPill(isOpen: provider.isOpen),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '${provider.trade} · ${provider.localityName}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DiscoveryText.metaMuted,
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      SvgPicture.asset(
-                        DiscoveryAssets.star,
-                        width: 12,
-                        height: 12,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        provider.rating.toStringAsFixed(1),
-                        style: DiscoveryText.chip,
-                      ),
-                      const Spacer(),
-                      if (provider.usageNote != null)
+                        const SizedBox(width: 8),
+                        _OpenPill(isOpen: provider.isOpen),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${provider.trade} · ${provider.localityName}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DiscoveryText.metaMuted,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        SvgPicture.asset(
+                          DiscoveryAssets.star,
+                          width: 12,
+                          height: 12,
+                        ),
+                        const SizedBox(width: 4),
                         Text(
-                          provider.usageNote!,
-                          style: DiscoveryText.statusDate,
+                          provider.rating.toStringAsFixed(1),
+                          style: DiscoveryText.chip,
                         ),
-                      const SizedBox(width: 10),
-                      GestureDetector(
-                        onTap: onUnsave,
-                        behavior: HitTestBehavior.opaque,
-                        child: SvgPicture.asset(
-                          DiscoveryAssets.heart,
-                          width: 18,
-                          height: 16,
+                        const Spacer(),
+                        if (provider.usageNote != null)
+                          Text(
+                            provider.usageNote!,
+                            style: DiscoveryText.statusDate,
+                          ),
+                        const SizedBox(width: 10),
+                        PressableScale(
+                          onTap: onUnsave,
+                          pressedScale: 0.82,
+                          child: SvgPicture.asset(
+                            DiscoveryAssets.heart,
+                            width: 18,
+                            height: 16,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

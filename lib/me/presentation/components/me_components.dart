@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
@@ -99,9 +100,8 @@ class BecomeProviderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return PressableScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
       child: Container(
         height: 68,
         clipBehavior: Clip.hardEdge,
@@ -136,6 +136,11 @@ class BecomeProviderCard extends StatelessWidget {
                 ),
               ),
             ),
+            // Two pale curves running the length of the card, which is what
+            // keeps it from reading as a flat navy rectangle.
+            const Positioned.fill(
+              child: CustomPaint(painter: _ProviderCardRibbons()),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
@@ -159,10 +164,14 @@ class BecomeProviderCard extends StatelessWidget {
                           'Get leads from your society — free to list',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                          // The design's muted grey is close to unreadable
+                          // on the navy; white held back reads as the same
+                          // step down without disappearing into the card.
                           style: DiscoveryText.pillMuted.copyWith(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 0,
+                            color: AppColor.white.withValues(alpha: 0.74),
                           ),
                         ),
                       ],
@@ -270,9 +279,9 @@ class OutlinedActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return PressableScale(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      pressedScale: 0.97,
       child: Container(
         height: height,
         alignment: Alignment.center,
@@ -301,4 +310,50 @@ class OutlinedActionButton extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The two bézier ribbons drawn across the "list your business" card.
+class _ProviderCardRibbons extends CustomPainter {
+  const _ProviderCardRibbons();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(-4, size.height * 0.82)
+        ..cubicTo(
+          size.width * 0.30,
+          size.height * 0.34,
+          size.width * 0.58,
+          size.height * 1.10,
+          size.width + 4,
+          size.height * 0.38,
+        ),
+      stroke
+        ..strokeWidth = 1.6
+        ..color = AppColor.white.withValues(alpha: 0.16),
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(-4, size.height * 1.05)
+        ..cubicTo(
+          size.width * 0.34,
+          size.height * 0.56,
+          size.width * 0.62,
+          size.height * 1.30,
+          size.width + 4,
+          size.height * 0.62,
+        ),
+      stroke
+        ..strokeWidth = 1.2
+        ..color = AppColor.white.withValues(alpha: 0.10),
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ProviderCardRibbons oldDelegate) => false;
 }

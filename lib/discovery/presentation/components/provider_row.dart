@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/discovery/model/provider_summary.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
@@ -17,6 +18,7 @@ class ProviderRow extends StatelessWidget {
     required this.subtitle,
     this.showReviewCount = true,
     this.onTap,
+    this.index = 0,
   });
 
   final ProviderSummary provider;
@@ -30,53 +32,62 @@ class ProviderRow extends StatelessWidget {
 
   final VoidCallback? onTap;
 
+  /// Position in the list, which staggers the row's entrance.
+  final int index;
+
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: SizedBox(
-        height: 78,
-        child: Row(
-          children: [
-            ProviderAvatar(
-              initials: provider.initials,
-              size: 44,
-              isVerified: provider.isVerified,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    provider.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DiscoveryText.rowTitle,
-                  ),
-                  const SizedBox(height: 4),
-                  RatingLabel(
-                    rating: provider.rating,
-                    reviewCount: showReviewCount ? provider.reviewCount : null,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: DiscoveryText.meta,
-                  ),
-                ],
+    return FadeSlideIn(
+      index: index,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: 78,
+          child: Row(
+            children: [
+              ProviderAvatar(
+                initials: provider.initials,
+                seed: provider.name,
+                size: 44,
+                isVerified: provider.isVerified,
               ),
-            ),
-            const SizedBox(width: 8),
-            SvgPicture.asset(
-              DiscoveryAssets.chevronRight,
-              width: 6.9,
-              height: 12.9,
-            ),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      provider.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DiscoveryText.rowTitle,
+                    ),
+                    const SizedBox(height: 4),
+                    RatingLabel(
+                      rating: provider.rating,
+                      reviewCount: showReviewCount
+                          ? provider.reviewCount
+                          : null,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: DiscoveryText.meta,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              SvgPicture.asset(
+                DiscoveryAssets.chevronRight,
+                width: 6.9,
+                height: 12.9,
+              ),
+            ],
+          ),
         ),
       ),
     );

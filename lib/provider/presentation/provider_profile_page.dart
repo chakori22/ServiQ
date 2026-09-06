@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_note.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
@@ -161,13 +162,20 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
         ),
       ),
       SliverList.separated(
+        // Keyed on the tab so switching sections builds the list afresh and
+        // its cards play their entrance, rather than the new section's
+        // content appearing inside the old one's rows.
+        key: ValueKey(_tab),
         itemCount: services.length,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (context, index) => Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: ServiceCard(
-            service: services[index],
-            onBook: () => _gatedAction('book ${services[index].name}'),
+        itemBuilder: (context, index) => FadeSlideIn(
+          index: index,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: ServiceCard(
+              service: services[index],
+              onBook: () => _gatedAction('book ${services[index].name}'),
+            ),
           ),
         ),
       ),
@@ -213,6 +221,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         sliver: SliverGrid.builder(
+          key: ValueKey(_tab),
           itemCount: products.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
@@ -220,9 +229,12 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
             crossAxisSpacing: 12,
             mainAxisExtent: 196,
           ),
-          itemBuilder: (context, index) => ProductCard(
-            product: products[index],
-            onAdd: () => _gatedAction('add ${products[index].name}'),
+          itemBuilder: (context, index) => FadeSlideIn(
+            index: index,
+            child: ProductCard(
+              product: products[index],
+              onAdd: () => _gatedAction('add ${products[index].name}'),
+            ),
           ),
         ),
       ),
@@ -247,6 +259,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
         const _Note('No reviews yet.')
       else
         SliverList.separated(
+          key: ValueKey(_tab),
           itemCount: reviews.length,
           separatorBuilder: (_, _) => const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 22),
@@ -256,9 +269,12 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
               color: AppColor.discoveryBorder,
             ),
           ),
-          itemBuilder: (context, index) => Padding(
-            padding: EdgeInsets.fromLTRB(20, index == 0 ? 22 : 0, 20, 0),
-            child: ReviewRow(review: reviews[index]),
+          itemBuilder: (context, index) => FadeSlideIn(
+            index: index,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, index == 0 ? 22 : 0, 20, 0),
+              child: ReviewRow(review: reviews[index]),
+            ),
           ),
         ),
     ];
@@ -267,18 +283,36 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
   List<Widget> _aboutBody() {
     return [
       SliverToBoxAdapter(
+        key: ValueKey(_tab),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_profile.about, style: DiscoveryText.body),
+              FadeSlideIn(
+                child: Text(_profile.about, style: DiscoveryText.body),
+              ),
               const SizedBox(height: 20),
-              MapThumbnail(onTap: () => _notice('Map — coming soon.')),
+              FadeSlideIn(
+                index: 1,
+                child: MapThumbnail(onTap: () => _notice('Map — coming soon.')),
+              ),
               const SizedBox(height: 22),
-              _Field(label: 'ADDRESS', value: _profile.address),
-              _Field(label: 'HOURS', value: _profile.hours),
-              _Field(label: 'SERVES', value: _profile.serves, isLast: true),
+              FadeSlideIn(
+                index: 2,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _Field(label: 'ADDRESS', value: _profile.address),
+                    _Field(label: 'HOURS', value: _profile.hours),
+                    _Field(
+                      label: 'SERVES',
+                      value: _profile.serves,
+                      isLast: true,
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

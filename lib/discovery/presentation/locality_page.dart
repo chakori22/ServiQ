@@ -71,6 +71,7 @@ class LocalityPage extends StatelessWidget {
                       itemBuilder: (context, index) => ProviderRow(
                         provider: providers[index],
                         subtitle: providers[index].trade,
+                        index: index,
                         onTap: () => onProviderTap?.call(providers[index]),
                       ),
                     ),
