@@ -24,6 +24,9 @@ class PostBoardRepository {
   /// not know about.
   final Map<String, int> _extraOffers = <String, int>{};
 
+  /// Posts the seeker has taken down.
+  final Set<String> _closed = <String>{};
+
   void publish(PostDetails post) => _published.insert(0, post);
 
   void accept(PostDetails post, String providerName) =>
@@ -31,6 +34,10 @@ class PostBoardRepository {
 
   void addOffer(PostDetails post) =>
       _extraOffers[post.key] = (_extraOffers[post.key] ?? 0) + 1;
+
+  void close(PostDetails post) => _closed.add(post.key);
+
+  void reopen(PostDetails post) => _closed.remove(post.key);
 
   /// Lays the session's changes over a freshly fetched feed.
   List<PostDetails> apply(List<PostDetails> fetched) => [
@@ -40,11 +47,13 @@ class PostBoardRepository {
   PostDetails _withChanges(PostDetails post) {
     final acceptedBy = _accepted[post.key];
     final extra = _extraOffers[post.key] ?? 0;
-    if (acceptedBy == null && extra == 0) return post;
+    final closed = _closed.contains(post.key);
+    if (acceptedBy == null && extra == 0 && !closed) return post;
     return post.copyWith(
       isAccepted: acceptedBy != null ? true : null,
       acceptedBy: acceptedBy,
       acceptCount: post.acceptCount + extra,
+      isClosed: closed ? true : null,
     );
   }
 
@@ -53,5 +62,6 @@ class PostBoardRepository {
     _published.clear();
     _accepted.clear();
     _extraOffers.clear();
+    _closed.clear();
   }
 }

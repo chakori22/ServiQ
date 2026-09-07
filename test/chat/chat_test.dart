@@ -182,6 +182,46 @@ void main() {
     });
   });
 
+  group('the keyboard', () {
+    testWidgets('does not cover the composer or the send button', (
+      tester,
+    ) async {
+      const keyboard = 300.0;
+      final chats = ChatRepository();
+
+      await pump(
+        tester,
+        ConversationPage(providerName: 'Sharma Carpentry', repository: chats),
+      );
+
+      final screen =
+          tester.view.physicalSize.height / tester.view.devicePixelRatio;
+
+      // Raise the keyboard the way the platform does.
+      tester.view.viewInsets = FakeViewPadding(
+        bottom: keyboard * tester.view.devicePixelRatio,
+      );
+      addTearDown(tester.view.resetViewInsets);
+      await tester.pumpAndSettle();
+
+      final field = tester.getRect(find.byType(TextField));
+      final send = tester.getRect(find.byIcon(Icons.arrow_forward_rounded));
+
+      // Both have to sit above the keyboard. They used to be in the
+      // Scaffold's bottomNavigationBar, which keeps its place underneath it.
+      expect(
+        field.bottom,
+        lessThanOrEqualTo(screen - keyboard),
+        reason: 'the message field is behind the keyboard',
+      );
+      expect(
+        send.bottom,
+        lessThanOrEqualTo(screen - keyboard),
+        reason: 'the send button is behind the keyboard',
+      );
+    });
+  });
+
   group('threads', () {
     test('age into the words the list uses', () {
       final now = DateTime.now();

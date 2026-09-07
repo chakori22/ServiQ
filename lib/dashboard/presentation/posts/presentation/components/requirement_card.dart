@@ -63,7 +63,11 @@ class RequirementCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  if (post.isAccepted)
+                  // Closed wins over accepted: a post taken down is over,
+                  // whatever happened before.
+                  if (post.isClosed)
+                    const StatusPill.closed()
+                  else if (post.isAccepted)
                     const StatusPill.accepted()
                   else
                     const StatusPill.open(),
@@ -214,6 +218,16 @@ class _OffersLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (post.isClosed) {
+      return Text(
+        'Closed',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: DiscoveryText.link.copyWith(
+          color: AppColor.discoveryTextTertiary,
+        ),
+      );
+    }
     if (post.isAccepted) {
       final by = post.acceptedBy;
       return Text(

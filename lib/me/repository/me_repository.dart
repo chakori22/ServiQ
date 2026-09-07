@@ -1,3 +1,4 @@
+import 'package:local_markerplace/visit/repository/visit_repository.dart';
 import 'package:local_markerplace/chat/repository/chat_repository.dart';
 import 'package:local_markerplace/me/model/kyc_document.dart';
 import 'package:local_markerplace/me/model/saved_address.dart';
@@ -36,8 +37,9 @@ class MeRepository {
           ? profile!.locality
           : 'No area chosen',
       joined: 'joined Aug 2026',
-      upcomingVisits: 2,
-      openPosts: 4,
+      // Real session state, not a figure typed in: the row would otherwise
+      // promise bookings the seeker does not have.
+      bookedOrders: VisitRepository.shared.booked.length,
       unreadChats: ChatRepository.shared.unreadCount,
       savedProviderCount: savedProviders().length,
       savedAddressCount: addresses().length,

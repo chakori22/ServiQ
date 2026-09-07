@@ -41,6 +41,7 @@ class RequirementPage extends StatefulWidget {
     this.currentUsername,
     this.onOfferMade,
     this.onOfferAccepted,
+    this.onClosed,
     this.offers,
     this.visits,
   });
@@ -59,6 +60,10 @@ class RequirementPage extends StatefulWidget {
 
   /// Told when the owner accepts, so the board can settle the requirement.
   final ValueChanged<PostOffer>? onOfferAccepted;
+
+  /// The seeker took their own requirement down. Null where the screen has
+  /// nobody to tell, and then closing is left off the menu.
+  final VoidCallback? onClosed;
 
   /// Defaults to the shared store, which is where offers made anywhere in
   /// the session are kept.
@@ -148,6 +153,71 @@ class _RequirementPageState extends State<RequirementPage> {
   static String _capitalised(String text) =>
       text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
+  /// The only thing in the menu so far, and only on your own post: taking
+  /// it down. Closing is separate from accepting — a job can be settled, or
+  /// simply no longer needed.
+  Future<void> _openMenu() async {
+    if (!_isMine || _post.isClosed) {
+      return _notice('More options — coming soon.');
+    }
+
+    final close = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: AppColor.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text('This post', style: DiscoveryText.sheetTitle),
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+              child: Text(
+                'Closing takes it off the board. Offers already made stay in '
+                'your posts.',
+                style: DiscoveryText.caption,
+              ),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.do_not_disturb_on_outlined,
+                color: AppColor.authError,
+              ),
+              title: Text(
+                'Close this post',
+                style: DiscoveryText.sheetOptionDanger,
+              ),
+              onTap: () => Navigator.of(context).pop(true),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.close_rounded,
+                color: AppColor.discoveryTextTertiary,
+              ),
+              title: Text('Keep it open', style: DiscoveryText.sheetOption),
+              onTap: () => Navigator.of(context).pop(false),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (close != true || !mounted) return;
+
+    setState(() => _post = _post.copyWith(isClosed: true));
+    widget.onClosed?.call();
+    _notice('Post closed.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final received = _offers.offersOn(_post);
@@ -161,7 +231,7 @@ class _RequirementPageState extends State<RequirementPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Header(onMore: () => _notice('More options — coming soon.')),
+              _Header(onMore: _openMenu),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: FadeSlideIn(
@@ -214,10 +284,14 @@ class _RequirementPageState extends State<RequirementPage> {
                   offers: received,
                   // Only the seeker who posted it decides, and only while it
                   // is still open.
-                  canAccept: _isMine && !_post.isAccepted,
+                  canAccept: _isMine && !_post.isAccepted && !_post.isClosed,
+                  // On the seeker's own closed post the work is done, so
+                  // Accept is shown greyed rather than taken away. On
+                  // somebody else's it was never theirs to press.
+                  showDisabledAccept: _isMine && _post.isClosed,
                   onAccept: _accept,
                 ),
-              if (!_isMine && !_post.isAccepted) ...[
+              if (!_isMine && !_post.isAccepted && !_post.isClosed) ...[
                 const SizedBox(height: 24),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -372,7 +446,10 @@ class _MetaChips extends StatelessWidget {
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        if (post.isAccepted)
+        // Closed wins over accepted, the same way the card reads it.
+        if (post.isClosed)
+          const StatusPill.closed()
+        else if (post.isAccepted)
           const StatusPill.accepted()
         else
           const StatusPill.open(),
@@ -414,6 +491,7 @@ class _Offers extends StatelessWidget {
   const _Offers({
     required this.offers,
     required this.canAccept,
+    required this.showDisabledAccept,
     required this.onAccept,
   });
 
@@ -422,6 +500,10 @@ class _Offers extends StatelessWidget {
   /// True only for the seeker who posted the requirement, and only while it
   /// is still open. Everybody else reads the offers without acting on them.
   final bool canAccept;
+
+  /// Draws Accept greyed instead of leaving it off — the requirement is
+  /// theirs, but it is over.
+  final bool showDisabledAccept;
 
   final ValueChanged<PostOffer> onAccept;
 
@@ -448,6 +530,7 @@ class _Offers extends StatelessWidget {
               offer: offer,
               index: index,
               onAccept: canAccept ? () => onAccept(offer) : null,
+              isDisabled: showDisabledAccept,
             ),
           ],
         ],

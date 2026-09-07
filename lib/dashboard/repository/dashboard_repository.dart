@@ -115,6 +115,44 @@ class DashboardRepository {
         acceptCount: 0,
         chatCount: 0,
       ),
+      // Closed after the work was done: the offers stay on it, but none of
+      // them can be taken any more.
+      PostDetails(
+        username: me,
+        userAvatarUrl: 'assets/images/avatar1.png',
+        postedAt: now.subtract(const Duration(days: 6)),
+        imageUrl: 'assets/images/marketplace2.png',
+        description:
+            'Geyser leaking from the bottom. Needs looking at before the '
+            'water damages the false ceiling.',
+        budgetAmount: 1100,
+        paymentMode: 'UPI',
+        isInstant: false,
+        scheduledTime: now.subtract(const Duration(days: 5, hours: 3)),
+        acceptCount: 2,
+        chatCount: 1,
+        isAccepted: true,
+        acceptedBy: 'Verma Plumbing Works',
+        isClosed: true,
+      ),
+      // Closed without anybody being booked — the seeker sorted it out
+      // themselves, which is the other way a post ends.
+      PostDetails(
+        username: me,
+        userAvatarUrl: 'assets/images/avatar1.png',
+        postedAt: now.subtract(const Duration(days: 9)),
+        imageUrl: 'assets/images/marketplace.png',
+        description:
+            'Bedroom light flickering. Sorted it myself in the end — the '
+            'tube starter had gone.',
+        budgetAmount: 300,
+        paymentMode: 'Cash',
+        isInstant: true,
+        scheduledTime: null,
+        acceptCount: 1,
+        chatCount: 0,
+        isClosed: true,
+      ),
     ];
     return Right(post);
   }

@@ -26,6 +26,12 @@ class StatusPill extends StatelessWidget {
     : _isLive = true,
       _hasDot = false;
 
+  /// A requirement the seeker has taken down. Grey rather than green: it
+  /// is neither live nor a good outcome, just over.
+  const StatusPill.closed({super.key, this.label = 'CLOSED'})
+    : _isLive = false,
+      _hasDot = false;
+
   const StatusPill.comingSoon({super.key, this.label = 'COMING SOON'})
     : _isLive = false,
       _hasDot = false;

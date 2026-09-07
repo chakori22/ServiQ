@@ -59,8 +59,10 @@ class MeView extends StatelessWidget {
                 FadeSlideIn(
                   index: 1,
                   child: MeRow(
-                    title: 'My visits',
-                    value: '${account.upcomingVisits} upcoming',
+                    title: 'My orders',
+                    value: account.bookedOrders == 0
+                        ? 'Nothing booked yet'
+                        : '${account.bookedOrders} booked',
                     onTap: onVisits,
                   ),
                 ),
@@ -69,7 +71,7 @@ class MeView extends StatelessWidget {
                   index: 2,
                   child: MeRow(
                     title: 'My posts',
-                    value: '${account.openPosts} open',
+                    value: 'Open, accepted and closed',
                     onTap: onPosts,
                   ),
                 ),

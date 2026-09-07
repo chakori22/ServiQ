@@ -1,3 +1,5 @@
+import 'package:local_markerplace/dashboard/model/post_status.dart';
+
 class PostDetails {
   /// Unique identifier for the post (e.g. Firestore doc id / DB primary key)
 
@@ -38,6 +40,12 @@ class PostDetails {
   /// on an accepted post whose provider is not known.
   final String? acceptedBy;
 
+  /// Whether the seeker has taken the requirement down.
+  ///
+  /// Closing is theirs to do and separate from accepting: a job can be
+  /// settled with a provider, or simply no longer needed.
+  final bool isClosed;
+
   /// Number of chat messages / replies on this post
   final int chatCount;
 
@@ -58,6 +66,7 @@ class PostDetails {
     this.isExpanded = false,
     this.isAccepted = false,
     this.acceptedBy,
+    this.isClosed = false,
   });
 
   /// Identifies this post for the session's in-memory stores.
@@ -70,6 +79,14 @@ class PostDetails {
   /// quietly lost the moment the board was reopened.
   // TODO: use the server's post id once the feed comes from an endpoint.
   String get key => '$username|$description';
+
+  /// Where the requirement has got to. Closed wins over accepted: a post
+  /// taken down is off the board whatever happened before.
+  PostStatus get status => isClosed
+      ? PostStatus.closed
+      : isAccepted
+      ? PostStatus.accepted
+      : PostStatus.open;
 
   /// Whether [handle] is the person who posted this. An empty handle — no
   /// session — owns nothing.
@@ -123,6 +140,7 @@ class PostDetails {
       isExpanded: json['isExpanded'] as bool? ?? false,
       isAccepted: json['isAccepted'] as bool? ?? false,
       acceptedBy: json['acceptedBy'] as String?,
+      isClosed: json['isClosed'] as bool? ?? false,
     );
   }
 
@@ -142,6 +160,7 @@ class PostDetails {
       'isExpanded': isExpanded,
       'isAccepted': isAccepted,
       'acceptedBy': acceptedBy,
+      'isClosed': isClosed,
     };
   }
 
@@ -160,6 +179,7 @@ class PostDetails {
     bool? isExpanded,
     bool? isAccepted,
     String? acceptedBy,
+    bool? isClosed,
   }) {
     return PostDetails(
       username: username ?? this.username,
@@ -176,6 +196,7 @@ class PostDetails {
       isExpanded: isExpanded ?? this.isExpanded,
       isAccepted: isAccepted ?? this.isAccepted,
       acceptedBy: acceptedBy ?? this.acceptedBy,
+      isClosed: isClosed ?? this.isClosed,
     );
   }
 }

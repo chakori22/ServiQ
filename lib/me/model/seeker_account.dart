@@ -9,8 +9,7 @@ class SeekerAccount extends Equatable {
     required this.phone,
     required this.localityName,
     required this.joined,
-    required this.upcomingVisits,
-    required this.openPosts,
+    required this.bookedOrders,
     required this.unreadChats,
     required this.savedProviderCount,
     required this.savedAddressCount,
@@ -28,8 +27,9 @@ class SeekerAccount extends Equatable {
   /// "joined Aug 2026".
   final String joined;
 
-  final int upcomingVisits;
-  final int openPosts;
+  /// How many bookings the seeker has, for the "My orders" row. Real
+  /// session state rather than a figure typed into the view.
+  final int bookedOrders;
   final int unreadChats;
   final int savedProviderCount;
   final int savedAddressCount;
@@ -56,8 +56,7 @@ class SeekerAccount extends Equatable {
     phone,
     localityName,
     joined,
-    upcomingVisits,
-    openPosts,
+    bookedOrders,
     unreadChats,
     savedProviderCount,
     savedAddressCount,

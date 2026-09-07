@@ -20,6 +20,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     on<OnDismissAlertMessage>(_onDismissAlertMessage);
     on<OnOfferMade>(_onOfferMade);
     on<OnOfferAccepted>(_onOfferAccepted);
+    on<OnPostClosed>(_onPostClosed);
   }
   final DashboardRepository _dashboardRepository;
 
@@ -53,6 +54,22 @@ class PostBloc extends Bloc<PostEvent, PostState> {
           for (final post in state.postDetails)
             if (post.key == event.post.key)
               post.copyWith(isAccepted: true, acceptedBy: event.offer.name)
+            else
+              post,
+        ],
+      ),
+    );
+  }
+
+  /// Takes the seeker's own requirement off the board.
+  void _onPostClosed(OnPostClosed event, Emitter<PostState> emit) {
+    _board.close(event.post);
+    emit(
+      state.copyWith(
+        postDetails: [
+          for (final post in state.postDetails)
+            if (post.key == event.post.key)
+              post.copyWith(isClosed: true)
             else
               post,
         ],

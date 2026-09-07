@@ -59,3 +59,14 @@ final class OnOfferAccepted extends PostEvent {
   @override
   List<Object> get props => [post.key, offer];
 }
+
+/// The seeker took their own requirement down. Only they can raise it — the
+/// screen offers the action on your own post and nowhere else.
+final class OnPostClosed extends PostEvent {
+  final PostDetails post;
+
+  const OnPostClosed(this.post);
+
+  @override
+  List<Object> get props => [post.key];
+}

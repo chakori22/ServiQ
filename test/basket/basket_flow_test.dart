@@ -72,9 +72,15 @@ void main() {
       await pump(tester, const DiscoveryShell(initialLocality: locality));
 
       expect(find.byType(PendingBookingBar), findsOneWidget);
-      expect(find.text('1 service'), findsOneWidget);
-      // The bar writes the provider and the running total on one line.
-      expect(find.textContaining('₹349'), findsOneWidget);
+      // The bar names the store on top and the contents under it.
+      expect(
+        find.descendant(
+          of: find.byType(PendingBookingBar),
+          matching: find.text('Shahnaz RO & Chimney Services'),
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('₹349 · 1 service'), findsOneWidget);
 
       for (final tab in [DiscoveryTab.explore, DiscoveryTab.me]) {
         await tester.tap(
@@ -118,8 +124,7 @@ void main() {
 
       await pump(tester, const DiscoveryShell(initialLocality: locality));
 
-      expect(find.text('1 service · 2 parts'), findsOneWidget);
-      expect(find.textContaining('₹1,599'), findsOneWidget);
+      expect(find.text('₹1,599 · 1 service · 2 parts'), findsOneWidget);
     });
   });
 
@@ -203,7 +208,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(PendingBookingBar), findsOneWidget);
-      expect(find.text('1 part'), findsOneWidget);
+      expect(find.textContaining('1 part'), findsWidgets);
 
       await tester.tap(find.text('View cart'));
       await tester.pumpAndSettle();

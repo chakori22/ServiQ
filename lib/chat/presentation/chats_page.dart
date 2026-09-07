@@ -140,10 +140,10 @@ class _ChatsPageState extends State<ChatsPage> {
       ),
       bottomNavigationBar: AppBottomBar(
         current: DiscoveryTab.me,
-        onSelect: (tab) {
-          widget.onTabSelected?.call(tab);
-          Navigator.of(context).pop();
-        },
+        // Reporting the tab is enough: the shell brings itself back. Popping
+        // here as well took the shell off the stack with this screen and left
+        // the app black.
+        onSelect: (tab) => widget.onTabSelected?.call(tab),
         onPost: widget.onPost,
       ),
     );

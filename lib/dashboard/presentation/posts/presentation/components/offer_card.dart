@@ -19,10 +19,18 @@ class OfferCard extends StatelessWidget {
     required this.offer,
     this.onAccept,
     this.index = 0,
+    this.isDisabled = false,
   });
 
   final PostOffer offer;
   final VoidCallback? onAccept;
+
+  /// Shows Accept greyed out rather than leaving it off.
+  ///
+  /// Used on a closed requirement: the work is done, so the button cannot be
+  /// pressed — but removing it would leave the offer looking as though it
+  /// were never actionable, rather than no longer being so.
+  final bool isDisabled;
 
   /// Position in the list, which staggers the card's entrance.
   final int index;
@@ -99,9 +107,9 @@ class OfferCard extends StatelessWidget {
                 // Only the seeker who posted the requirement can take an
                 // offer, so for everybody else the button is absent rather
                 // than present and dead.
-                if (onAccept != null) ...[
+                if (onAccept != null || isDisabled) ...[
                   const SizedBox(width: 12),
-                  _AcceptButton(onTap: onAccept!),
+                  _AcceptButton(onTap: onAccept),
                 ],
               ],
             ),
@@ -132,10 +140,13 @@ class _OfferBadge extends StatelessWidget {
 class _AcceptButton extends StatelessWidget {
   const _AcceptButton({required this.onTap});
 
-  final VoidCallback onTap;
+  /// Null draws the button greyed and inert.
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onTap != null;
+
     return PressableScale(
       onTap: onTap,
       pressedScale: 0.92,
@@ -143,21 +154,35 @@ class _AcceptButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
-          gradient: const LinearGradient(
-            colors: [
-              AppColor.discoveryGradientStart,
-              AppColor.discoveryGradientEnd,
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColor.discoveryGradientEnd.withValues(alpha: 0.28),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
+          color: enabled ? null : AppColor.buttonDisabledFill,
+          gradient: enabled
+              ? const LinearGradient(
+                  colors: [
+                    AppColor.discoveryGradientStart,
+                    AppColor.discoveryGradientEnd,
+                  ],
+                )
+              : null,
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: AppColor.discoveryGradientEnd.withValues(
+                      alpha: 0.28,
+                    ),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : null,
         ),
-        child: Text('Accept', style: DiscoveryText.chipSelected),
+        child: Text(
+          'Accept',
+          style: enabled
+              ? DiscoveryText.chipSelected
+              : DiscoveryText.chipSelected.copyWith(
+                  color: AppColor.discoveryTextDisabled,
+                ),
+        ),
       ),
     );
   }

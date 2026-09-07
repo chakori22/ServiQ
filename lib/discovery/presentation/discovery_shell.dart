@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:local_markerplace/visit/presentation/my_orders_page.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/presentation/my_posts_page.dart';
 import 'package:local_markerplace/chat/presentation/chats_page.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
@@ -336,10 +338,25 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
           onPickLocality: _pickLocality,
         ),
       ),
-      onVisits: () => _notice('My visits — coming soon.'),
-      // "My posts" is about the seeker's own requirements, so the board
-      // opens with that chip already on rather than on everybody's.
-      onPosts: () => _openPosts(filter: BoardFilter.mine),
+      onVisits: () => _push(
+        MyOrdersPage(
+          onTabSelected: _selectTabFromChild,
+          onPost: _openPostForm,
+          onBrowse: () {
+            Navigator.of(context).pop();
+            setState(() => _tab = DiscoveryTab.explore);
+          },
+        ),
+      ),
+      // "My posts" is the seeker's own history — open, accepted and closed —
+      // rather than the board narrowed to them.
+      onPosts: () => _push(
+        MyPostsPage(
+          localityName: _localityName,
+          onTabSelected: _selectTabFromChild,
+          onPost: _openPostForm,
+        ),
+      ),
       onChats: _openChats,
       onIdentity: () => _push(KycListPage(repository: widget.meRepository)),
       onSavedProviders: () => _push(

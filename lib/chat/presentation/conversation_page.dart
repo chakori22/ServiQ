@@ -61,6 +61,20 @@ class _ConversationPageState extends State<ConversationPage> {
     _scroll.jumpTo(_scroll.position.maxScrollExtent);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Opening the keyboard shortens the list; without this the message the
+    // seeker is replying to slides out of sight behind it.
+    final inset = MediaQuery.viewInsetsOf(context).bottom;
+    if (inset > 0 && inset != _lastInset) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _toBottom());
+    }
+    _lastInset = inset;
+  }
+
+  double _lastInset = 0;
+
   void _send() {
     final text = _message.text.trim();
     if (text.isEmpty) return;
@@ -167,13 +181,12 @@ class _ConversationPageState extends State<ConversationPage> {
                 },
               ),
             ),
+            // The composer sits inside the body, not in the Scaffold's
+            // bottomNavigationBar: that keeps its place under the keyboard,
+            // which hid the field and the send button behind it.
+            ChatComposer(controller: _message, canSend: true, onSend: _send),
           ],
         ),
-      ),
-      bottomNavigationBar: ChatComposer(
-        controller: _message,
-        canSend: true,
-        onSend: _send,
       ),
     );
   }

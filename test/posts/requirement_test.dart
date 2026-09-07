@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -266,6 +267,41 @@ void main() {
     });
   });
 
+  group('a closed post', () {
+    testWidgets('reads closed on the detail screen, not open', (tester) async {
+      await pumpRequirement(
+        tester,
+        requirement: post(author: 'chakorichaturvedi').copyWith(isClosed: true),
+        signedInAs: 'chakorichaturvedi',
+      );
+
+      expect(find.text('CLOSED'), findsOneWidget);
+      expect(find.text('OPEN'), findsNothing);
+      // The work is done, so Accept is greyed rather than taken away — an
+      // offer with no button would read as one that was never actionable.
+      expect(find.text('Accept'), findsNWidgets(3));
+      for (final element in find.text('Accept').evaluate()) {
+        final button = element.findAncestorWidgetOfExactType<PressableScale>();
+        expect(button?.onTap, isNull);
+      }
+      expect(find.text('Make an offer'), findsNothing);
+    });
+
+    testWidgets('somebody else\'s closed post shows no button at all', (
+      tester,
+    ) async {
+      await pumpRequirement(
+        tester,
+        requirement: post(author: 'rahul_verma').copyWith(isClosed: true),
+        signedInAs: 'chakorichaturvedi',
+      );
+
+      // It was never theirs to press, so there is nothing to grey out.
+      expect(find.text('Accept'), findsNothing);
+      expect(find.text('Make an offer'), findsNothing);
+    });
+  });
+
   group('the money fields', () {
     testWidgets('take digits and nothing else', (tester) async {
       await pumpRequirement(
@@ -310,6 +346,9 @@ void main() {
 
     test('accepting settles that post and names who took it', () async {
       final bloc = await loadedBoard();
+      final settledBefore = bloc.state.postDetails
+          .where((post) => post.isAccepted)
+          .length;
       final target = bloc.state.postDetails.firstWhere(
         (post) => !post.isAccepted,
       );
@@ -322,11 +361,11 @@ void main() {
       );
       expect(updated.isAccepted, isTrue);
       expect(updated.acceptedBy, 'Sharma Carpentry');
-      // Only that one moved.
+      // Only that one moved: the seed already carries settled requirements
+      // of its own, so count the difference rather than a fixed total.
       expect(
         bloc.state.postDetails.where((post) => post.isAccepted).length,
-        2,
-        reason: 'the seed already carries one settled requirement',
+        settledBefore + 1,
       );
     });
 
