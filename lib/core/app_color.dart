@@ -220,6 +220,22 @@ class AppColor {
   /// Behind a "only 2 left" stock pill, where in stock uses the live tint.
   static const Color stockLowTint = Color(0xFFFDECEC);
 
+  // --- Skeletons ------------------------------------------------------------
+  // Two fills, no shimmer. The States page draws them flat and labels the
+  // frame "never a spinner": a skeleton in the shape of what is coming says
+  // more about the wait than a spinner does, and a still one does not fight
+  // the content that replaces it.
+
+  /// The heavier of the two skeleton fills — headings, names, primary bars.
+  static const Color skeletonStrong = Color(0xFFEEF3FB);
+
+  /// The lighter fill, for the secondary bars under them. Shares its value
+  /// with [discoveryTint], which is what the design uses.
+  static const Color skeletonSoft = discoveryTint;
+
+  /// Wash behind a profile skeleton's hero.
+  static const Color skeletonHeroTop = Color(0xFFF2F6FF);
+
   // --- Generated artwork ----------------------------------------------------
   // The flow has no photography behind it, so cards, tiles and heroes carry
   // artwork painted in code instead: a gradient plate with bézier ribbons

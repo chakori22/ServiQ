@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:local_markerplace/components/skeleton/skeleton.dart';
 import 'package:local_markerplace/visit/presentation/my_orders_page.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/my_posts_page.dart';
 import 'package:local_markerplace/chat/presentation/chats_page.dart';
@@ -304,11 +305,16 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
   @override
   Widget build(BuildContext context) {
     if (_resolvingLocality) {
-      // A single frame or two while secure storage is read.
+      // Reading the stored area takes a frame or two. The design's rule is
+      // never a spinner, so home wears the shape it is about to become.
       return const Scaffold(
         backgroundColor: AppColor.white,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColor.discoveryAccent),
+        body: SafeArea(
+          bottom: false,
+          child: SkeletonList(
+            hasHeader: true,
+            caption: 'Loading providers near you',
+          ),
         ),
       );
     }

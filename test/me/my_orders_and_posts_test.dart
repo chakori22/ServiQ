@@ -46,6 +46,16 @@ Future<void> loadFonts() async {
   }
 }
 
+/// Waits for a screen's fetch to land.
+///
+/// `pumpAndSettle` is not enough on its own any more: a still skeleton
+/// schedules no frames, so settling returns before the pending future has
+/// been given any time. The clock has to be advanced explicitly.
+Future<void> settleFetch(WidgetTester tester) async {
+  await tester.pump(const Duration(seconds: 3));
+  await tester.pumpAndSettle();
+}
+
 Future<void> pump(WidgetTester tester, Widget child) async {
   tester.view.physicalSize = const Size(390 * 3, 1100 * 3);
   tester.view.devicePixelRatio = 3;
@@ -114,6 +124,7 @@ void main() {
   group('my posts', () {
     testWidgets('groups the posts the seeker made, by status', (tester) async {
       await pump(tester, const MyPostsPage(localityName: 'Ajnara Gen X'));
+      await settleFetch(tester);
 
       expect(find.text('My posts'), findsOneWidget);
       // Three chips, each with its own count.
@@ -126,6 +137,7 @@ void main() {
 
     testWidgets('the chips narrow to one status at a time', (tester) async {
       await pump(tester, const MyPostsPage(localityName: 'Ajnara Gen X'));
+      await settleFetch(tester);
 
       await tester.tap(find.textContaining('Accepted'));
       await tester.pumpAndSettle();

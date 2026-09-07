@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:local_markerplace/components/skeleton/skeleton.dart';
 import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
@@ -152,11 +153,9 @@ class _MyPostsViewState extends State<_MyPostsView> {
                 ),
                 Expanded(
                   child: state.postsLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppColor.discoveryAccent,
-                          ),
-                        )
+                      // Never a spinner: the skeleton is the shape of the
+                      // posts that are coming.
+                      ? const SkeletonList(caption: 'Loading your posts')
                       : showing.isEmpty
                       ? _Nothing(status: _tab, onPost: widget.onPost)
                       : ListView.separated(

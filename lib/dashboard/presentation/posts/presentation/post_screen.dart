@@ -3,13 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:local_markerplace/components/skeleton/skeleton.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/dashboard/model/post_details.dart';
 import 'package:local_markerplace/dashboard/model/post_draft.dart';
-import 'package:local_markerplace/dashboard/presentation/components/dashboard_shimmer.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/components/requirement_card.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/requirement_page.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/components/post_upload_banner.dart';
@@ -250,7 +250,7 @@ class _PostScreenState extends State<PostScreenContainer> {
                 const SizedBox(height: 16),
                 Expanded(
                   child: state.postsLoading
-                      ? const RequirementBoardShimmer()
+                      ? const SkeletonList(caption: 'Loading what people need')
                       : posts.isEmpty
                       ? Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 20),
