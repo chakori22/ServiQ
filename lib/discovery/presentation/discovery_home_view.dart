@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'package:local_markerplace/chat/repository/chat_repository.dart';
 import 'package:local_markerplace/components/art/bezier_wash.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/discovery/model/provider_summary.dart';
@@ -29,6 +30,7 @@ class DiscoveryHomeView extends StatelessWidget {
     required this.onSearch,
     required this.onSeeAllCategories,
     required this.onSeeAllProviders,
+    this.onChat,
     this.onCategoryTap,
     this.onProviderTap,
     this.repository = const DiscoveryRepository(),
@@ -39,6 +41,9 @@ class DiscoveryHomeView extends StatelessWidget {
   final VoidCallback onSearch;
   final VoidCallback onSeeAllCategories;
   final VoidCallback onSeeAllProviders;
+
+  /// Opens the conversations from the header's chat button.
+  final VoidCallback? onChat;
   final ValueChanged<ServiceCategory>? onCategoryTap;
   final ValueChanged<ProviderSummary>? onProviderTap;
   final DiscoveryRepository repository;
@@ -66,7 +71,8 @@ class DiscoveryHomeView extends StatelessWidget {
                 localityName: localityName,
                 onChangeLocality: onChangeLocality,
                 onNotifications: () => showNotificationsSheet(context),
-                unreadChats: 2,
+                onChat: onChat,
+                unreadChats: ChatRepository.shared.unreadCount,
                 unreadNotifications: NotificationRepository.shared.unreadCount,
               ),
               const SizedBox(height: 14),

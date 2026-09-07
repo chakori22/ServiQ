@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -265,6 +266,9 @@ class _ScheduleFormState extends State<_ScheduleForm> {
                             hintText: '500',
                             prefixText: '₹',
                             keyboardType: TextInputType.number,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.digitsOnly,
+                            ],
                             maxLines: 1,
                             maxLength: 20,
                             fillColor: AppColor.white,
@@ -329,7 +333,16 @@ class _ScheduleFormState extends State<_ScheduleForm> {
           // progress banner while it uploads.
           onPost: () => GoRouter.of(context).pushReplacementAppRoute(
             AppRoutes.posts,
-            extra: state.toDraft(isInstant: false, username: _signedInUsername),
+            // The board reads everything it opens with out of one
+            // [PostsArgs]; handing it a bare draft leaves it unrecognised,
+            // and the upload banner and the locality bar both go missing.
+            extra: PostsArgs(
+              draft: state.toDraft(
+                isInstant: false,
+                username: _signedInUsername,
+              ),
+              localityName: widget.localityName,
+            ),
           ),
         ),
       ),

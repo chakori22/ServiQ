@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../core/app_color.dart';
 
@@ -13,6 +14,7 @@ class AppTextField extends StatelessWidget {
     this.enabled = true,
     this.obscureText = false,
     this.keyboardType,
+    this.inputFormatters,
     this.maxLength,
     this.maxLines = 1,
     this.prefixText,
@@ -42,6 +44,12 @@ class AppTextField extends StatelessWidget {
   final bool enabled;
   final bool obscureText;
   final TextInputType? keyboardType;
+
+  /// Restricts what can be typed. [keyboardType] only asks for a particular
+  /// keyboard; it does not stop other characters arriving — from a paste, a
+  /// hardware keyboard, or an autofill — so a field that must be digits has
+  /// to say so here as well.
+  final List<TextInputFormatter>? inputFormatters;
   final int? maxLength;
 
   /// Number of lines the field can grow to. Set to null for an
@@ -145,10 +153,7 @@ class AppTextField extends StatelessWidget {
         children: [
           if (prefixIcon != null)
             Padding(
-              padding: EdgeInsets.only(
-                left: 18,
-                right: hasPrefix ? 0 : 10,
-              ),
+              padding: EdgeInsets.only(left: 18, right: hasPrefix ? 0 : 10),
               child: prefixIcon,
             ),
           if (hasPrefix)
@@ -173,6 +178,7 @@ class AppTextField extends StatelessWidget {
               enabled: enabled,
               obscureText: obscureText,
               keyboardType: keyboardType,
+              inputFormatters: inputFormatters,
               maxLength: maxLength,
               maxLines: obscureText ? 1 : maxLines,
               onChanged: onChanged,

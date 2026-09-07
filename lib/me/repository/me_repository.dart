@@ -1,3 +1,4 @@
+import 'package:local_markerplace/chat/repository/chat_repository.dart';
 import 'package:local_markerplace/me/model/kyc_document.dart';
 import 'package:local_markerplace/me/model/saved_address.dart';
 import 'package:local_markerplace/me/model/saved_provider.dart';
@@ -37,7 +38,7 @@ class MeRepository {
       joined: 'joined Aug 2026',
       upcomingVisits: 2,
       openPosts: 4,
-      unreadChats: 2,
+      unreadChats: ChatRepository.shared.unreadCount,
       savedProviderCount: savedProviders().length,
       savedAddressCount: addresses().length,
       interests: interests.isEmpty

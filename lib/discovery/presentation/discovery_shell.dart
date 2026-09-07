@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:local_markerplace/chat/presentation/chats_page.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/discovery/model/locality.dart';
@@ -236,6 +237,24 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
     );
   }
 
+  /// Every way into the conversations — the Me row and home's chat button.
+  Future<void> _openChats() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatsPage(
+          onTabSelected: _selectTabFromChild,
+          onPost: _openPostForm,
+          onFindProvider: () {
+            Navigator.of(context).pop();
+            setState(() => _tab = DiscoveryTab.explore);
+          },
+        ),
+      ),
+    );
+    // The badge on home counts unread threads, so opening one changes it.
+    if (mounted) setState(() {});
+  }
+
   /// Home's category tiles are a way into the catalogue, not six screens:
   /// "See all" opens it unfiltered, a tile opens it with that chip lit.
   Future<void> _openServices([String? category]) async {
@@ -321,7 +340,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
       // "My posts" is about the seeker's own requirements, so the board
       // opens with that chip already on rather than on everybody's.
       onPosts: () => _openPosts(filter: BoardFilter.mine),
-      onChats: () => _notice('Chats — coming soon.'),
+      onChats: _openChats,
       onIdentity: () => _push(KycListPage(repository: widget.meRepository)),
       onSavedProviders: () => _push(
         SavedProvidersPage(
@@ -370,6 +389,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
         return DiscoveryHomeView(
           localityName: _localityName ?? 'Choose your area',
           repository: widget.repository,
+          onChat: _openChats,
           onChangeLocality: _pickLocality,
           onSearch: _openSearch,
           onProviderTap: _openProvider,

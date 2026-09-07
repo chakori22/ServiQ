@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:local_markerplace/components/primary_button.dart';
 import 'package:local_markerplace/core/app_color.dart';
@@ -107,6 +108,7 @@ class _MakeOfferSheetState extends State<_MakeOfferSheet> {
                 hintText: '800',
                 prefixText: '₹',
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 maxLines: 1,
                 maxLength: 10,
                 fillColor: AppColor.white,

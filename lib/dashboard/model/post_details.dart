@@ -62,10 +62,14 @@ class PostDetails {
 
   /// Identifies this post for the session's in-memory stores.
   ///
-  /// The API's payload carries no id yet, so this stands in: an author plus
-  /// the instant they posted plus what they wrote is unique in practice, and
-  /// it survives the list being rebuilt.
-  String get key => '$username|${postedAt.toIso8601String()}|$description';
+  /// The API's payload carries no id yet, so an author plus what they wrote
+  /// stands in. It deliberately leaves the timestamp out: the stub feed
+  /// recomputes `postedAt` relative to now on every fetch, so a key
+  /// containing it changed between one fetch and the next — and anything
+  /// stored against a post, an offer made on it or an offer accepted, was
+  /// quietly lost the moment the board was reopened.
+  // TODO: use the server's post id once the feed comes from an endpoint.
+  String get key => '$username|$description';
 
   /// Whether [handle] is the person who posted this. An empty handle — no
   /// session — owns nothing.

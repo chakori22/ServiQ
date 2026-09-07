@@ -24,11 +24,13 @@ enum PostPriority {
     PostPriority.urgent => 'Priority, plus nearby areas and reminders',
   };
 
-  /// What the option gets you. [area] names the board it would appear on.
-  String description(String area) => switch (this) {
+  /// What the option gets you. [area] names the board it would appear on;
+  /// null where the area is not known, which reads as "your board" rather
+  /// than the ungrammatical "the your board".
+  String description(String? area) => switch (this) {
     PostPriority.standard =>
-      'Shown in the $area board. Providers see it next time they open the '
-          'app.',
+      'Shown in ${area == null ? 'your' : 'the $area'} board. Providers see '
+          'it next time they open the app.',
     PostPriority.priority =>
       'Pinned to the top of the board and pushed to every matching provider '
           'straight away.',

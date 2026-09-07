@@ -4,13 +4,17 @@ import 'package:local_markerplace/dashboard/model/post_details.dart';
 import 'package:local_markerplace/dashboard/model/post_draft.dart';
 import 'package:local_markerplace/dashboard/model/post_offer.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
+import 'package:local_markerplace/dashboard/repository/post_board_repository.dart';
 part 'post_event.dart';
 part 'post_state.dart';
 
 class PostBloc extends Bloc<PostEvent, PostState> {
-  PostBloc({required DashboardRepository dashboardRepository})
-    : _dashboardRepository = dashboardRepository,
-      super(const PostState.initial()) {
+  PostBloc({
+    required DashboardRepository dashboardRepository,
+    PostBoardRepository? board,
+  }) : _dashboardRepository = dashboardRepository,
+       _board = board ?? PostBoardRepository.shared,
+       super(const PostState.initial()) {
     on<OnFetchPostDetails>(_onFetchPostDetails);
     on<OnStartPostUpload>(_onStartPostUpload);
     on<OnDismissAlertMessage>(_onDismissAlertMessage);
@@ -19,9 +23,14 @@ class PostBloc extends Bloc<PostEvent, PostState> {
   }
   final DashboardRepository _dashboardRepository;
 
+  /// Everything the seeker has done to the board this session. The bloc is
+  /// rebuilt every time the board opens, so it cannot be the only record.
+  final PostBoardRepository _board;
+
   /// Bumps the offer count on the post that was offered on. The offer's own
   /// details live in the offer store; the board only needs the number.
   void _onOfferMade(OnOfferMade event, Emitter<PostState> emit) {
+    _board.addOffer(event.post);
     emit(
       state.copyWith(
         postDetails: [
@@ -37,6 +46,7 @@ class PostBloc extends Bloc<PostEvent, PostState> {
 
   /// Settles a requirement on the offer its owner picked.
   void _onOfferAccepted(OnOfferAccepted event, Emitter<PostState> emit) {
+    _board.accept(event.post, event.offer.name);
     emit(
       state.copyWith(
         postDetails: [
@@ -71,7 +81,9 @@ class PostBloc extends Bloc<PostEvent, PostState> {
         emit(
           state.copyWith(
             errorMessage: "",
-            postDetails: postDetails,
+            // The feed is the same seeded list every time; what the seeker
+            // has posted and settled is laid back over it.
+            postDetails: _board.apply(postDetails),
             postsLoading: false,
           ),
         );
@@ -101,9 +113,11 @@ class PostBloc extends Bloc<PostEvent, PostState> {
     // A failure already cleared the draft; only publish when it survived.
     if (state.uploadingDraft == null) return;
 
+    final published = event.draft.toPostDetails();
+    _board.publish(published);
     emit(
       state.copyWith(
-        postDetails: [event.draft.toPostDetails(), ...state.postDetails],
+        postDetails: [published, ...state.postDetails],
         clearUploadingDraft: true,
         uploadProgress: 0,
       ),

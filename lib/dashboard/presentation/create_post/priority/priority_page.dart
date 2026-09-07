@@ -19,7 +19,7 @@ class PriorityPage extends StatefulWidget {
     super.key,
     required this.requirement,
     this.selected = PostPriority.standard,
-    this.areaName = 'your',
+    this.areaName,
   });
 
   /// What the seeker typed, echoed back so they know what they are boosting.
@@ -28,7 +28,8 @@ class PriorityPage extends StatefulWidget {
   final PostPriority selected;
 
   /// Named in the Standard option's description.
-  final String areaName;
+  /// The seeker's area, when it is known. Null reads as "your board".
+  final String? areaName;
 
   @override
   State<PriorityPage> createState() => _PriorityPageState();
@@ -111,7 +112,7 @@ class _PriorityOption extends StatelessWidget {
   });
 
   final PostPriority option;
-  final String areaName;
+  final String? areaName;
   final bool isSelected;
   final VoidCallback onTap;
 

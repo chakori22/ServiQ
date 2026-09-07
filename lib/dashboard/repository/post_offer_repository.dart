@@ -44,10 +44,19 @@ class PostOfferRepository {
 
   /// Everything on [post] — the ones it arrived with, then anything offered
   /// here since.
-  List<PostOffer> offersOn(PostDetails post) => [
-    ..._catalogue.take(post.acceptCount.clamp(0, _catalogue.length)),
-    ...?_added[post.key],
-  ];
+  ///
+  /// The post's count is the total, and an offer made here has already been
+  /// added to it. The seeded slice is therefore taken from what is left over
+  /// — otherwise offering on a post with none conjured a stranger's offer
+  /// alongside your own.
+  List<PostOffer> offersOn(PostDetails post) {
+    final added = _added[post.key] ?? const <PostOffer>[];
+    final seeded = (post.acceptCount - added.length).clamp(
+      0,
+      _catalogue.length,
+    );
+    return [..._catalogue.take(seeded), ...added];
+  }
 
   /// Records an offer made on this device.
   void add(PostDetails post, PostOffer offer) =>

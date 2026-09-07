@@ -2,8 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:local_markerplace/cart/presentation/cart_page.dart';
 import 'package:local_markerplace/dashboard/bloc/dashboard_bloc.dart';
-import 'package:local_markerplace/dashboard/model/services.dart';
 import 'package:local_markerplace/dashboard/model/post_draft.dart';
+import 'package:local_markerplace/dashboard/model/services.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/instant/instant_form.dart';
 import 'package:local_markerplace/dashboard/presentation/create_post/schedule/schedule_form.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
@@ -120,8 +120,14 @@ List<RouteBase> createRoutes() {
       // a freshly shared post to upload, the area it belongs to, and which
       // chip to open on. A deep link arrives with none of them.
       builder: (context, state) {
-        final args = state.extra;
-        if (args is! PostsArgs) return const PostPage();
+        final args = switch (state.extra) {
+          final PostsArgs args => args,
+          // A draft on its own still has to upload. The board used to drop
+          // anything that was not a PostsArgs, which meant a form posting
+          // the older shape lost its progress banner silently.
+          final PostDraft draft => PostsArgs(draft: draft),
+          _ => const PostsArgs(),
+        };
         return PostPage(
           uploadingDraft: args.draft,
           localityName: args.localityName,

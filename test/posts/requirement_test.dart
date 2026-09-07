@@ -9,6 +9,7 @@ import 'package:local_markerplace/dashboard/model/post_offer.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/bloc/bloc/post_bloc.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/requirement_page.dart';
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
+import 'package:local_markerplace/dashboard/repository/post_board_repository.dart';
 import 'package:local_markerplace/dashboard/repository/post_offer_repository.dart';
 import 'package:local_markerplace/visit/repository/visit_repository.dart';
 
@@ -74,6 +75,11 @@ Future<void> loadFonts() async {
 void main() {
   setUpAll(loadFonts);
 
+  // The board's session store is a singleton; one test must not colour the
+  // next.
+  setUp(PostBoardRepository.shared.clear);
+  tearDown(PostBoardRepository.shared.clear);
+
   group('somebody else posted it', () {
     testWidgets('there is no way to accept, only to offer', (tester) async {
       await pumpRequirement(
@@ -137,6 +143,40 @@ void main() {
       expect(find.text('Make an offer'), findsNothing);
     });
 
+    testWidgets('with no offers yet, there is still nothing to bid on', (
+      tester,
+    ) async {
+      await pumpRequirement(
+        tester,
+        requirement: post(author: 'chakorichaturvedi', offers: 0),
+        signedInAs: 'chakorichaturvedi',
+      );
+
+      expect(find.text('No offers yet'), findsOneWidget);
+      // You cannot offer on your own requirement, empty or not.
+      expect(find.text('Make an offer'), findsNothing);
+      expect(find.text('Accept'), findsNothing);
+    });
+
+    testWidgets('once settled, it is neither acceptable nor biddable', (
+      tester,
+    ) async {
+      await pumpRequirement(
+        tester,
+        requirement: post(author: 'chakorichaturvedi'),
+        signedInAs: 'chakorichaturvedi',
+      );
+
+      await tester.tap(find.text('Accept').first);
+      await tester.pumpAndSettle();
+      Navigator.of(tester.element(find.text('Visit booked'))).pop();
+      await tester.pumpAndSettle();
+
+      expect(find.text('ACCEPTED'), findsOneWidget);
+      expect(find.text('Accept'), findsNothing);
+      expect(find.text('Make an offer'), findsNothing);
+    });
+
     testWidgets('accepting books the visit outright', (tester) async {
       PostOffer? accepted;
       final visits = VisitRepository();
@@ -176,6 +216,75 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('ACCEPTED'), findsOneWidget);
       expect(find.text('Accept'), findsNothing);
+    });
+  });
+
+  group('a settled post of somebody else\'s', () {
+    testWidgets('cannot be offered on any more', (tester) async {
+      await pumpRequirement(
+        tester,
+        requirement: post(author: 'rahul_verma').copyWith(
+          isAccepted: true,
+          acceptedBy: 'Sharma Carpentry',
+        ),
+        signedInAs: 'chakorichaturvedi',
+      );
+
+      expect(find.text('ACCEPTED'), findsOneWidget);
+      expect(find.text('Make an offer'), findsNothing);
+      expect(find.text('Accept'), findsNothing);
+    });
+  });
+
+  group('offering on a stranger\'s post', () {
+    testWidgets('adds one offer, not two', (tester) async {
+      final offers = PostOfferRepository();
+      // A post nobody has answered yet.
+      final theirs = post(author: 'rahul_verma', offers: 0);
+
+      await pumpRequirement(
+        tester,
+        requirement: theirs,
+        signedInAs: 'chakorichaturvedi',
+        offers: offers,
+      );
+
+      expect(find.text('No offers yet'), findsOneWidget);
+
+      await tester.tap(find.text('Make an offer'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '750');
+      await tester.enterText(find.byType(TextField).at(1), 'tomorrow morning');
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.text('Send offer'));
+      await tester.pumpAndSettle();
+
+      // The count is the total, so the seeded slice must not grow with it —
+      // offering used to summon a stranger's offer alongside your own.
+      expect(find.text('1 offer'), findsOneWidget);
+      expect(find.text('₹750'), findsOneWidget);
+      expect(find.text('Shahnaz RO & Chimney'), findsNothing);
+    });
+  });
+
+  group('the money fields', () {
+    testWidgets('take digits and nothing else', (tester) async {
+      await pumpRequirement(
+        tester,
+        requirement: post(author: 'rahul_verma'),
+        signedInAs: 'chakorichaturvedi',
+      );
+
+      await tester.tap(find.text('Make an offer'));
+      await tester.pumpAndSettle();
+
+      // A number keyboard is only a request; a paste or a hardware keyboard
+      // can still put letters in, and "₹750tomorrow" is not a price.
+      await tester.enterText(find.byType(TextField).first, '750tomorrow');
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('750'), findsOneWidget);
+      expect(find.text('750tomorrow'), findsNothing);
     });
   });
 
