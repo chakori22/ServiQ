@@ -9,6 +9,7 @@ import 'package:local_markerplace/discovery/presentation/components/pending_book
 import 'package:local_markerplace/discovery/presentation/discovery_shell.dart';
 import 'package:local_markerplace/discovery/presentation/services_page.dart';
 import 'package:local_markerplace/provider/presentation/components/segmented_tabs.dart';
+import 'package:local_markerplace/provider/repository/provider_repository.dart';
 import 'package:local_markerplace/provider/presentation/provider_profile_page.dart';
 import 'package:local_markerplace/store/model/cart_product.dart';
 import 'package:local_markerplace/visit/model/visit_service.dart';
@@ -126,18 +127,26 @@ void main() {
     testWidgets('lists every job and narrows to a category', (tester) async {
       await pump(tester, const ServicesPage(localityName: locality));
 
-      expect(find.text('17 jobs in $locality'), findsOneWidget);
-      expect(find.text('AC Servicing'), findsOneWidget);
-      expect(find.text('RO Filter Change'), findsOneWidget);
+      const providers = ProviderRepository();
+      final all = providers.servicesIn(locality);
+      final plumbing = providers.servicesIn(locality, categoryLabel: 'Plumber');
+
+      // The catalogue is the providers' own service lists flattened, so it
+      // is as long as they make it.
+      expect(all, isNotEmpty);
+      expect(find.text('${all.length} jobs in $locality'), findsOneWidget);
 
       await tester.tap(find.text('Plumber'));
       await tester.pumpAndSettle();
 
       // The chip narrows the same flat list rather than opening a screen of
-      // its own.
-      expect(find.text('3 jobs in $locality'), findsOneWidget);
-      expect(find.text('Tap & Mixer Repair'), findsOneWidget);
-      expect(find.text('RO Filter Change'), findsNothing);
+      // its own, and only plumbers survive it.
+      expect(plumbing, isNotEmpty);
+      expect(plumbing.length, lessThan(all.length));
+      expect(find.text('${plumbing.length} jobs in $locality'), findsOneWidget);
+      for (final service in plumbing) {
+        expect(service.categoryLabel, 'Plumber');
+      }
     });
 
     testWidgets('adding puts the job in the cart and offers to undo it', (

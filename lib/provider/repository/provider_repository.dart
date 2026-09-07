@@ -1,7 +1,11 @@
+import 'package:local_markerplace/discovery/model/catalogue_service.dart';
+import 'package:local_markerplace/discovery/model/provider_summary.dart';
+import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
 import 'package:local_markerplace/provider/model/provider_profile.dart';
 import 'package:local_markerplace/provider/model/provider_review.dart';
 import 'package:local_markerplace/provider/model/provider_service.dart';
 import 'package:local_markerplace/provider/model/store_product.dart';
+import 'package:local_markerplace/provider/model/trade_catalogue.dart';
 
 /// Profiles for the provider page.
 ///
@@ -197,7 +201,202 @@ class ProviderRepository {
     return null;
   }
 
-  /// Falls back to the flagship profile so a tap from anywhere in discovery
-  /// lands on a page with content while the endpoint is still missing.
-  ProviderProfile forName(String name) => byName(name) ?? _shahnaz;
+  /// The page for [name].
+  ///
+  /// Two providers are written out by hand because the design draws them and
+  /// the rest of the seed refers to them. Every other business in the
+  /// directory is built from its trade and its own name, so an electrician
+  /// sells electrical work and a plumber sells plumbing — and two
+  /// electricians do not sell an identical list at identical prices.
+  ProviderProfile forName(String name) =>
+      byName(name) ?? _fromDirectory(name) ?? _shahnaz;
+
+  /// Every job bookable in [localityName], flattened out of the providers
+  /// who work there.
+  ///
+  /// It is built from the profiles rather than kept as a list of its own, so
+  /// the price a seeker sees on the services screen is by construction the
+  /// price on the provider's page. The two used to be written separately and
+  /// quietly disagreed.
+  List<CatalogueService> servicesIn(
+    String localityName, {
+    String? categoryLabel,
+  }) {
+    final catalogue = <CatalogueService>[];
+    for (final provider in _directory.providersIn(localityName)) {
+      final category = provider.trade.split('·').first.trim();
+      if (categoryLabel != null && category != categoryLabel) continue;
+      final profile = forName(provider.name);
+      for (final service in profile.services) {
+        catalogue.add(
+          CatalogueService(
+            name: service.name,
+            detail: service.detail,
+            fromPrice: service.fromPrice,
+            categoryLabel: category,
+            providerName: provider.name,
+            rating: provider.rating,
+            isVerifiedProvider: provider.isVerified,
+          ),
+        );
+      }
+    }
+    return catalogue;
+  }
+
+  ProviderProfile? _fromDirectory(String name) {
+    final summary = _directory.byName(name);
+    if (summary == null) return null;
+    return _derive(summary);
+  }
+
+  static const DiscoveryRepository _directory = DiscoveryRepository();
+
+  /// Builds a page for a provider the directory knows but nobody has written
+  /// out.
+  ///
+  /// Everything varies with the business's own name, so the page is stable
+  /// between visits and different from its neighbours': which jobs they
+  /// take, what they stock, what they charge, when they open and what people
+  /// said about them.
+  static ProviderProfile _derive(ProviderSummary summary) {
+    final catalogue = TradeCatalogue.of(summary.trade);
+    final seed = _seedOf(summary.name);
+
+    // A provider offers most of their trade's work but not all of it, taken
+    // from a different point in the list each time.
+    final services = _rotate(
+      catalogue.services,
+      seed,
+    ).take(3 + seed % 3).map((service) => _priced(service, seed)).toList();
+
+    // Some businesses keep a counter and some only do call-outs, which is
+    // why a third of them have no store at all.
+    final products = seed % 3 == 0
+        ? const <StoreProduct>[]
+        : _rotate(catalogue.products, seed ~/ 2).take(3 + seed % 4).toList();
+
+    return ProviderProfile(
+      name: summary.name,
+      badge: summary.isVerified
+          ? ProviderBadge.verified
+          : ProviderBadge.provider,
+      // Always a date that has already happened — a business trading
+      // "since Nov 2026" when it is September reads as a bug.
+      since: 'since ${_months[seed % _months.length]} 202${2 + seed % 3}',
+      locationLine: 'Works across ${summary.localityName}',
+      rating: summary.rating,
+      reviewCount: summary.reviewCount,
+      ratingBreakdown: _breakdownFor(summary.rating),
+      badgeNote: summary.isVerified
+          ? null
+          : '${summary.name.split(' ').first} verified their ID but has no '
+                'GSTIN. Individuals are not required to have one.',
+      about: catalogue.about.replaceAll('{area}', summary.localityName),
+      address:
+          '${summary.localityName}, Crossings Republik,\nGhaziabad '
+          '201016',
+      hours: _hours[seed % _hours.length],
+      serves: summary.localityName,
+      services: services,
+      products: products,
+      reviews: _reviewsFor(catalogue, seed),
+    );
+  }
+
+  /// Prices move a little between businesses — the same job is not quoted to
+  /// the rupee by every provider in the society.
+  static ProviderService _priced(ProviderService service, int seed) {
+    final base = _rupeesIn(service.fromPrice);
+    if (base == 0) return service;
+    // Between 10% under and 15% over, rounded to something a person would
+    // actually write down.
+    final adjusted = (base * (90 + seed % 26) / 100 / 10).round() * 10;
+    return ProviderService(
+      name: service.name,
+      fromPrice: 'from ₹${_grouped(adjusted)}',
+      detail: service.detail,
+    );
+  }
+
+  static List<ProviderReview> _reviewsFor(TradeCatalogue catalogue, int seed) {
+    final lines = _rotate(catalogue.reviews, seed).take(2).toList();
+    return [
+      for (final (index, body) in lines.indexed)
+        ProviderReview(
+          author: _authors[(seed + index) % _authors.length],
+          rating: index == 0 ? 5 : 4,
+          age: _ages[(seed + index) % _ages.length],
+          body: body,
+        ),
+    ];
+  }
+
+  /// A rating's shape: the higher it is, the more of it sits on five stars.
+  static List<double> _breakdownFor(double rating) {
+    final top = ((rating - 3) / 2).clamp(0.15, 0.85);
+    final second = (1 - top) * 0.55;
+    final rest = 1 - top - second;
+    return [top, second, rest * 0.5, rest * 0.3, rest * 0.2];
+  }
+
+  /// Starts the list at a different place for each business, so neighbours
+  /// in the same trade lead with different work.
+  static List<T> _rotate<T>(List<T> items, int seed) {
+    if (items.isEmpty) return items;
+    final at = seed % items.length;
+    return [...items.skip(at), ...items.take(at)];
+  }
+
+  /// FNV-1a over the name — stable across launches, unlike hashCode.
+  static int _seedOf(String name) {
+    var hash = 0x811c9dc5;
+    for (final unit in name.codeUnits) {
+      hash = ((hash ^ unit) * 0x01000193) & 0x7fffffff;
+    }
+    return hash;
+  }
+
+  static int _rupeesIn(String price) {
+    final digits = RegExp(r'[\d,]+').firstMatch(price)?.group(0);
+    if (digits == null) return 0;
+    return int.tryParse(digits.replaceAll(',', '')) ?? 0;
+  }
+
+  static String _grouped(int amount) {
+    final whole = amount.toString();
+    final buffer = StringBuffer();
+    for (var i = 0; i < whole.length; i++) {
+      if (i > 0 && (whole.length - i) % 3 == 0) buffer.write(',');
+      buffer.write(whole[i]);
+    }
+    return buffer.toString();
+  }
+
+  static const _months = ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov'];
+
+  static const _hours = [
+    'Mon–Sun · 08:00 – 20:00',
+    'Mon–Sat · 09:00 – 19:00',
+    'Mon–Sun · 07:00 – 21:00',
+    'Mon–Sat · 10:00 – 18:00',
+  ];
+
+  static const _authors = [
+    'Anita Sharma',
+    'Rohit Verma',
+    'Deepak Rana',
+    'Meera Nair',
+    'Sanjay Gupta',
+    'Farah Khan',
+    'Vikram Singh',
+  ];
+
+  static const _ages = [
+    '3 days ago',
+    'a week ago',
+    '2 weeks ago',
+    'last month',
+    '3 weeks ago',
+  ];
 }

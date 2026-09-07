@@ -12,6 +12,7 @@ import 'package:local_markerplace/discovery/presentation/components/pending_book
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/components/provider_avatar.dart';
 import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
+import 'package:local_markerplace/provider/repository/provider_repository.dart';
 import 'package:local_markerplace/visit/model/visit_service.dart';
 import 'package:local_markerplace/visit/presentation/add_to_visit_sheet.dart';
 import 'package:local_markerplace/visit/presentation/your_visit_page.dart';
@@ -31,6 +32,7 @@ class ServicesPage extends StatefulWidget {
     required this.localityName,
     this.initialCategory,
     this.repository = const DiscoveryRepository(),
+    this.providers = const ProviderRepository(),
     this.visits,
   });
 
@@ -40,6 +42,11 @@ class ServicesPage extends StatefulWidget {
   final String? initialCategory;
 
   final DiscoveryRepository repository;
+
+  /// Where the catalogue comes from: each provider's own service list, so
+  /// the prices here are the prices on their page.
+  final ProviderRepository providers;
+
   final VisitRepository? visits;
 
   @override
@@ -51,8 +58,10 @@ class _ServicesPageState extends State<ServicesPage> {
 
   late String? _category = widget.initialCategory;
 
-  List<CatalogueService> get _services =>
-      widget.repository.services(categoryLabel: _category);
+  List<CatalogueService> get _services => widget.providers.servicesIn(
+    widget.localityName,
+    categoryLabel: _category,
+  );
 
   /// How many of [service] are already on the visit, so the row can offer to
   /// take it off again rather than add a second one.

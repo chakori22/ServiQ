@@ -223,10 +223,9 @@ void main() {
     testWidgets('cannot be offered on any more', (tester) async {
       await pumpRequirement(
         tester,
-        requirement: post(author: 'rahul_verma').copyWith(
-          isAccepted: true,
-          acceptedBy: 'Sharma Carpentry',
-        ),
+        requirement: post(
+          author: 'rahul_verma',
+        ).copyWith(isAccepted: true, acceptedBy: 'Sharma Carpentry'),
         signedInAs: 'chakorichaturvedi',
       );
 
