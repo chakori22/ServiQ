@@ -18,7 +18,14 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 /// surprise — who is coming, when, where, what it costs and how it gets
 /// paid, with a way back to each.
 class ConfirmVisitPage extends StatefulWidget {
-  const ConfirmVisitPage({super.key, this.repository});
+  const ConfirmVisitPage({
+    super.key,
+    required this.providerName,
+    this.repository,
+  });
+
+  /// Whose cart is being confirmed.
+  final String providerName;
 
   final VisitRepository? repository;
 
@@ -31,7 +38,7 @@ class _ConfirmVisitPageState extends State<ConfirmVisitPage> {
       widget.repository ?? VisitRepository.shared;
 
   Future<void> _confirm() async {
-    final booked = _visits.confirm();
+    final booked = _visits.confirm(widget.providerName);
     if (!mounted) return;
     // Everything behind this screen is about a visit that no longer exists
     // to edit — going back to the slot picker would land on "nothing on this
@@ -45,7 +52,7 @@ class _ConfirmVisitPageState extends State<ConfirmVisitPage> {
 
   @override
   Widget build(BuildContext context) {
-    final visit = _visits.current;
+    final visit = _visits.cartFor(widget.providerName);
     if (visit == null) return const SizedBox.shrink();
 
     return Scaffold(
@@ -135,7 +142,9 @@ class _ConfirmVisitPageState extends State<ConfirmVisitPage> {
                       _PaymentRow(
                         method: method,
                         isSelected: visit.payment == method,
-                        onTap: () => setState(() => _visits.setPayment(method)),
+                        onTap: () => setState(
+                          () => _visits.setPayment(widget.providerName, method),
+                        ),
                       ),
                       const SizedBox(height: 10),
                     ],

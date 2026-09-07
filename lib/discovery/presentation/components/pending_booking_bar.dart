@@ -12,6 +12,9 @@ class PendingBookingBar extends StatelessWidget {
   const PendingBookingBar({super.key, required this.booking, this.onView});
 
   final PendingBooking booking;
+
+  /// Opens the cart, or the list of them when several are open — the bar
+  /// can name only the newest.
   final VoidCallback? onView;
 
   @override
@@ -95,7 +98,10 @@ class PendingBookingBar extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          booking.summary,
+                          booking.otherCarts == 0
+                              ? booking.providerName
+                              : '${booking.providerName} + '
+                                    '${booking.otherCarts} more',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: DiscoveryText.onAccent(
@@ -106,9 +112,9 @@ class PendingBookingBar extends StatelessWidget {
                         const SizedBox(height: 3),
                         Text(
                           // The amount leads: it is the half a seeker checks,
-                          // and a long business name would otherwise push it
-                          // out of the ellipsis.
-                          '${booking.amount} · ${booking.providerName}',
+                          // and a long summary would otherwise push it out of
+                          // the ellipsis.
+                          '${booking.amount} · ${booking.summary}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -123,7 +129,7 @@ class PendingBookingBar extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'View cart',
+                    booking.otherCarts == 0 ? 'View cart' : 'View carts',
                     style: DiscoveryText.onAccent(13, letterSpacing: -0.13),
                   ),
                   const SizedBox(width: 6),

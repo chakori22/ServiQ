@@ -39,7 +39,6 @@ class Visit extends Equatable {
     this.addressLine = 'Tower B, Flat 1204, Crossings Republik',
     this.contactName = 'Test Seeker',
     this.contactPhone = '+91 98765 43210',
-    this.recurrence,
     this.payment = VisitPayment.upiAfterService,
     this.reference,
     this.agreedWhen,
@@ -72,9 +71,6 @@ class Visit extends Equatable {
   /// the account is wired through.
   final String contactName;
   final String contactPhone;
-
-  /// How often a recurring booking comes back. Null on the other two modes.
-  final VisitRecurrence? recurrence;
 
   final VisitPayment payment;
 
@@ -121,8 +117,7 @@ class Visit extends Equatable {
     final chosen = mode;
     if (chosen == null) return false;
     if (!chosen.needsSlot) return true;
-    if (slot == null) return false;
-    return chosen != VisitMode.recurring || recurrence != null;
+    return slot != null;
   }
 
   /// "2 services · 1 part · Shahnaz RO & Chimney".
@@ -143,11 +138,7 @@ class Visit extends Equatable {
     final chosen = slot;
     if (chosen == null) return 'No slot chosen yet';
     final day = VisitDay(date: chosen.date, slots: const []);
-    final when =
-        '${day.weekdayLabel}, ${day.dateLabel} · '
-        '${chosen.spokenLabel}';
-    final repeat = recurrence;
-    return repeat == null ? when : '$when · ${repeat.label.toLowerCase()}';
+    return '${day.weekdayLabel}, ${day.dateLabel} · ${chosen.spokenLabel}';
   }
 
   /// "Mon, Sep 7 - 07:00AM" — the booking-details row.
@@ -169,8 +160,6 @@ class Visit extends Equatable {
     String? addressLine,
     VisitPayment? payment,
     String? reference,
-    VisitRecurrence? recurrence,
-    bool clearRecurrence = false,
   }) => Visit(
     providerName: providerName,
     providerLine: providerLine,
@@ -184,7 +173,6 @@ class Visit extends Equatable {
     addressLine: addressLine ?? this.addressLine,
     contactName: contactName,
     contactPhone: contactPhone,
-    recurrence: clearRecurrence ? null : (recurrence ?? this.recurrence),
     payment: payment ?? this.payment,
     reference: reference ?? this.reference,
   );
@@ -202,6 +190,5 @@ class Visit extends Equatable {
     payment,
     reference,
     agreedWhen,
-    recurrence,
   ];
 }

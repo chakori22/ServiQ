@@ -174,8 +174,8 @@ class _DashedDivider extends StatelessWidget {
         builder: (context, constraints) {
           const double dashWidth = 4;
           const double gapWidth = 4;
-          final int dashCount =
-              (constraints.maxWidth / (dashWidth + gapWidth)).floor();
+          final int dashCount = (constraints.maxWidth / (dashWidth + gapWidth))
+              .floor();
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(

@@ -15,7 +15,6 @@ import 'package:local_markerplace/discovery/repository/discovery_repository.dart
 import 'package:local_markerplace/provider/repository/provider_repository.dart';
 import 'package:local_markerplace/visit/model/visit_service.dart';
 import 'package:local_markerplace/visit/presentation/add_to_visit_sheet.dart';
-import 'package:local_markerplace/visit/presentation/your_visit_page.dart';
 import 'package:local_markerplace/visit/repository/visit_repository.dart';
 
 /// Everything bookable in the seeker's area, in one list.
@@ -66,8 +65,8 @@ class _ServicesPageState extends State<ServicesPage> {
   /// How many of [service] are already on the visit, so the row can offer to
   /// take it off again rather than add a second one.
   int _onVisit(CatalogueService service) {
-    final visit = _visits.current;
-    if (visit == null || visit.providerName != service.providerName) return 0;
+    final visit = _visits.cartFor(service.providerName);
+    if (visit == null) return 0;
     for (final booked in visit.services) {
       if (booked.name == service.name) return booked.quantity;
     }
@@ -83,15 +82,12 @@ class _ServicesPageState extends State<ServicesPage> {
     );
     if (added == null || !mounted) return;
 
-    final replaced = _visits.addService(
+    _visits.addService(
       providerName: service.providerName,
       providerLine: service.providerLine(widget.localityName),
       isVerifiedProvider: service.isVerifiedProvider,
       service: added,
     );
-    if (replaced) {
-      _notice('Started a new visit with ${service.providerName}.');
-    }
     setState(() {});
   }
 
@@ -99,31 +95,16 @@ class _ServicesPageState extends State<ServicesPage> {
   /// removed from without opening the visit itself, so the row keeps the
   /// action once something is on it.
   void _remove(CatalogueService service) {
-    final visit = _visits.current;
+    final visit = _visits.cartFor(service.providerName);
     if (visit == null) return;
     final index = visit.services.indexWhere((s) => s.name == service.name);
     if (index == -1) return;
-    setState(() => _visits.removeServiceAt(index));
+    setState(() => _visits.removeServiceAt(service.providerName, index));
   }
 
   Future<void> _openVisit() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => YourVisitPage(repository: _visits)),
-    );
+    await openBasket(context, visits: _visits);
     if (mounted) setState(() {});
-  }
-
-  void _notice(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            message,
-            style: DiscoveryText.heroSubtitle.copyWith(color: AppColor.white),
-          ),
-        ),
-      );
   }
 
   @override

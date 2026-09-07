@@ -85,19 +85,21 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
     );
     if (added == null || !mounted) return;
 
-    final replaced = VisitRepository.shared.addService(
+    // Adding never displaces another store's cart: they sit side by side.
+    VisitRepository.shared.addService(
       providerName: _profile.name,
       providerLine: '${widget.localityName} · usually replies in 10 min',
       isVerifiedProvider: _profile.isVerified,
       service: added,
     );
-    if (replaced) _notice('Started a new visit with ${_profile.name}.');
     if (!mounted) return;
 
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            YourVisitPage(onAddAnother: () => Navigator.of(context).pop()),
+        builder: (_) => YourVisitPage(
+          providerName: _profile.name,
+          onAddAnother: () => Navigator.of(context).pop(),
+        ),
       ),
     );
     if (mounted) setState(() {});
@@ -122,13 +124,12 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
     );
     if (added == null || !mounted) return;
 
-    final replaced = VisitRepository.shared.addProduct(
+    VisitRepository.shared.addProduct(
       providerName: _profile.name,
       providerLine: '${widget.localityName} · usually replies in 10 min',
       isVerifiedProvider: _profile.isVerified,
       product: added,
     );
-    if (replaced) _notice('Started a new cart with ${_profile.name}.');
     if (!mounted) return;
     await _openCart();
   }
@@ -137,25 +138,25 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
   /// provider — a service is one job, so it is on or off rather than
   /// counted.
   bool _onVisit(ProviderService service) {
-    final visit = VisitRepository.shared.current;
-    if (visit == null || visit.providerName != _profile.name) return false;
+    final visit = VisitRepository.shared.cartFor(_profile.name);
+    if (visit == null) return false;
     return visit.services.any((booked) => booked.name == service.name);
   }
 
   void _removeFromVisit(ProviderService service) {
     final visits = VisitRepository.shared;
-    final visit = visits.current;
+    final visit = visits.cartFor(_profile.name);
     if (visit == null) return;
     final index = visit.services.indexWhere((s) => s.name == service.name);
     if (index == -1) return;
-    setState(() => visits.removeServiceAt(index));
+    setState(() => visits.removeServiceAt(_profile.name, index));
   }
 
   /// How many of [product] are in this provider's cart. A cart belongs to
   /// one provider, so another store's count is not this grid's business.
   int _inCart(StoreProduct product) {
-    final cart = VisitRepository.shared.current;
-    if (cart == null || cart.providerName != _profile.name) return 0;
+    final cart = VisitRepository.shared.cartFor(_profile.name);
+    if (cart == null) return 0;
     for (final part in cart.parts) {
       if (part.name == product.name) return part.quantity;
     }
@@ -167,20 +168,26 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
   /// promising.
   void _stepPart(StoreProduct product, int delta) {
     final visits = VisitRepository.shared;
-    final cart = visits.current;
+    final cart = visits.cartFor(_profile.name);
     if (cart == null) return;
     final index = cart.parts.indexWhere((part) => part.name == product.name);
     if (index == -1) return;
     setState(
-      () => visits.setPartQuantityAt(index, cart.parts[index].quantity + delta),
+      () => visits.setPartQuantityAt(
+        _profile.name,
+        index,
+        cart.parts[index].quantity + delta,
+      ),
     );
   }
 
   Future<void> _openCart() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            YourVisitPage(onAddAnother: () => Navigator.of(context).pop()),
+        builder: (_) => YourVisitPage(
+          providerName: _profile.name,
+          onAddAnother: () => Navigator.of(context).pop(),
+        ),
       ),
     );
     if (mounted) setState(() {});
@@ -337,8 +344,8 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
     // Only the cart this provider's parts are in — a cart belongs to one
     // provider, so another store's count would be a number about somebody
     // else.
-    final cart = VisitRepository.shared.current;
-    final cartCount = cart?.providerName == _profile.name ? cart!.partCount : 0;
+    final cart = VisitRepository.shared.cartFor(_profile.name);
+    final cartCount = cart?.partCount ?? 0;
 
     return [
       SliverToBoxAdapter(

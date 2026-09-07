@@ -78,7 +78,7 @@ void main() {
 
   group('parts go in the same cart as services', () {
     test('they are counted by the piece, not by the line', () {
-      expect(seededCart().current!.partCount, 3);
+      expect(seededCart().cartFor(shahnaz)!.partCount, 3);
     });
 
     test('the cart totals both halves', () {
@@ -93,7 +93,7 @@ void main() {
           ),
         );
 
-      final cart = visits.current!;
+      final cart = visits.cartFor(shahnaz)!;
       expect(cart.partsTotal, 1900);
       expect(cart.servicesTotal, 349);
       expect(cart.estimate, 2249);
@@ -111,24 +111,30 @@ void main() {
             unitPrice: 1200,
           ),
         );
-      expect(visits.current!.parts.length, 2);
-      expect(visits.current!.parts.first.quantity, 2);
+      expect(visits.cartFor(shahnaz)!.parts.length, 2);
+      expect(visits.cartFor(shahnaz)!.parts.first.quantity, 2);
     });
 
-    test('another provider starts a new cart rather than mixing them', () {
-      final visits = seededCart();
-      final replaced = visits.addProduct(
-        providerName: 'Delhi Cool Care',
-        providerLine: 'Ajnara Gen X',
-        product: const CartProduct(
-          name: 'AC Gas Top-up Kit',
-          detail: '',
-          unitPrice: 600,
-        ),
-      );
-      expect(replaced, isTrue);
+    test('another provider gets a cart of their own, alongside', () {
+      final visits = seededCart()
+        ..addProduct(
+          providerName: 'Delhi Cool Care',
+          providerLine: 'Ajnara Gen X',
+          product: const CartProduct(
+            name: 'AC Gas Top-up Kit',
+            detail: '',
+            unitPrice: 600,
+          ),
+        );
+
+      // Nothing was displaced: both stores keep their own cart, and the bar
+      // names whichever was added to last.
+      expect(visits.cartCount, 2);
       expect(visits.current!.providerName, 'Delhi Cool Care');
-      expect(visits.current!.partCount, 1);
+      expect(visits.cartFor(shahnaz)!.partCount, 3);
+      expect(visits.cartFor('Delhi Cool Care')!.partCount, 1);
+      expect(visits.itemCount, 4);
+      expect(visits.grandTotal, 2500);
     });
 
     test('taking out the last part empties the cart', () {
@@ -142,7 +148,7 @@ void main() {
             unitPrice: 1200,
           ),
         )
-        ..removePartAt(0);
+        ..removePartAt(shahnaz, 0);
       expect(visits.current, isNull);
     });
 
@@ -157,12 +163,12 @@ void main() {
             unitPrice: 349,
           ),
         )
-        ..removePartAt(0)
-        ..removePartAt(0);
+        ..removePartAt(shahnaz, 0)
+        ..removePartAt(shahnaz, 0);
 
-      expect(visits.current, isNotNull);
-      expect(visits.current!.parts, isEmpty);
-      expect(visits.current!.services, hasLength(1));
+      expect(visits.cartFor(shahnaz), isNotNull);
+      expect(visits.cartFor(shahnaz)!.parts, isEmpty);
+      expect(visits.cartFor(shahnaz)!.services, hasLength(1));
     });
   });
 

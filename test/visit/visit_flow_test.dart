@@ -40,7 +40,8 @@ Future<void> pumpFlow(WidgetTester tester, VisitRepository visits) async {
             child: TextButton(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => YourVisitPage(repository: visits),
+                  builder: (_) =>
+                      YourVisitPage(providerName: shahnaz, repository: visits),
                 ),
               ),
               child: const Text('where I came from'),
@@ -91,7 +92,7 @@ void main() {
 
       // Nothing has been picked, so the booking cannot go ahead and the
       // instant fee is off the bill.
-      expect(visits.current!.slot, isNull);
+      expect(visits.cartFor(shahnaz)!.slot, isNull);
       expect(find.text('No time chosen yet'), findsOneWidget);
       expect(find.text('Select time slot'), findsOneWidget);
       expect(find.text('Confirm booking · ₹598'), findsNothing);
@@ -123,27 +124,10 @@ void main() {
       await tester.tap(find.text('Confirm'));
       await tester.pumpAndSettle();
 
-      expect(visits.current!.slot, isNotNull);
+      expect(visits.cartFor(shahnaz)!.slot, isNotNull);
       expect(find.text('Scheduled for'), findsOneWidget);
       expect(find.text('Change slot'), findsOneWidget);
       expect(find.text('Confirm booking · ₹499'), findsOneWidget);
-    });
-
-    testWidgets('Recurring keeps the repeat on the booking', (tester) async {
-      final visits = seededVisit();
-      await pumpFlow(tester, visits);
-
-      await tester.tap(find.text('Recurring'));
-      await tester.pump(const Duration(seconds: 1));
-
-      expect(visits.current!.mode, VisitMode.recurring);
-      expect(visits.current!.recurrence, VisitRecurrence.weekly);
-
-      await tester.tap(find.text('Every month'));
-      await tester.pump(const Duration(seconds: 1));
-      expect(visits.current!.recurrence, VisitRecurrence.monthly);
-      // Still no time, so it is not bookable yet.
-      expect(find.text('Select time slot'), findsOneWidget);
     });
 
     testWidgets('the stepper edits the count and empties the line', (
@@ -154,7 +138,7 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump(const Duration(seconds: 1));
-      expect(visits.current!.services.single.quantity, 2);
+      expect(visits.cartFor(shahnaz)!.services.single.quantity, 2);
       expect(find.text('Units'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.remove_rounded));
@@ -164,6 +148,34 @@ void main() {
 
       expect(visits.current, isNull);
       expect(find.textContaining('Nothing in your cart yet'), findsOneWidget);
+    });
+  });
+
+  group('the tab showing is the cart\'s mode', () {
+    testWidgets('confirming works without touching a tab first', (
+      tester,
+    ) async {
+      final visits = seededVisit();
+      await pumpFlow(tester, visits);
+
+      // The cart opens on Instant. A seeker who agrees with that taps the
+      // button straight away — it must not need the tab pressing first.
+      expect(visits.cartFor(shahnaz)!.mode, VisitMode.instant);
+      await tester.tap(find.text('Confirm booking · ₹598'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Confirm visit'), findsWidgets);
+    });
+
+    testWidgets('a cart opened on Instant reads as ready elsewhere', (
+      tester,
+    ) async {
+      final visits = seededVisit();
+      await pumpFlow(tester, visits);
+
+      // The checkout screen asks the cart, not the tab — so opening the
+      // cart has to have committed what the tab shows.
+      expect(visits.cartFor(shahnaz)!.isReady, isTrue);
     });
   });
 
@@ -215,8 +227,8 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(visits.current, isNotNull);
-      expect(visits.current!.services, isEmpty);
-      expect(visits.current!.parts, hasLength(1));
+      expect(visits.cartFor(shahnaz)!.services, isEmpty);
+      expect(visits.cartFor(shahnaz)!.parts, hasLength(1));
       expect(find.text('1 part'), findsOneWidget);
     });
   });

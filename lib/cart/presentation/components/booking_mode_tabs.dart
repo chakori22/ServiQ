@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:local_markerplace/cart/model/cart_booking_mode.dart';
 import 'package:local_markerplace/core/app_color.dart';
 
-/// The Instant / Scheduled / Recurring switch at the top of the cart.
+/// The Instant / Scheduled switch at the top of the cart.
 ///
 /// A mode that cannot currently be booked still selects — the cart explains
 /// why further down — but its pill goes grey rather than brand-coloured, so

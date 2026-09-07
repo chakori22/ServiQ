@@ -4,50 +4,87 @@ import 'package:local_markerplace/visit/model/visit_mode.dart';
 import 'package:local_markerplace/visit/model/visit_service.dart';
 import 'package:local_markerplace/visit/model/visit_slot.dart';
 
-/// The visit being put together, and the slots it can be booked into.
+/// The carts the seeker is filling, and the visits booked out of them.
 ///
-/// There is no booking endpoint yet, so this holds the one visit in progress
-/// for the session. It is a single visit on purpose: the design is explicit
-/// that a visit is one provider and one trip, so adding a service from a
-/// different provider starts again rather than mixing them.
+/// There is a cart per provider, not one cart. A visit is still one provider
+/// making one trip — that has not changed — but a seeker shopping the
+/// society will pick a filter up from one store and book a carpenter from
+/// another, and being told the second replaced the first was wrong. So the
+/// carts sit side by side and are checked out together.
+///
+/// [carts] is ordered by what was touched last, which is what the bar above
+/// the tabs shows and what "Your carts" lists first.
 class VisitRepository {
   VisitRepository();
 
   static final VisitRepository shared = VisitRepository();
 
-  Visit? _current;
+  final List<Visit> _carts = <Visit>[];
 
-  /// The visit being built, or null when nothing has been added.
-  Visit? get current => _current;
+  /// Every cart, most recently touched first.
+  List<Visit> get carts => List.unmodifiable(_carts);
+
+  /// The cart the bar speaks for — the one last added to. Null when there
+  /// are none.
+  Visit? get current => _carts.isEmpty ? null : _carts.first;
+
+  /// That provider's cart, or null if they have none.
+  Visit? cartFor(String providerName) {
+    for (final cart in _carts) {
+      if (cart.providerName == providerName) return cart;
+    }
+    return null;
+  }
+
+  bool get isEmpty => _carts.isEmpty;
+
+  int get cartCount => _carts.length;
+
+  /// Services and parts across every cart, which is what "4 items" counts.
+  int get itemCount =>
+      _carts.fold(0, (sum, cart) => sum + cart.serviceCount + cart.partCount);
+
+  /// What every cart comes to together, before any of them is timed.
+  double get grandTotal =>
+      _carts.fold(0, (sum, cart) => sum + cart.servicesTotal + cart.partsTotal);
+
+  /// Every cart that has a time on it and could be booked now.
+  List<Visit> get readyCarts => _carts.where((cart) => cart.isReady).toList();
 
   /// Visits that have been confirmed this session, newest first.
   final List<Visit> booked = <Visit>[];
 
-  /// Adds [service] to the visit with [providerName], starting one if there
-  /// is none — or replacing it when the seeker has moved to another
-  /// provider, since a visit cannot span two.
+  int _indexOf(String providerName) =>
+      _carts.indexWhere((cart) => cart.providerName == providerName);
+
+  /// Puts [cart] at the front — the bar names whichever was touched last.
+  void _promote(Visit cart, int at) {
+    _carts.removeAt(at);
+    _carts.insert(0, cart);
+  }
+
+  Visit _cartOrNew(
+    String providerName,
+    String providerLine,
+    bool isVerifiedProvider,
+  ) =>
+      cartFor(providerName) ??
+      Visit(
+        providerName: providerName,
+        providerLine: providerLine,
+        isVerifiedProvider: isVerifiedProvider,
+      );
+
+  /// Adds [service] to that provider's cart, starting one if they have none.
   ///
-  /// Returns true when an existing visit for a different provider was
-  /// discarded, so the screen can say so rather than silently losing it.
-  bool addService({
+  /// Nothing is ever replaced: another provider means another cart.
+  void addService({
     required String providerName,
     required String providerLine,
     required VisitService service,
     bool isVerifiedProvider = true,
   }) {
-    final existing = _current;
-    final replaced = existing != null && existing.providerName != providerName;
-
-    if (existing == null || replaced) {
-      _current = Visit(
-        providerName: providerName,
-        providerLine: providerLine,
-        isVerifiedProvider: isVerifiedProvider,
-        services: [service],
-      );
-      return replaced;
-    }
-
+    final existing = _cartOrNew(providerName, providerLine, isVerifiedProvider);
     // The same service added twice becomes one line with a bigger count,
     // which is what the stepper on the sheet is really editing.
     final services = [...existing.services];
@@ -60,34 +97,18 @@ class VisitRepository {
         note: service.note.isEmpty ? services[index].note : service.note,
       );
     }
-    _current = existing.copyWith(services: services);
-    return false;
+    _put(existing.copyWith(services: services));
   }
 
-  /// Adds a part from the provider's store to the same cart the services
-  /// are in.
-  ///
-  /// It behaves exactly like [addService] because it is the same cart: one
-  /// provider, one trip. Moving to another provider's store starts again.
-  bool addProduct({
+  /// Adds a part from the provider's store to the same cart their services
+  /// are in — one provider, one trip, one cart.
+  void addProduct({
     required String providerName,
     required String providerLine,
     required CartProduct product,
     bool isVerifiedProvider = true,
   }) {
-    final existing = _current;
-    final replaced = existing != null && existing.providerName != providerName;
-
-    if (existing == null || replaced) {
-      _current = Visit(
-        providerName: providerName,
-        providerLine: providerLine,
-        isVerifiedProvider: isVerifiedProvider,
-        parts: [product],
-      );
-      return replaced;
-    }
-
+    final existing = _cartOrNew(providerName, providerLine, isVerifiedProvider);
     final parts = [...existing.parts];
     final index = parts.indexWhere((part) => part.name == product.name);
     if (index == -1) {
@@ -97,88 +118,91 @@ class VisitRepository {
         quantity: parts[index].quantity + product.quantity,
       );
     }
-    _current = existing.copyWith(parts: parts);
-    return false;
+    _put(existing.copyWith(parts: parts));
   }
 
-  void setPartQuantityAt(int index, int quantity) {
-    final existing = _current;
+  /// Writes a cart back, dropping it if it has been emptied and moving it to
+  /// the front otherwise.
+  void _put(Visit cart) {
+    final at = _indexOf(cart.providerName);
+    if (cart.services.isEmpty && cart.parts.isEmpty) {
+      if (at != -1) _carts.removeAt(at);
+      return;
+    }
+    if (at == -1) {
+      _carts.insert(0, cart);
+    } else {
+      _carts[at] = cart;
+      _promote(cart, at);
+    }
+  }
+
+  // --- editing one provider's cart -----------------------------------------
+  //
+  // Every one of these names the provider: with several carts open there is
+  // no such thing as "the" cart to edit.
+
+  void setPartQuantityAt(String providerName, int index, int quantity) {
+    final existing = cartFor(providerName);
     if (existing == null) return;
-    if (quantity < 1) return removePartAt(index);
+    if (quantity < 1) return removePartAt(providerName, index);
     final parts = [...existing.parts];
     parts[index] = parts[index].copyWith(quantity: quantity);
-    _current = existing.copyWith(parts: parts);
+    _put(existing.copyWith(parts: parts));
   }
 
-  void removePartAt(int index) {
-    final existing = _current;
+  void removePartAt(String providerName, int index) {
+    final existing = cartFor(providerName);
     if (existing == null) return;
-    final parts = [...existing.parts]..removeAt(index);
-    _current = _emptied(existing.copyWith(parts: parts));
+    _put(existing.copyWith(parts: [...existing.parts]..removeAt(index)));
   }
-
-  /// A cart with nothing left in it is no cart at all.
-  Visit? _emptied(Visit visit) =>
-      visit.services.isEmpty && visit.parts.isEmpty ? null : visit;
 
   /// Changes how many of a service are wanted. Below one the line goes,
   /// which is how the cart's stepper removes it.
-  void setQuantityAt(int index, int quantity) {
-    final existing = _current;
+  void setQuantityAt(String providerName, int index, int quantity) {
+    final existing = cartFor(providerName);
     if (existing == null) return;
-    if (quantity < 1) return removeServiceAt(index);
+    if (quantity < 1) return removeServiceAt(providerName, index);
     final services = [...existing.services];
     services[index] = services[index].copyWith(quantity: quantity);
-    _current = existing.copyWith(services: services);
+    _put(existing.copyWith(services: services));
   }
 
-  void removeServiceAt(int index) {
-    final existing = _current;
+  void removeServiceAt(String providerName, int index) {
+    final existing = cartFor(providerName);
     if (existing == null) return;
-    final services = [...existing.services]..removeAt(index);
-    _current = _emptied(existing.copyWith(services: services));
+    _put(existing.copyWith(services: [...existing.services]..removeAt(index)));
   }
 
-  void setMode(VisitMode mode) {
-    final existing = _current;
+  void setMode(String providerName, VisitMode mode) {
+    final existing = cartFor(providerName);
     if (existing == null) return;
-    // Instant has no slot, and leaving recurring drops the repeat — keeping
-    // either would confirm something the seeker is no longer asking for.
-    _current = existing.copyWith(
-      mode: mode,
-      clearSlot: !mode.needsSlot,
-      clearRecurrence: mode != VisitMode.recurring,
-      recurrence: mode == VisitMode.recurring
-          ? (existing.recurrence ?? VisitRecurrence.weekly)
-          : null,
-    );
+    // An instant visit has no slot; keeping a stale one would confirm a time
+    // the seeker is no longer asking for.
+    _put(existing.copyWith(mode: mode, clearSlot: !mode.needsSlot));
   }
 
-  void setRecurrence(VisitRecurrence recurrence) {
-    final existing = _current;
+  /// Picking a time is itself the choice of a scheduled visit.
+  void setSlot(String providerName, VisitSlot slot) {
+    final existing = cartFor(providerName);
     if (existing == null) return;
-    _current = existing.copyWith(
-      mode: VisitMode.recurring,
-      recurrence: recurrence,
-    );
+    _put(existing.copyWith(mode: VisitMode.scheduled, slot: slot));
   }
 
-  /// Keeps whichever slotted mode is showing — picking a time on the
-  /// recurring tab must not silently turn the booking into a one-off.
-  void setSlot(VisitSlot slot) {
-    final existing = _current;
+  void setPayment(String providerName, VisitPayment payment) {
+    final existing = cartFor(providerName);
     if (existing == null) return;
-    final mode = existing.mode == VisitMode.recurring
-        ? VisitMode.recurring
-        : VisitMode.scheduled;
-    _current = existing.copyWith(mode: mode, slot: slot);
+    _put(existing.copyWith(payment: payment));
   }
 
-  void setPayment(VisitPayment payment) {
-    final existing = _current;
-    if (existing == null) return;
-    _current = existing.copyWith(payment: payment);
+  /// Throws away one provider's cart — the × beside them in "Your carts".
+  void removeCart(String providerName) {
+    final at = _indexOf(providerName);
+    if (at != -1) _carts.removeAt(at);
   }
+
+  /// "Clear all".
+  void clear() => _carts.clear();
 
   /// Books a visit straight from an accepted offer.
   ///
@@ -207,16 +231,28 @@ class VisitRepository {
     return confirmed;
   }
 
-  /// Books the visit and hands back the confirmed copy.
-  Visit confirm() {
-    final existing = _current!;
+  /// Books one provider's cart and hands back the confirmed copy.
+  Visit confirm(String providerName) {
+    final existing = cartFor(providerName)!;
     final confirmed = existing.copyWith(reference: _nextReference());
     booked.insert(0, confirmed);
-    _current = null;
+    removeCart(providerName);
     return confirmed;
   }
 
-  void clear() => _current = null;
+  /// Books every cart that has a time on it, oldest first so the references
+  /// run in the order they were filled.
+  ///
+  /// Carts still missing a time are left where they are rather than being
+  /// booked into nothing.
+  List<Visit> confirmAll() {
+    final confirmed = <Visit>[];
+    for (final cart in _carts.reversed.toList()) {
+      if (!cart.isReady) continue;
+      confirmed.add(confirm(cart.providerName));
+    }
+    return confirmed;
+  }
 
   int _sequence = 4820;
 

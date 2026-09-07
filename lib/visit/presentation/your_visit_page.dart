@@ -22,7 +22,16 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 /// address and the bill stay put and only the middle of the page answers the
 /// tab at the top.
 class YourVisitPage extends StatefulWidget {
-  const YourVisitPage({super.key, this.repository, this.onAddAnother});
+  const YourVisitPage({
+    super.key,
+    required this.providerName,
+    this.repository,
+    this.onAddAnother,
+  });
+
+  /// Whose cart this is. There is one per provider, so a cart screen without
+  /// a provider would not know which to show.
+  final String providerName;
 
   final VisitRepository? repository;
 
@@ -40,12 +49,24 @@ class _YourVisitPageState extends State<YourVisitPage> {
 
   late final List<VisitDay> _days = _visits.days();
 
-  Visit? get _visit => _visits.current;
+  Visit? get _visit => _visits.cartFor(widget.providerName);
 
-  /// The tab showing. It leads the visit's own mode so the seeker can read
-  /// what a mode offers before committing the booking to it — nothing is
-  /// written until they act inside the tab.
-  late VisitMode _tab = _visits.current?.mode ?? _firstAvailableMode();
+  /// The tab showing, which is also the cart's mode.
+  ///
+  /// The two are kept in step deliberately: the screen opens on a tab, and a
+  /// seeker who agrees with it taps the button without touching it. When the
+  /// tab was only a highlight, that button did nothing until they switched
+  /// away and back — and the checkout screen read the cart as untimed.
+  late VisitMode _tab = _visit?.mode ?? _firstAvailableMode();
+
+  @override
+  void initState() {
+    super.initState();
+    final cart = _visit;
+    if (cart != null && cart.mode == null && !_instantBlocked) {
+      _visits.setMode(widget.providerName, _tab);
+    }
+  }
 
   VisitMode _firstAvailableMode() =>
       _visits.instantAvailable ? VisitMode.instant : VisitMode.scheduled;
@@ -56,21 +77,21 @@ class _YourVisitPageState extends State<YourVisitPage> {
   void _selectTab(VisitMode mode) {
     setState(() {
       _tab = mode;
-      // Instant is committed on sight because there is nothing else to pick;
-      // the slotted modes wait for a time.
-      if (mode == VisitMode.instant) {
-        if (_visits.instantAvailable) _visits.setMode(mode);
-      } else {
-        _visits.setMode(mode);
+      // An instant booking nobody can take is the one thing not written to
+      // the cart — there would be nothing to confirm.
+      if (mode != VisitMode.instant || _visits.instantAvailable) {
+        _visits.setMode(widget.providerName, mode);
       }
     });
   }
 
-  void _setQuantity(int index, int quantity) =>
-      setState(() => _visits.setQuantityAt(index, quantity));
+  void _setQuantity(int index, int quantity) => setState(
+    () => _visits.setQuantityAt(widget.providerName, index, quantity),
+  );
 
-  void _setPartQuantity(int index, int quantity) =>
-      setState(() => _visits.setPartQuantityAt(index, quantity));
+  void _setPartQuantity(int index, int quantity) => setState(
+    () => _visits.setPartQuantityAt(widget.providerName, index, quantity),
+  );
 
   Future<void> _pickSlot() async {
     final chosen = await showSlotSheet(
@@ -79,7 +100,7 @@ class _YourVisitPageState extends State<YourVisitPage> {
       selected: _visit?.slot,
     );
     if (chosen == null || !mounted) return;
-    setState(() => _visits.setSlot(chosen));
+    setState(() => _visits.setSlot(widget.providerName, chosen));
   }
 
   Future<void> _continue() async {
@@ -87,10 +108,19 @@ class _YourVisitPageState extends State<YourVisitPage> {
     if (visit == null) return;
     if (_instantBlocked) return _selectTab(VisitMode.scheduled);
     if (_tab.needsSlot && visit.slot == null) return _pickSlot();
-    if (!visit.isReady) return;
+    if (!visit.isReady) {
+      // Unreachable while the tab and the mode agree, but a button that
+      // silently does nothing is worse than one that says what is missing.
+      return _notice('Choose when you need this first.');
+    }
 
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ConfirmVisitPage(repository: _visits)),
+      MaterialPageRoute(
+        builder: (_) => ConfirmVisitPage(
+          providerName: widget.providerName,
+          repository: _visits,
+        ),
+      ),
     );
     if (mounted) setState(() {});
   }
@@ -125,7 +155,7 @@ class _YourVisitPageState extends State<YourVisitPage> {
   Widget _cart(Visit visit) {
     return Column(
       children: [
-        const DiscoveryHeader(title: 'My Cart'),
+        DiscoveryHeader(title: 'My Cart', subtitle: visit.providerName),
         const SizedBox(height: 14),
         Expanded(
           child: SingleChildScrollView(
@@ -268,22 +298,11 @@ class _YourVisitPageState extends State<YourVisitPage> {
           else
             CartDetailRow(
               icon: Icons.calendar_today_rounded,
-              title: _tab == VisitMode.recurring
-                  ? 'Starting ${scheduledFor.split(' - ').first}'
-                  : 'Scheduled for',
-              subtitle: _tab == VisitMode.recurring
-                  ? '$scheduledFor · ${visit.recurrence?.label.toLowerCase()}'
-                  : scheduledFor,
+              title: 'Scheduled for',
+              subtitle: scheduledFor,
               link: 'Change slot',
               onLinkTap: _pickSlot,
             ),
-          if (_tab == VisitMode.recurring) ...[
-            const SizedBox(height: 14),
-            _RepeatPicker(
-              selected: visit.recurrence ?? VisitRecurrence.weekly,
-              onSelect: (value) => setState(() => _visits.setRecurrence(value)),
-            ),
-          ],
           const CartDivider(),
           CartDetailRow(
             icon: Icons.place_outlined,
@@ -448,59 +467,6 @@ class _LineRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: DiscoveryText.smallPrint.copyWith(
               color: AppColor.discoveryTextTertiary,
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// How often a recurring booking comes back.
-class _RepeatPicker extends StatelessWidget {
-  const _RepeatPicker({required this.selected, required this.onSelect});
-
-  final VisitRecurrence selected;
-  final ValueChanged<VisitRecurrence> onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (final (index, option) in VisitRecurrence.values.indexed) ...[
-          if (index > 0) const SizedBox(width: 8),
-          Expanded(
-            child: PressableScale(
-              onTap: () => onSelect(option),
-              pressedScale: 0.95,
-              child: Container(
-                height: 38,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                decoration: BoxDecoration(
-                  color: option == selected
-                      ? AppColor.visitEtaTint
-                      : AppColor.white,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(
-                    color: option == selected
-                        ? AppColor.discoveryAccent
-                        : AppColor.discoveryBorder,
-                    width: option == selected ? 1.8 : 1.4,
-                  ),
-                ),
-                child: Text(
-                  option.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: DiscoveryText.meta.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: option == selected
-                        ? AppColor.discoveryGradientEnd
-                        : AppColor.discoveryInkMuted,
-                  ),
-                ),
-              ),
             ),
           ),
         ],
