@@ -9,6 +9,7 @@ import 'package:local_markerplace/dashboard/presentation/create_post/schedule/sc
 import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart';
 import 'package:local_markerplace/dashboard/presentation/dashboard_page.dart';
 import 'package:local_markerplace/discovery/presentation/discovery_shell.dart';
+import 'package:local_markerplace/discovery/repository/home_repository.dart';
 
 import 'package:local_markerplace/core/launch_app.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
@@ -153,6 +154,7 @@ List<RouteBase> createRoutes() {
         return DiscoveryShell(
           initialLocality: extra is String ? extra : null,
           profiles: context.read<OnboardingRepository>(),
+          homeRepository: context.read<HomeRepository>(),
         );
       },
       name: AppRoutes.discovery.name,

@@ -130,14 +130,14 @@ void main() {
     tester,
   ) async {
     final profiles = _FakeProfiles(
-      const SeekerProfile(fullName: 'Asha', locality: 'Ajnara Gen X'),
+      const SeekerProfile(fullName: 'Asha', locality: 'Galleria Market 1'),
     );
 
     await pumpShell(tester, profiles);
-    await tester.tap(find.text('Ajnara Gen X'));
+    await tester.tap(find.text('Galleria Market 1'));
     await tester.pumpAndSettle();
     // The row inside the picker's card, not the header behind it.
-    await tester.tap(find.text('Ajnara Gen X').last);
+    await tester.tap(find.text('Galleria Market 1').last);
     await tester.pumpAndSettle();
 
     expect(profiles.writes, 0);

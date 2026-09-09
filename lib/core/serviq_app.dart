@@ -8,6 +8,7 @@ import 'package:local_markerplace/dashboard/repository/dashboard_repository.dart
 import 'package:local_markerplace/login/repository/login_repository.dart';
 import 'package:local_markerplace/core/device_identity.dart';
 import 'package:local_markerplace/network/api_client.dart';
+import 'package:local_markerplace/discovery/repository/home_repository.dart';
 import 'package:local_markerplace/network/auth_session.dart';
 import 'package:local_markerplace/network/logging_interceptor.dart';
 import 'package:local_markerplace/network/token_refresh_interceptor.dart';
@@ -88,6 +89,7 @@ Future<Widget> appBuilder(
       RepositoryProvider.value(value: authSession),
       RepositoryProvider.value(value: deviceIdentity),
       RepositoryProvider.value(value: _onboardingRepository),
+      RepositoryProvider.value(value: HomeRepository(apiClient: apiClient)),
     ],
     // A refreshed session skips the login screen entirely; a missing or
     // rejected token lands on it.

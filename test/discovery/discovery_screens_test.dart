@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/fake_home_source.dart';
 import 'package:local_markerplace/discovery/model/locality.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/pending_booking_bar.dart';
 import 'package:local_markerplace/discovery/presentation/discovery_home_view.dart';
@@ -59,7 +61,10 @@ void main() {
     expect(find.text('Where do you need help?'), findsOneWidget);
     expect(find.text('Use my current location'), findsOneWidget);
     expect(find.text('Crossing Republik'), findsOneWidget);
-    expect(find.text('Ajnara Gen X'), findsOneWidget);
+    // Markets are pickable too, and the one the endpoint has providers in
+    // leads the card.
+    expect(find.text('Galleria Market 1'), findsOneWidget);
+    expect(find.text('Mahagun Mascot'), findsOneWidget);
     expect(find.text('COMING SOON'), findsWidgets);
   });
 
@@ -73,10 +78,14 @@ void main() {
           bottom: false,
           child: DiscoveryHomeView(
             localityName: 'Ajnara Gen X',
+            localitySlug: 'ajnara-gen-x',
+            homeRepository: FakeHomeSource(
+              feed: sampleFeed(name: 'Ajnara Gen X'),
+            ),
             onChangeLocality: () {},
             onSearch: () {},
-            onSeeAllCategories: () {},
-            onSeeAllProviders: () {},
+            onSeeAllCategories: (_) {},
+            onSeeAllProviders: (_) {},
           ),
         ),
         bottomNavigationBar: DiscoveryTabBar(
@@ -86,10 +95,20 @@ void main() {
       ),
     );
 
+    // The feed has landed, so everything here comes from the endpoint
+    // rather than the seeded catalogue.
+    await tester.pumpAndSettle();
+
     expect(find.text('What do you need done?'), findsOneWidget);
-    expect(find.text('Ajnara Gen X'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(HomeHeader),
+        matching: find.text('Ajnara Gen X'),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Electrician'), findsWidgets);
-    expect(find.text('Shahnaz RO & Chimney Services'), findsOneWidget);
+    expect(find.text('Dev Electricals'), findsOneWidget);
     // Nothing has been added, so the basket bar is absent rather than
     // showing an example of what one would look like.
     expect(find.byType(PendingBookingBar), findsNothing);
@@ -209,36 +228,10 @@ void main() {
     expect(find.text('Where do you need help?'), findsOneWidget);
   });
 
-  testWidgets(
-    '"Near you" shows the seeker\'s own area, not the first on file',
-    (tester) async {
-      await pumpScreen(
-        tester,
-        Scaffold(
-          body: SafeArea(
-            bottom: false,
-            child: DiscoveryHomeView(
-              localityName: 'Panchsheel Greens',
-              onChangeLocality: () {},
-              onSearch: () {},
-              onSeeAllCategories: () {},
-              onSeeAllProviders: () {},
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Greens Cleaning Crew'), findsOneWidget);
-      // Ajnara Gen X's providers head the catalogue; they must not leak onto
-      // another area's home screen.
-      expect(find.text('Shahnaz RO & Chimney Services'), findsNothing);
-    },
-  );
-
-  testWidgets('"Near you" says so when the area has nobody yet', (
+  testWidgets('"Near you" asks the endpoint for the seeker\'s own area', (
     tester,
   ) async {
-    final empty = zone.markets.firstWhere((m) => m.providerCount == 0);
+    final source = FakeHomeSource(feed: sampleFeed(name: 'Panchsheel Greens'));
 
     await pumpScreen(
       tester,
@@ -246,18 +239,54 @@ void main() {
         body: SafeArea(
           bottom: false,
           child: DiscoveryHomeView(
-            localityName: empty.name,
+            localityName: 'Panchsheel Greens',
+            localitySlug: 'panchsheel-greens',
+            homeRepository: source,
             onChangeLocality: () {},
             onSearch: () {},
-            onSeeAllCategories: () {},
-            onSeeAllProviders: () {},
+            onSeeAllCategories: (_) {},
+            onSeeAllProviders: (_) {},
           ),
         ),
       ),
     );
+    await tester.pumpAndSettle();
+
+    // The area travels to the server as its slug — nothing is filtered
+    // client-side any more.
+    expect(source.requested, ['panchsheel-greens']);
+    expect(find.text('Dev Electricals'), findsOneWidget);
+  });
+
+  testWidgets('"Near you" says so when the area has nobody yet', (
+    tester,
+  ) async {
+    // An area the endpoint knows but nobody has listed a business in.
+    const name = 'Gaur City Centre';
+
+    await pumpScreen(
+      tester,
+      Scaffold(
+        body: SafeArea(
+          bottom: false,
+          child: DiscoveryHomeView(
+            localityName: name,
+            localitySlug: 'gaur-city-centre',
+            homeRepository: FakeHomeSource(
+              feed: sampleFeed(name: name, providers: 0),
+            ),
+            onChangeLocality: () {},
+            onSearch: () {},
+            onSeeAllCategories: (_) {},
+            onSeeAllProviders: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
 
     expect(
-      find.text('No providers in ${empty.name} yet — coming soon.'),
+      find.text('No providers in $name yet — coming soon.'),
       findsOneWidget,
     );
   });

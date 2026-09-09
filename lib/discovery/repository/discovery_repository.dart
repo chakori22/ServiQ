@@ -29,10 +29,14 @@ class DiscoveryRepository {
     name: 'Crossing Republik',
     city: 'Ghaziabad, UP',
     isLive: true,
+    // Ordered as the picker reads them, best-served first: Galleria Market 1
+    // is the area the home endpoint actually has providers listed in, so it
+    // leads rather than sitting eleventh behind ten societies.
     localities: [
-      _locality('Ajnara Gen X', LocalityKind.society),
+      _locality('Galleria Market 1', LocalityKind.market),
       _locality('Mahagun Mascot', LocalityKind.society),
       _locality('Panchsheel Wellington', LocalityKind.society),
+      _locality('Ajnara Gen X', LocalityKind.society),
       _locality('Mahagun Montage', LocalityKind.society),
       _locality('Ajnara Integrity', LocalityKind.society),
       _locality('Panchsheel Greens', LocalityKind.society),
@@ -40,7 +44,6 @@ class DiscoveryRepository {
       _locality('Supertech Livingston', LocalityKind.society),
       _locality('Victory Crossroads', LocalityKind.society),
       _locality('Amrapali Princely Estate', LocalityKind.society),
-      _locality('Galleria Market 1', LocalityKind.market),
       _locality('Galleria Market 2', LocalityKind.market),
       _locality('Panchsheel Square', LocalityKind.market),
       _locality('Crossing Mall', LocalityKind.market),

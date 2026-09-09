@@ -44,7 +44,11 @@ class _ZoneCardShell extends StatelessWidget {
 }
 
 /// The area picker's card: a live zone's name with its LIVE pill, then one
-/// row per society so the seeker can pick their area without a second step.
+/// row per area so the seeker can pick theirs without a second step.
+///
+/// Markets belong here as much as societies do — a seeker who wants work
+/// done at their shop picks the market, and leaving them out made the areas
+/// with the most providers unreachable from the picker entirely.
 class ZonePickerCard extends StatelessWidget {
   const ZonePickerCard({
     super.key,
@@ -61,7 +65,7 @@ class ZonePickerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final localities = zone.societies.take(maxLocalities).toList();
+    final localities = zone.localities.take(maxLocalities).toList();
 
     return _ZoneCardShell(
       child: Padding(

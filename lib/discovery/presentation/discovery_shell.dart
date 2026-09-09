@@ -8,6 +8,7 @@ import 'package:local_markerplace/chat/presentation/chats_page.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/core/app_routes.dart';
 import 'package:local_markerplace/discovery/model/locality.dart';
+import 'package:local_markerplace/discovery/model/service_category.dart';
 import 'package:local_markerplace/discovery/model/service_zone.dart';
 import 'package:local_markerplace/dashboard/presentation/posts/presentation/post_screen.dart';
 import 'package:local_markerplace/basket/app_bottom_bar.dart';
@@ -22,6 +23,8 @@ import 'package:local_markerplace/discovery/presentation/services_page.dart';
 import 'package:local_markerplace/discovery/presentation/zone_detail_page.dart';
 import 'package:local_markerplace/discovery/model/provider_summary.dart';
 import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
+import 'package:local_markerplace/discovery/repository/home_repository.dart';
+import 'package:local_markerplace/network/api_client.dart';
 import 'package:local_markerplace/provider/presentation/provider_profile_page.dart';
 import 'package:local_markerplace/me/model/saved_provider.dart';
 import 'package:local_markerplace/me/presentation/addresses_page.dart';
@@ -49,6 +52,7 @@ class DiscoveryShell extends StatefulWidget {
     this.repository = const DiscoveryRepository(),
     this.profiles,
     this.meRepository = const MeRepository(),
+    this.homeRepository,
   });
 
   final DiscoveryTab initialTab;
@@ -71,6 +75,11 @@ class DiscoveryShell extends StatefulWidget {
   /// Everything the Me tab and its screens read.
   final MeRepository meRepository;
 
+  /// Where home's feed comes from. Null in tests and previews, which then
+  /// get a repository pointed at nothing and see the error state — better
+  /// than a screen that silently shows seeded data as if it were live.
+  final HomeSource? homeRepository;
+
   @override
   State<DiscoveryShell> createState() => _DiscoveryShellState();
 }
@@ -86,6 +95,11 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
   /// The profile behind the Me tab. Null until it has been read, or when
   /// there is none on file.
   SeekerProfile? _profile;
+
+  /// Bumped every time the seeker picks an area, so home fetches on the
+  /// choice itself rather than only when the choice differs from what it is
+  /// already showing.
+  int _localityChoice = 0;
 
   @override
   void initState() {
@@ -127,7 +141,10 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
       ),
     );
     if (!mounted || locality == null) return;
-    setState(() => _localityName = locality.name);
+    setState(() {
+      _localityName = locality.name;
+      _localityChoice++;
+    });
     await _rememberLocality(locality.name);
   }
 
@@ -226,11 +243,15 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
     );
   }
 
-  void _openLocality(Locality locality) {
+  /// [providers] is passed when the caller already has the list — home,
+  /// which got it from the endpoint. Without it the page falls back to what
+  /// the seeded repository knows, which is what the zone drill-down uses.
+  void _openLocality(Locality locality, {List<ProviderSummary>? providers}) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LocalityPage(
           localityName: locality.name,
+          providers: providers,
           repository: widget.repository,
           onProviderTap: _openProvider,
           onTabSelected: _selectTabFromChild,
@@ -239,6 +260,11 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
       ),
     );
   }
+
+  /// The area's slug, as the endpoint wants it — "Galleria Market 1" is
+  /// "galleria-market-1". The conversion is the repository's, so there is
+  /// one rule for it rather than one per caller.
+  String get _localitySlug => HomeRepository.slugFor(_localityName ?? '');
 
   /// Every way into the conversations — the Me row and home's chat button.
   Future<void> _openChats() async {
@@ -260,12 +286,20 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
 
   /// Home's category tiles are a way into the catalogue, not six screens:
   /// "See all" opens it unfiltered, a tile opens it with that chip lit.
-  Future<void> _openServices([String? category]) async {
+  ///
+  /// [categories] is the endpoint's own list, handed over so the catalogue's
+  /// filter offers the trades home showed rather than a seeded set of its
+  /// own.
+  Future<void> _openServices({
+    String? category,
+    List<ServiceCategory>? categories,
+  }) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ServicesPage(
           localityName: _localityName ?? 'Ajnara Gen X',
           initialCategory: category,
+          categories: categories,
         ),
       ),
     );
@@ -412,21 +446,33 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
         return DiscoveryHomeView(
           localityName: _localityName ?? 'Choose your area',
           repository: widget.repository,
+          localitySlug: _localitySlug,
+          localityChoiceId: _localityChoice,
+          homeRepository:
+              widget.homeRepository ??
+              HomeRepository(apiClient: APIClient(baseUrl: '')),
           onChat: _openChats,
+          onPost: _openPostForm,
           onChangeLocality: _pickLocality,
           onSearch: _openSearch,
           onProviderTap: _openProvider,
-          onSeeAllCategories: _openServices,
-          onCategoryTap: (category) => _openServices(category.label),
-          onSeeAllProviders: () {
+          onSeeAllCategories: (categories) =>
+              _openServices(categories: categories),
+          onCategoryTap: (category, categories) =>
+              _openServices(category: category.label, categories: categories),
+          // The full list is the same people home just showed, handed
+          // over rather than looked up again — the endpoint is the only
+          // thing that knows who actually works in this area.
+          onSeeAllProviders: (providers) {
             final locality = _localityName;
             if (locality != null) {
               _openLocality(
                 Locality(
                   name: locality,
-                  providerCount: widget.repository.providersIn(locality).length,
+                  providerCount: providers.length,
                   kind: LocalityKind.society,
                 ),
+                providers: providers,
               );
             }
           },

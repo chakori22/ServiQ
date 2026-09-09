@@ -76,11 +76,19 @@ class CategoryTile extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: SvgPicture.asset(
-                    category.iconAsset,
-                    width: 22,
-                    height: 22,
-                  ),
+                  // A bundled glyph where the design shipped one; the
+                  // server's named icon otherwise.
+                  child: category.iconAsset.isNotEmpty
+                      ? SvgPicture.asset(
+                          category.iconAsset,
+                          width: 22,
+                          height: 22,
+                        )
+                      : Icon(
+                          category.icon,
+                          size: 22,
+                          color: AppColor.discoveryAccent,
+                        ),
                 ),
                 const SizedBox(height: 8),
                 Text(

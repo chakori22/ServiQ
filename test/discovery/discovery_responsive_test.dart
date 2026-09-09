@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../support/fake_home_source.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
 import 'package:local_markerplace/discovery/presentation/discovery_home_view.dart';
 import 'package:local_markerplace/discovery/presentation/explore_zones_view.dart';
@@ -63,10 +64,14 @@ void main() {
         bottom: false,
         child: DiscoveryHomeView(
           localityName: 'Panchsheel Wellington',
+          localitySlug: 'ajnara-gen-x',
+          homeRepository: FakeHomeSource(
+            feed: sampleFeed(name: 'Panchsheel Wellington'),
+          ),
           onChangeLocality: () {},
           onSearch: () {},
-          onSeeAllCategories: () {},
-          onSeeAllProviders: () {},
+          onSeeAllCategories: (_) {},
+          onSeeAllProviders: (_) {},
         ),
       ),
       bottomNavigationBar: DiscoveryTabBar(
@@ -150,6 +155,6 @@ void main() {
   ) async {
     await pumpAt(tester, devices.first, const LocationPage());
     expect(find.text('Where do you need help?'), findsOneWidget);
-    expect(find.text('Ajnara Gen X'), findsOneWidget);
+    expect(find.text('Galleria Market 1'), findsOneWidget);
   });
 }

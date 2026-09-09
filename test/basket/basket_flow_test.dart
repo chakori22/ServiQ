@@ -141,14 +141,21 @@ void main() {
       expect(all, isNotEmpty);
       expect(find.text('${all.length} jobs in $locality'), findsOneWidget);
 
-      await tester.tap(find.text('Plumber'));
+      // The catalogue's filter is the sheet behind the header icon.
+      await tester.tap(find.byIcon(Icons.tune_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Plumber').last);
       await tester.pumpAndSettle();
 
       // The chip narrows the same flat list rather than opening a screen of
-      // its own, and only plumbers survive it.
+      // its own, and only plumbers survive it. The header names the filter
+      // alongside the count, so a short list reads as narrowed.
       expect(plumbing, isNotEmpty);
       expect(plumbing.length, lessThan(all.length));
-      expect(find.text('${plumbing.length} jobs in $locality'), findsOneWidget);
+      expect(
+        find.text('${plumbing.length} jobs in $locality · Plumber'),
+        findsOneWidget,
+      );
       for (final service in plumbing) {
         expect(service.categoryLabel, 'Plumber');
       }

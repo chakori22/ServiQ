@@ -17,10 +17,16 @@ class LocalityPage extends StatelessWidget {
     this.onProviderTap,
     this.onTabSelected,
     this.onPost,
+    this.providers,
     this.repository = const DiscoveryRepository(),
   });
 
   final String localityName;
+
+  /// Who to list. Null falls back to the seeded repository — the zone
+  /// drill-down still comes that way, while home hands over what the home
+  /// endpoint actually returned for this area.
+  final List<ProviderSummary>? providers;
   final ValueChanged<ProviderSummary>? onProviderTap;
   final ValueChanged<DiscoveryTab>? onTabSelected;
   final VoidCallback? onPost;
@@ -28,7 +34,7 @@ class LocalityPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final providers = repository.providersIn(localityName);
+    final providers = this.providers ?? repository.providersIn(localityName);
     final zone = repository.zoneOfLocality(localityName);
     final locality = zone?.localities
         .where((l) => l.name == localityName)
@@ -43,7 +49,10 @@ class LocalityPage extends StatelessWidget {
             DiscoveryHeader(
               title: localityName,
               subtitle: [
-                '${locality?.providerCount ?? providers.length} providers',
+                // The count follows the list being shown; the seeded
+                // locality's own number is only right when the list is
+                // seeded too.
+                '${this.providers != null ? providers.length : locality?.providerCount ?? providers.length} providers',
                 if (zone != null) zone.name,
               ].join(' · '),
             ),

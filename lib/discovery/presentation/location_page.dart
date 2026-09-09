@@ -107,13 +107,13 @@ class LocationPage extends StatelessWidget {
                           height: 21,
                         ),
                         // Nothing reads the device's location yet, so this
-                        // lands on the area with the most providers rather
-                        // than pretending to have resolved one.
+                        // lands on the area the picker leads with rather than
+                        // pretending to have resolved one.
                         onPressed: () {
                           if (liveZones.isEmpty) return;
-                          final societies = liveZones.first.societies;
-                          if (societies.isEmpty) return;
-                          _choose(context, societies.first);
+                          final localities = liveZones.first.localities;
+                          if (localities.isEmpty) return;
+                          _choose(context, localities.first);
                         },
                       ),
                       const SizedBox(height: 24),

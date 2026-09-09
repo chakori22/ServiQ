@@ -6,7 +6,8 @@ import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/basket/basket.dart';
 import 'package:local_markerplace/discovery/model/catalogue_service.dart';
-import 'package:local_markerplace/discovery/presentation/components/discovery_filter_chip.dart';
+import 'package:local_markerplace/discovery/model/service_category.dart';
+import 'package:local_markerplace/discovery/presentation/components/category_filter_sheet.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
 import 'package:local_markerplace/discovery/presentation/components/pending_booking_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
@@ -30,6 +31,7 @@ class ServicesPage extends StatefulWidget {
     super.key,
     required this.localityName,
     this.initialCategory,
+    this.categories,
     this.repository = const DiscoveryRepository(),
     this.providers = const ProviderRepository(),
     this.visits,
@@ -39,6 +41,12 @@ class ServicesPage extends StatefulWidget {
 
   /// The tile that was tapped, or null for "See all".
   final String? initialCategory;
+
+  /// The trades to offer as filters — home's, which came from the endpoint,
+  /// so the sheet lists what the seeker just saw rather than a second set of
+  /// its own. Null falls back to the seeded catalogue's categories, which is
+  /// what a screen opened outside that flow gets.
+  final List<ServiceCategory>? categories;
 
   final DiscoveryRepository repository;
 
@@ -56,6 +64,30 @@ class _ServicesPageState extends State<ServicesPage> {
   late final VisitRepository _visits = widget.visits ?? VisitRepository.shared;
 
   late String? _category = widget.initialCategory;
+
+  List<ServiceCategory> get _categories =>
+      widget.categories ?? widget.repository.categories();
+
+  /// True while the sheet is up.
+  ///
+  /// A second tap on the icon would otherwise stack a second sheet on the
+  /// first, and choosing in one would leave the other still standing.
+  bool _filterIsOpen = false;
+
+  /// Opens the full list of trades. Dismissing it changes nothing, which is
+  /// why a null answer is not read as "All".
+  Future<void> _openFilter() async {
+    if (_filterIsOpen) return;
+    _filterIsOpen = true;
+    final choice = await CategoryFilterSheet.show(
+      context,
+      categories: _categories,
+      selected: _category,
+    );
+    _filterIsOpen = false;
+    if (choice == null || !mounted) return;
+    setState(() => _category = choice.label);
+  }
 
   List<CatalogueService> get _services => widget.providers.servicesIn(
     widget.localityName,
@@ -120,32 +152,17 @@ class _ServicesPageState extends State<ServicesPage> {
           children: [
             DiscoveryHeader(
               title: 'Services',
-              subtitle:
-                  '${services.length} '
-                  '${services.length == 1 ? 'job' : 'jobs'} in '
-                  '${widget.localityName}',
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              height: 40,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                children: [
-                  DiscoveryFilterChip(
-                    label: 'All',
-                    isSelected: _category == null,
-                    onTap: () => setState(() => _category = null),
-                  ),
-                  for (final category in widget.repository.categories()) ...[
-                    const SizedBox(width: 8),
-                    DiscoveryFilterChip(
-                      label: category.label,
-                      isSelected: _category == category.label,
-                      onTap: () => setState(() => _category = category.label),
-                    ),
-                  ],
-                ],
+              subtitle: [
+                '${services.length} '
+                    '${services.length == 1 ? 'job' : 'jobs'} in '
+                    '${widget.localityName}',
+                // Says which filter produced that count, so a short list
+                // reads as narrowed rather than as an empty area.
+                ?_category,
+              ].join(' · '),
+              trailing: _FilterButton(
+                isFiltered: _category != null,
+                onTap: _openFilter,
               ),
             ),
             const SizedBox(height: 14),
@@ -158,8 +175,8 @@ class _ServicesPageState extends State<ServicesPage> {
               child: services.isEmpty
                   ? const _NoServices()
                   : ListView.separated(
-                      // Keyed on the chip so switching categories builds the
-                      // list afresh and its rows play their entrance.
+                      // Keyed on the filter so switching categories builds
+                      // the list afresh and its rows play their entrance.
                       key: ValueKey(_category),
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                       itemCount: services.length,
@@ -409,4 +426,42 @@ String _initials(String name) {
   if (words.isEmpty || words.first.isEmpty) return '?';
   if (words.length == 1) return words.first.substring(0, 1).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+/// The header's filter affordance. It fills with the accent once a category
+/// is on, so the seeker can tell a short list from a narrowed one without
+/// reading the chips.
+class _FilterButton extends StatelessWidget {
+  const _FilterButton({required this.isFiltered, required this.onTap});
+
+  final bool isFiltered;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return PressableScale(
+      onTap: onTap,
+      pressedScale: 0.9,
+      child: Container(
+        width: 40,
+        height: 40,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isFiltered ? AppColor.discoveryAccent : AppColor.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isFiltered
+                ? AppColor.discoveryAccent
+                : AppColor.discoveryBorder,
+            width: 1.4,
+          ),
+        ),
+        child: Icon(
+          Icons.tune_rounded,
+          size: 19,
+          color: isFiltered ? AppColor.white : AppColor.discoveryTextSecondary,
+        ),
+      ),
+    );
+  }
 }
