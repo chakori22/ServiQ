@@ -478,9 +478,28 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
           },
         );
       case DiscoveryTab.explore:
-        return ExploreZonesView(
-          repository: widget.repository,
-          onZoneTap: _openZone,
+        // The seeker already said where they are, so explore opens on that
+        // area's societies and markets rather than asking them to pick a
+        // zone all over again. Without an area on file there is nothing to
+        // open on, and the zone list is the way in.
+        final locality = _localityName;
+        final zone = locality == null
+            ? null
+            : widget.repository.zoneOfLocality(locality);
+        if (zone == null) {
+          return ExploreZonesView(
+            repository: widget.repository,
+            onZoneTap: _openZone,
+            onComingSoonTap: (zone) => showComingSoonNotice(context, zone),
+          );
+        }
+        return ExploreAreaView(
+          zone: zone,
+          onLocalityTap: _openLocality,
+          comingSoon: widget.repository
+              .zones()
+              .where((other) => !other.isLive)
+              .toList(),
           onComingSoonTap: (zone) => showComingSoonNotice(context, zone),
         );
       case DiscoveryTab.me:

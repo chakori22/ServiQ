@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
+import 'package:local_markerplace/discovery/model/locality.dart';
 import 'package:local_markerplace/discovery/model/service_zone.dart';
+import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
+import 'package:local_markerplace/discovery/presentation/components/locality_groups.dart';
+import 'package:local_markerplace/discovery/presentation/components/status_pill.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/components/zone_cards.dart';
 import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
@@ -75,6 +79,79 @@ class ExploreZonesView extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// 03 · Explore, for a seeker who has already said where they are.
+///
+/// The zone list asks which area to look in; this answers it from what they
+/// chose on home and goes straight to the societies and markets inside it.
+/// Being asked to pick an area a second time, one tab after picking one, is
+/// the thing this exists to stop.
+///
+/// The areas ServiQ has not opened yet still follow underneath, since that
+/// list is also how a seeker says where to open next.
+class ExploreAreaView extends StatelessWidget {
+  const ExploreAreaView({
+    super.key,
+    required this.zone,
+    required this.onLocalityTap,
+    this.comingSoon = const [],
+    this.onComingSoonTap,
+  });
+
+  /// The zone the chosen area sits in.
+  final ServiceZone zone;
+
+  final ValueChanged<Locality> onLocalityTap;
+
+  /// Zones that are not open yet, listed under the area's own localities.
+  final List<ServiceZone> comingSoon;
+  final ValueChanged<ServiceZone>? onComingSoonTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        DiscoveryHeader(
+          // A tab is not something to go back from, so the header carries no
+          // back button here the way the pushed zone detail does.
+          showBack: false,
+          title: zone.name,
+          subtitle:
+              '${zone.totalSocieties} societies · '
+              '${zone.totalMarkets} markets',
+          trailing: zone.isLive ? const StatusPill.live() : null,
+        ),
+        const SizedBox(height: 14),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+            children: [
+              ...localityGroups(zone: zone, onLocalityTap: onLocalityTap),
+              if (comingSoon.isNotEmpty) ...[
+                const SizedBox(height: 30),
+                Text('COMING SOON', style: DiscoveryText.overline),
+                const SizedBox(height: 14),
+                for (final (index, other) in comingSoon.indexed) ...[
+                  ComingSoonZoneCard(
+                    zone: other,
+                    index: index + 1,
+                    onTap: () => onComingSoonTap?.call(other),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  'Tapping a coming-soon area tells us where to open next.',
+                  style: DiscoveryText.footnote.copyWith(height: 18 / 12),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
