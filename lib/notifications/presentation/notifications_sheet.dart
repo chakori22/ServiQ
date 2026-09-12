@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
+import 'package:local_markerplace/notifications/bloc/notification_bloc.dart';
 import 'package:local_markerplace/notifications/model/app_notification.dart';
 import 'package:local_markerplace/notifications/repository/notification_repository.dart';
 
@@ -30,33 +32,32 @@ Future<void> showNotificationsSheet(
   );
 }
 
-class NotificationsSheet extends StatefulWidget {
+class NotificationsSheet extends StatelessWidget {
   const NotificationsSheet({super.key, this.repository});
 
   /// Defaults to the shared store, which is what the bells count from.
   final NotificationRepository? repository;
 
   @override
-  State<NotificationsSheet> createState() => _NotificationsSheetState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => NotificationBloc(
+        notificationRepository: repository ?? NotificationRepository.shared,
+      )..add(const NotificationsRequested()),
+      child: const _NotificationsView(),
+    );
+  }
 }
 
-class _NotificationsSheetState extends State<NotificationsSheet> {
-  late final NotificationRepository _repository =
-      widget.repository ?? NotificationRepository.shared;
-
-  late List<AppNotification> _notifications = _repository.notifications();
-
-  void _markAllRead() {
-    _repository.markAllRead();
-    setState(() => _notifications = _repository.notifications());
-  }
+class _NotificationsView extends StatelessWidget {
+  const _NotificationsView();
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<NotificationBloc>().state;
     final now = DateTime.now();
-    final today = _notifications.where((n) => n.isToday(now)).toList();
-    final earlier = _notifications.where((n) => !n.isToday(now)).toList();
-    final hasUnread = _notifications.any((n) => n.isUnread);
+    final today = state.todayAt(now);
+    final earlier = state.earlierAt(now);
 
     // The design gives the sheet 694 of 844 — most of the screen, but with
     // the board still showing above it.
@@ -83,9 +84,11 @@ class _NotificationsSheetState extends State<NotificationsSheet> {
                 ),
                 // Nothing to mark once everything has been read, so the
                 // action steps back rather than sitting there doing nothing.
-                if (hasUnread)
+                if (state.hasUnread)
                   PressableScale(
-                    onTap: _markAllRead,
+                    onTap: () => context.read<NotificationBloc>().add(
+                      const AllNotificationsRead(),
+                    ),
                     pressedScale: 0.92,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(

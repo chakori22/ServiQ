@@ -22,3 +22,11 @@ final class HomeRefreshed extends HomeEvent {
   @override
   List<Object> get props => [];
 }
+
+/// The chat or notification counts the header badges have changed.
+final class HomeBadgesChanged extends HomeEvent {
+  const HomeBadgesChanged();
+
+  @override
+  List<Object> get props => [];
+}

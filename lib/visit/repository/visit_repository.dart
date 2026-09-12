@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:local_markerplace/store/model/cart_product.dart';
 import 'package:local_markerplace/visit/model/visit.dart';
 import 'package:local_markerplace/visit/model/visit_mode.dart';
@@ -18,6 +20,21 @@ class VisitRepository {
   VisitRepository();
 
   static final VisitRepository shared = VisitRepository();
+
+  /// Announced whenever a cart changes.
+  ///
+  /// A cart is added to from the provider's page, emptied from its own
+  /// screen and booked from the checkout, while the bar above the tabs has
+  /// to say the truth on all of them. Reading the store as the bar built
+  /// itself is what used to keep it honest; this is what keeps it honest now
+  /// that a bloc holds what it draws.
+  Stream<void> get changes => _changes.stream;
+
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
+  void _announce() {
+    if (!_changes.isClosed) _changes.add(null);
+  }
 
   final List<Visit> _carts = <Visit>[];
 
@@ -127,6 +144,7 @@ class VisitRepository {
     final at = _indexOf(cart.providerName);
     if (cart.services.isEmpty && cart.parts.isEmpty) {
       if (at != -1) _carts.removeAt(at);
+      _announce();
       return;
     }
     if (at == -1) {
@@ -135,6 +153,7 @@ class VisitRepository {
       _carts[at] = cart;
       _promote(cart, at);
     }
+    _announce();
   }
 
   // --- editing one provider's cart -----------------------------------------
@@ -199,10 +218,14 @@ class VisitRepository {
   void removeCart(String providerName) {
     final at = _indexOf(providerName);
     if (at != -1) _carts.removeAt(at);
+    _announce();
   }
 
   /// "Clear all".
-  void clear() => _carts.clear();
+  void clear() {
+    _carts.clear();
+    _announce();
+  }
 
   /// Books a visit straight from an accepted offer.
   ///
@@ -237,6 +260,7 @@ class VisitRepository {
     final confirmed = existing.copyWith(reference: _nextReference());
     booked.insert(0, confirmed);
     removeCart(providerName);
+    _announce();
     return confirmed;
   }
 

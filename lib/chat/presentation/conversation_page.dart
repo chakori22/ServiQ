@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'package:local_markerplace/chat/bloc/conversation_bloc.dart';
 import 'package:local_markerplace/chat/model/chat_message.dart';
 import 'package:local_markerplace/chat/model/chat_thread.dart';
 import 'package:local_markerplace/chat/presentation/components/chat_bits.dart';
@@ -8,7 +10,7 @@ import 'package:local_markerplace/components/app_back_button.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/components/provider_avatar.dart';
-import 'package:local_markerplace/visit/model/visit_service.dart';
+import 'package:local_markerplace/visit/model/visit.dart';
 import 'package:local_markerplace/visit/presentation/visit_booked_page.dart';
 import 'package:local_markerplace/visit/repository/visit_repository.dart';
 
@@ -17,7 +19,7 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 /// Everything the two of them agreed is here, including the price: an offer
 /// is a message, so accepting one is answering the person rather than
 /// leaving for a form.
-class ConversationPage extends StatefulWidget {
+class ConversationPage extends StatelessWidget {
   const ConversationPage({
     super.key,
     required this.providerName,
@@ -30,17 +32,29 @@ class ConversationPage extends StatefulWidget {
   final VisitRepository? visits;
 
   @override
-  State<ConversationPage> createState() => _ConversationPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => ConversationBloc(
+        chatRepository: repository ?? ChatRepository.shared,
+        visitRepository: visits ?? VisitRepository.shared,
+      )..add(ConversationOpened(providerName)),
+      child: const _ConversationView(),
+    );
+  }
 }
 
-class _ConversationPageState extends State<ConversationPage> {
-  late final ChatRepository _chats = widget.repository ?? ChatRepository.shared;
-  late final VisitRepository _visits = widget.visits ?? VisitRepository.shared;
+class _ConversationView extends StatefulWidget {
+  const _ConversationView();
 
+  @override
+  State<_ConversationView> createState() => _ConversationViewState();
+}
+
+class _ConversationViewState extends State<_ConversationView> {
+  /// Both belong to the widget: one holds what is being typed, the other
+  /// where the list is scrolled to. Neither is state the bloc should carry.
   final TextEditingController _message = TextEditingController();
   final ScrollController _scroll = ScrollController();
-
-  late ChatThread _thread = _chats.markRead(widget.providerName);
 
   @override
   void initState() {
@@ -78,114 +92,97 @@ class _ConversationPageState extends State<ConversationPage> {
   void _send() {
     final text = _message.text.trim();
     if (text.isEmpty) return;
-    setState(() {
-      _thread = _chats.send(widget.providerName, text);
-      _message.clear();
-    });
+    context.read<ConversationBloc>().add(MessageSent(text));
+    _message.clear();
     WidgetsBinding.instance.addPostFrameCallback((_) => _toBottom());
   }
 
-  /// Taking an offer books the visit outright, the same way taking one on
-  /// the board does: the provider named a price and a time, and accepting
-  /// agreed to both.
-  Future<void> _accept(int index, ChatOffer offer) async {
-    setState(
-      () => _thread = _chats.answerOffer(
-        widget.providerName,
-        index,
-        ChatOfferStatus.accepted,
-      ),
-    );
-
-    final booked = _visits.bookFromOffer(
-      providerName: _thread.providerName,
-      providerLine: 'agreed in chat',
-      isVerifiedProvider: _thread.isVerified,
-      agreedWhen: _capitalised(offer.timing),
-      service: VisitService(
-        name: _thread.postTitle ?? 'Agreed in chat',
-        detail: offer.terms,
-        unitPrice: offer.price,
-      ),
-    );
-    if (!mounted) return;
-
+  /// Accepting books the visit, so the receipt follows it. The bloc says a
+  /// booking happened; showing it is the screen's job, and telling the bloc
+  /// it has been shown is what stops it being shown twice.
+  Future<void> _showReceipt(Visit booked) async {
+    final bloc = context.read<ConversationBloc>();
     await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => VisitBookedPage(visit: booked)));
-    if (mounted) setState(() {});
+    bloc.add(const BookingSeen());
   }
-
-  void _decline(int index) {
-    setState(
-      () => _thread = _chats.answerOffer(
-        widget.providerName,
-        index,
-        ChatOfferStatus.declined,
-      ),
-    );
-  }
-
-  static String _capitalised(String text) =>
-      text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
   @override
   Widget build(BuildContext context) {
-    final messages = _thread.messages;
+    final state = context.watch<ConversationBloc>().state;
+    final thread = state.thread;
+    if (thread == null) {
+      return const Scaffold(backgroundColor: AppColor.white);
+    }
+    final messages = state.messages;
 
     return Scaffold(
       backgroundColor: AppColor.white,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _Header(thread: _thread),
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: AppColor.discoveryBorder,
-            ),
-            Expanded(
-              child: ListView.builder(
-                controller: _scroll,
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                itemCount: messages.length + 1,
-                itemBuilder: (context, index) {
-                  // The last row is the note about what accepting does; it
-                  // belongs with the conversation rather than pinned, so it
-                  // scrolls away once the thread grows.
-                  if (index == messages.length) {
-                    return _AcceptNote(thread: _thread);
-                  }
-
-                  final message = messages[index];
-                  final previous = index == 0 ? null : messages[index - 1];
-                  final offer = message.offer;
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_startsNewDay(previous, message))
-                        ChatDayLabel(label: _dayLabel(message.sentAt)),
-                      if (message.text.isNotEmpty)
-                        MessageBubble(message: message),
-                      if (offer != null)
-                        ChatOfferCard(
-                          offer: offer,
-                          timeLabel: message.timeLabel,
-                          onAccept: () => _accept(index, offer),
-                          onDecline: () => _decline(index),
-                        ),
-                    ],
-                  );
-                },
+      body: BlocListener<ConversationBloc, ConversationState>(
+        listenWhen: (previous, current) =>
+            previous.booked != current.booked && current.booked != null,
+        listener: (context, state) => _showReceipt(state.booked!),
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _Header(thread: thread),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColor.discoveryBorder,
               ),
-            ),
-            // The composer sits inside the body, not in the Scaffold's
-            // bottomNavigationBar: that keeps its place under the keyboard,
-            // which hid the field and the send button behind it.
-            ChatComposer(controller: _message, canSend: true, onSend: _send),
-          ],
+              Expanded(
+                child: ListView.builder(
+                  controller: _scroll,
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  itemCount: messages.length + 1,
+                  itemBuilder: (context, index) {
+                    // The last row is the note about what accepting does; it
+                    // belongs with the conversation rather than pinned, so it
+                    // scrolls away once the thread grows.
+                    if (index == messages.length) {
+                      return _AcceptNote(thread: thread);
+                    }
+
+                    final message = messages[index];
+                    final previous = index == 0 ? null : messages[index - 1];
+                    final offer = message.offer;
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (_startsNewDay(previous, message))
+                          ChatDayLabel(label: _dayLabel(message.sentAt)),
+                        if (message.text.isNotEmpty)
+                          MessageBubble(message: message),
+                        if (offer != null)
+                          ChatOfferCard(
+                            offer: offer,
+                            timeLabel: message.timeLabel,
+                            onAccept: () =>
+                                context.read<ConversationBloc>().add(
+                                  OfferAccepted(
+                                    messageIndex: index,
+                                    offer: offer,
+                                  ),
+                                ),
+                            onDecline: () => context
+                                .read<ConversationBloc>()
+                                .add(OfferDeclined(index)),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              // The composer sits inside the body, not in the Scaffold's
+              // bottomNavigationBar: that keeps its place under the keyboard,
+              // which hid the field and the send button behind it.
+              ChatComposer(controller: _message, canSend: true, onSend: _send),
+            ],
+          ),
         ),
       ),
     );

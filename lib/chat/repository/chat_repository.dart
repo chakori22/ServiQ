@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:local_markerplace/chat/model/chat_message.dart';
 import 'package:local_markerplace/chat/model/chat_thread.dart';
 
@@ -10,6 +12,18 @@ class ChatRepository {
   ChatRepository({List<ChatThread>? threads}) : _threads = threads ?? _seeded();
 
   static final ChatRepository shared = ChatRepository();
+
+  /// Announced whenever a thread changes.
+  ///
+  /// Home badges the unread count, and reading a thread happens on a screen
+  /// home cannot see — so it is told rather than left to notice.
+  Stream<void> get changes => _changes.stream;
+
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
+  void _announce() {
+    if (!_changes.isClosed) _changes.add(null);
+  }
 
   final List<ChatThread> _threads;
 
@@ -43,7 +57,9 @@ class ChatRepository {
   ChatThread markRead(String providerName) {
     final index = _indexOf(providerName);
     if (index == -1) return byName(providerName);
-    return _threads[index] = _threads[index].copyWith(unreadCount: 0);
+    final read = _threads[index] = _threads[index].copyWith(unreadCount: 0);
+    _announce();
+    return read;
   }
 
   /// Sends a message from the seeker and moves the thread to the top.
@@ -60,6 +76,7 @@ class ChatRepository {
     _threads
       ..removeAt(index)
       ..insert(0, updated);
+    _announce();
     return updated;
   }
 
@@ -82,7 +99,9 @@ class ChatRepository {
     messages[messageIndex] = message.copyWith(
       offer: offer.copyWith(status: status),
     );
-    return _threads[index] = thread.copyWith(messages: messages);
+    final answered = _threads[index] = thread.copyWith(messages: messages);
+    _announce();
+    return answered;
   }
 
   /// The conversations the design draws, aged off the current clock so the

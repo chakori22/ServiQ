@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:local_markerplace/basket/app_bottom_bar.dart';
+import 'package:local_markerplace/provider/bloc/provider_bloc.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_note.dart';
@@ -30,7 +32,7 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 /// which is what [isSignedIn] switches. The head scrolls away with the
 /// content and the tab strip pins under it, so the four sections behave like
 /// one page rather than four.
-class ProviderProfilePage extends StatefulWidget {
+class ProviderProfilePage extends StatelessWidget {
   const ProviderProfilePage({
     super.key,
     required this.providerName,
@@ -53,15 +55,47 @@ class ProviderProfilePage extends StatefulWidget {
   final VoidCallback? onPost;
 
   @override
-  State<ProviderProfilePage> createState() => _ProviderProfilePageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          ProviderBloc(
+            providerRepository: repository,
+            visitRepository: VisitRepository.shared,
+          )..add(
+            ProviderRequested(
+              providerName: providerName,
+              localityName: localityName,
+              initialTab: initialTab,
+            ),
+          ),
+      child: _ProviderProfileView(
+        isSignedIn: isSignedIn,
+        onTabSelected: onTabSelected,
+        onPost: onPost,
+      ),
+    );
+  }
 }
 
-class _ProviderProfilePageState extends State<ProviderProfilePage> {
-  late ProviderTab _tab = widget.initialTab;
+class _ProviderProfileView extends StatefulWidget {
+  const _ProviderProfileView({
+    required this.isSignedIn,
+    required this.onTabSelected,
+    required this.onPost,
+  });
 
-  late final ProviderProfile _profile = widget.repository.forName(
-    widget.providerName,
-  );
+  final bool isSignedIn;
+  final ValueChanged<DiscoveryTab>? onTabSelected;
+  final VoidCallback? onPost;
+
+  @override
+  State<_ProviderProfileView> createState() => _ProviderProfileViewState();
+}
+
+class _ProviderProfileViewState extends State<_ProviderProfileView> {
+  ProviderBloc get _bloc => context.read<ProviderBloc>();
+
+  ProviderProfile get _profile => _bloc.state.profile!;
 
   void _gatedAction(String what) {
     if (widget.isSignedIn) {
@@ -85,24 +119,8 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
     );
     if (added == null || !mounted) return;
 
-    // Adding never displaces another store's cart: they sit side by side.
-    VisitRepository.shared.addService(
-      providerName: _profile.name,
-      providerLine: '${widget.localityName} · usually replies in 10 min',
-      isVerifiedProvider: _profile.isVerified,
-      service: added,
-    );
-    if (!mounted) return;
-
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => YourVisitPage(
-          providerName: _profile.name,
-          onAddAnother: () => Navigator.of(context).pop(),
-        ),
-      ),
-    );
-    if (mounted) setState(() {});
+    _bloc.add(ProviderServiceAdded(added));
+    await _openCart();
   }
 
   /// Opens a part, and puts it in the cart if the seeker takes it.
@@ -115,7 +133,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
       MaterialPageRoute(
         builder: (_) => ProductPage(
           product: product,
-          localityName: widget.localityName,
+          localityName: _bloc.state.localityName,
           onBookFitting: product.fittingName == null
               ? null
               : () => _bookFitting(product.fittingName!),
@@ -124,64 +142,12 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
     );
     if (added == null || !mounted) return;
 
-    VisitRepository.shared.addProduct(
-      providerName: _profile.name,
-      providerLine: '${widget.localityName} · usually replies in 10 min',
-      isVerifiedProvider: _profile.isVerified,
-      product: added,
-    );
-    if (!mounted) return;
+    _bloc.add(ProviderPartAdded(added));
     await _openCart();
   }
 
-  /// Whether [service] is already on the visit being built with this
-  /// provider — a service is one job, so it is on or off rather than
-  /// counted.
-  bool _onVisit(ProviderService service) {
-    final visit = VisitRepository.shared.cartFor(_profile.name);
-    if (visit == null) return false;
-    return visit.services.any((booked) => booked.name == service.name);
-  }
-
-  void _removeFromVisit(ProviderService service) {
-    final visits = VisitRepository.shared;
-    final visit = visits.cartFor(_profile.name);
-    if (visit == null) return;
-    final index = visit.services.indexWhere((s) => s.name == service.name);
-    if (index == -1) return;
-    setState(() => visits.removeServiceAt(_profile.name, index));
-  }
-
-  /// How many of [product] are in this provider's cart. A cart belongs to
-  /// one provider, so another store's count is not this grid's business.
-  int _inCart(StoreProduct product) {
-    final cart = VisitRepository.shared.cartFor(_profile.name);
-    if (cart == null) return 0;
-    for (final part in cart.parts) {
-      if (part.name == product.name) return part.quantity;
-    }
-    return 0;
-  }
-
-  /// Adjusts a part's count straight from the grid. Stepping the last one
-  /// down takes it out of the cart, which is what the bin on the button is
-  /// promising.
-  void _stepPart(StoreProduct product, int delta) {
-    final visits = VisitRepository.shared;
-    final cart = visits.cartFor(_profile.name);
-    if (cart == null) return;
-    final index = cart.parts.indexWhere((part) => part.name == product.name);
-    if (index == -1) return;
-    setState(
-      () => visits.setPartQuantityAt(
-        _profile.name,
-        index,
-        cart.parts[index].quantity + delta,
-      ),
-    );
-  }
-
   Future<void> _openCart() async {
+    final bloc = _bloc;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => YourVisitPage(
@@ -190,7 +156,8 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
         ),
       ),
     );
-    if (mounted) setState(() {});
+    // The cart screen can empty it, so the page asks what is left.
+    bloc.add(const ProviderCartRefreshed());
   }
 
   /// Leaves the store for the service that fits what is being bought. The
@@ -198,7 +165,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
   /// switch rather than a new screen.
   void _bookFitting(String serviceName) {
     Navigator.of(context).pop();
-    setState(() => _tab = ProviderTab.services);
+    _bloc.add(const ProviderTabSelected(ProviderTab.services));
     final match = _profile.services.where((s) => s.name == serviceName);
     if (match.isEmpty) return;
     _addToVisit(match.first);
@@ -219,6 +186,11 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<ProviderBloc>().state;
+    if (state.profile == null) {
+      return const Scaffold(backgroundColor: AppColor.white);
+    }
+
     return Scaffold(
       backgroundColor: AppColor.white,
       body: SafeArea(
@@ -258,13 +230,13 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
                 child: ColoredBox(
                   color: AppColor.white,
                   child: ProviderSegmentedTabs(
-                    current: _tab,
-                    onSelect: (tab) => setState(() => _tab = tab),
+                    current: state.tab,
+                    onSelect: (tab) => _bloc.add(ProviderTabSelected(tab)),
                   ),
                 ),
               ),
             ),
-            ..._body(),
+            ..._body(state),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
@@ -273,27 +245,23 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
         current: DiscoveryTab.explore,
         onSelect: (tab) => widget.onTabSelected?.call(tab),
         onPost: widget.onPost,
-        // The store grid shows its own count, so it has to be rebuilt when
+        // The store grid shows its own count, so it has to be told when
         // the cart is emptied from the bar.
-        onCartChanged: () => setState(() {}),
+        onCartChanged: () => _bloc.add(const ProviderCartRefreshed()),
       ),
     );
   }
 
-  List<Widget> _body() {
-    switch (_tab) {
-      case ProviderTab.services:
-        return _servicesBody();
-      case ProviderTab.store:
-        return _storeBody();
-      case ProviderTab.reviews:
-        return _reviewsBody();
-      case ProviderTab.about:
-        return _aboutBody();
-    }
+  List<Widget> _body(ProviderState state) {
+    return switch (state.tab) {
+      ProviderTab.services => _servicesBody(state),
+      ProviderTab.store => _storeBody(state),
+      ProviderTab.reviews => _reviewsBody(state),
+      ProviderTab.about => _aboutBody(state),
+    };
   }
 
-  List<Widget> _servicesBody() {
+  List<Widget> _servicesBody(ProviderState state) {
     final services = _profile.services;
     if (services.isEmpty) {
       return [const _Note('No services listed yet — coming soon.')];
@@ -314,7 +282,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
         // Keyed on the tab so switching sections builds the list afresh and
         // its cards play their entrance, rather than the new section's
         // content appearing inside the old one's rows.
-        key: ValueKey(_tab),
+        key: ValueKey(state.tab),
         itemCount: services.length,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) => FadeSlideIn(
@@ -323,11 +291,12 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: ServiceCard(
               service: services[index],
-              isOnVisit: _onVisit(services[index]),
+              isOnVisit: state.isOnVisit(services[index].name),
               onBook: widget.isSignedIn
                   ? () => _addToVisit(services[index])
                   : () => _gatedAction('book ${services[index].name}'),
-              onRemove: () => _removeFromVisit(services[index]),
+              onRemove: () =>
+                  _bloc.add(ProviderServiceRemoved(services[index].name)),
             ),
           ),
         ),
@@ -335,7 +304,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
     ];
   }
 
-  List<Widget> _storeBody() {
+  List<Widget> _storeBody(ProviderState state) {
     final products = _profile.products;
     if (products.isEmpty) {
       return [const _Note('No products listed yet — coming soon.')];
@@ -344,8 +313,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
     // Only the cart this provider's parts are in — a cart belongs to one
     // provider, so another store's count would be a number about somebody
     // else.
-    final cart = VisitRepository.shared.cartFor(_profile.name);
-    final cartCount = cart?.partCount ?? 0;
+    final cartCount = state.cart?.partCount ?? 0;
 
     return [
       SliverToBoxAdapter(
@@ -384,7 +352,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         sliver: SliverGrid.builder(
-          key: ValueKey(_tab),
+          key: ValueKey(state.tab),
           itemCount: products.length,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
@@ -396,13 +364,17 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
             index: index,
             child: ProductCard(
               product: products[index],
-              quantityInCart: _inCart(products[index]),
+              quantityInCart: state.quantityOf(products[index].name),
               onTap: () => _openProduct(products[index]),
               onAdd: widget.isSignedIn
                   ? () => _openProduct(products[index])
                   : () => _gatedAction('add ${products[index].name}'),
-              onIncrement: () => _stepPart(products[index], 1),
-              onDecrement: () => _stepPart(products[index], -1),
+              onIncrement: () => _bloc.add(
+                ProviderPartStepped(name: products[index].name, delta: 1),
+              ),
+              onDecrement: () => _bloc.add(
+                ProviderPartStepped(name: products[index].name, delta: -1),
+              ),
             ),
           ),
         ),
@@ -410,7 +382,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
     ];
   }
 
-  List<Widget> _reviewsBody() {
+  List<Widget> _reviewsBody(ProviderState state) {
     final reviews = _profile.reviews;
 
     return [
@@ -428,7 +400,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
         const _Note('No reviews yet.')
       else
         SliverList.separated(
-          key: ValueKey(_tab),
+          key: ValueKey(state.tab),
           itemCount: reviews.length,
           separatorBuilder: (_, _) => const Padding(
             padding: EdgeInsets.symmetric(horizontal: 20, vertical: 22),
@@ -449,10 +421,10 @@ class _ProviderProfilePageState extends State<ProviderProfilePage> {
     ];
   }
 
-  List<Widget> _aboutBody() {
+  List<Widget> _aboutBody(ProviderState state) {
     return [
       SliverToBoxAdapter(
-        key: ValueKey(_tab),
+        key: ValueKey(state.tab),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 0),
           child: Column(

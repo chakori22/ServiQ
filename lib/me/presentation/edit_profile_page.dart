@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:local_markerplace/components/primary_button.dart';
@@ -8,6 +9,7 @@ import 'package:local_markerplace/discovery/presentation/components/discovery_as
 import 'package:local_markerplace/discovery/presentation/components/discovery_filter_chip.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
+import 'package:local_markerplace/me/bloc/edit_profile_bloc.dart';
 import 'package:local_markerplace/me/model/seeker_account.dart';
 import 'package:local_markerplace/onboarding/model/seeker_profile.dart';
 
@@ -16,7 +18,7 @@ import 'package:local_markerplace/onboarding/model/seeker_profile.dart';
 /// The phone is shown but locked: it is how the seeker signs in, so changing
 /// it is a different flow entirely and the field says so rather than
 /// pretending to be editable.
-class EditProfilePage extends StatefulWidget {
+class EditProfilePage extends StatelessWidget {
   const EditProfilePage({
     super.key,
     required this.account,
@@ -34,18 +36,42 @@ class EditProfilePage extends StatefulWidget {
   final VoidCallback? onPickLocality;
 
   @override
-  State<EditProfilePage> createState() => _EditProfilePageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => EditProfileBloc()..add(EditProfileOpened(account)),
+      child: _EditProfileView(
+        account: account,
+        onSave: onSave,
+        onChangePhoto: onChangePhoto,
+        onPickLocality: onPickLocality,
+      ),
+    );
+  }
 }
 
-class _EditProfilePageState extends State<EditProfilePage> {
+class _EditProfileView extends StatefulWidget {
+  const _EditProfileView({
+    required this.account,
+    required this.onSave,
+    required this.onChangePhoto,
+    required this.onPickLocality,
+  });
+
+  final SeekerAccount account;
+  final void Function(String name, Set<String> interests)? onSave;
+  final VoidCallback? onChangePhoto;
+  final VoidCallback? onPickLocality;
+
+  @override
+  State<_EditProfileView> createState() => _EditProfileViewState();
+}
+
+class _EditProfileViewState extends State<_EditProfileView> {
+  /// The controller belongs to the field; what has been typed belongs to the
+  /// bloc, which is told on every change.
   late final TextEditingController _name = TextEditingController(
     text: widget.account.name,
   );
-
-  late final Set<String> _chosen = seekerServiceInterests
-      .where((interest) => widget.account.interests.contains(interest.label))
-      .map((interest) => interest.label)
-      .toSet();
 
   @override
   void dispose() {
@@ -55,6 +81,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<EditProfileBloc>().state;
+
     return Scaffold(
       backgroundColor: AppColor.white,
       body: SafeArea(
@@ -115,6 +143,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   const SizedBox(height: 8),
                   AppTextField(
                     controller: _name,
+                    onChanged: (value) => context.read<EditProfileBloc>().add(
+                      ProfileNameChanged(value),
+                    ),
                     fillColor: AppColor.white,
                     borderColor: AppColor.discoveryAccent,
                     borderWidth: 1.8,
@@ -195,19 +226,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       for (final interest in seekerServiceInterests)
                         DiscoveryFilterChip(
                           label: interest.label,
-                          isSelected: _chosen.contains(interest.label),
-                          onTap: () => setState(() {
-                            if (!_chosen.remove(interest.label)) {
-                              _chosen.add(interest.label);
-                            }
-                          }),
+                          isSelected: state.interests.contains(interest.label),
+                          onTap: () => context.read<EditProfileBloc>().add(
+                            InterestToggled(interest.label),
+                          ),
                         ),
                     ],
                   ),
                   const SizedBox(height: 32),
                   PrimaryButton(
                     label: 'Save changes',
-                    enabled: _name.text.trim().isNotEmpty,
+                    enabled: state.canSave,
                     gradient: true,
                     height: 56,
                     gradientColors: const [
@@ -219,7 +248,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       letterSpacing: -0.165,
                     ),
                     onPressed: () {
-                      widget.onSave?.call(_name.text.trim(), _chosen);
+                      widget.onSave?.call(state.name.trim(), state.interests);
                       Navigator.of(context).pop();
                     },
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -6,6 +7,7 @@ import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/components/app_back_button.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
+import 'package:local_markerplace/discovery/bloc/search_bloc.dart';
 import 'package:local_markerplace/discovery/model/provider_summary.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_assets.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_filter_chip.dart';
@@ -19,7 +21,7 @@ import 'package:local_markerplace/discovery/repository/discovery_repository.dart
 ///
 /// The trade chips are built from the trades actually present in the current
 /// locality, so the row never offers a filter that would return nothing.
-class SearchPage extends StatefulWidget {
+class SearchPage extends StatelessWidget {
   const SearchPage({
     super.key,
     required this.localityName,
@@ -38,21 +40,46 @@ class SearchPage extends StatefulWidget {
   final DiscoveryRepository repository;
 
   @override
-  State<SearchPage> createState() => _SearchPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => SearchBloc(discoveryRepository: repository)
+        ..add(SearchOpened(localityName: localityName, query: initialQuery)),
+      child: _SearchView(
+        initialQuery: initialQuery,
+        repository: repository,
+        onProviderTap: onProviderTap,
+        onTabSelected: onTabSelected,
+        onPost: onPost,
+      ),
+    );
+  }
 }
 
-class _SearchPageState extends State<SearchPage> {
+class _SearchView extends StatefulWidget {
+  const _SearchView({
+    required this.initialQuery,
+    required this.repository,
+    required this.onProviderTap,
+    required this.onTabSelected,
+    required this.onPost,
+  });
+
+  final String initialQuery;
+  final DiscoveryRepository repository;
+  final ValueChanged<ProviderSummary>? onProviderTap;
+  final ValueChanged<DiscoveryTab>? onTabSelected;
+  final VoidCallback? onPost;
+
+  @override
+  State<_SearchView> createState() => _SearchViewState();
+}
+
+class _SearchViewState extends State<_SearchView> {
+  /// The controller belongs to the field; what was typed belongs to the
+  /// bloc, which is told on every change.
   late final TextEditingController _controller = TextEditingController(
     text: widget.initialQuery,
   );
-
-  /// Null means the "All" chip is on.
-  String? _trade;
-
-  /// The rating floor the scope chip applies. Null until the seeker sets one.
-  double? _minRating;
-
-  static const _ratingSteps = <double?>[null, 4.0, 4.5];
 
   @override
   void dispose() {
@@ -77,20 +104,14 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  void _cycleRating() {
-    final next = (_ratingSteps.indexOf(_minRating) + 1) % _ratingSteps.length;
-    setState(() => _minRating = _ratingSteps[next]);
-  }
+  void _query(String value) =>
+      context.read<SearchBloc>().add(SearchQueryChanged(value));
 
   @override
   Widget build(BuildContext context) {
-    final trades = widget.repository.tradesIn(widget.localityName);
-    final results = widget.repository.search(
-      _controller.text,
-      trade: _trade,
-      minRating: _minRating,
-      localityName: widget.localityName,
-    );
+    final state = context.watch<SearchBloc>().state;
+    final trades = state.trades;
+    final results = state.results;
 
     return Scaffold(
       backgroundColor: AppColor.white,
@@ -108,10 +129,10 @@ class _SearchPageState extends State<SearchPage> {
                   Expanded(
                     child: DiscoverySearchField(
                       controller: _controller,
-                      onChanged: (_) => setState(() {}),
+                      onChanged: _query,
                       onClear: () {
                         _controller.clear();
-                        setState(() {});
+                        _query('');
                       },
                     ),
                   ),
@@ -127,15 +148,19 @@ class _SearchPageState extends State<SearchPage> {
                 children: [
                   DiscoveryFilterChip(
                     label: 'All',
-                    isSelected: _trade == null,
-                    onTap: () => setState(() => _trade = null),
+                    isSelected: state.trade == null,
+                    onTap: () => context.read<SearchBloc>().add(
+                      const SearchTradeSelected(null),
+                    ),
                   ),
                   for (final trade in trades) ...[
                     const SizedBox(width: 8),
                     DiscoveryFilterChip(
                       label: trade,
-                      isSelected: _trade == trade,
-                      onTap: () => setState(() => _trade = trade),
+                      isSelected: state.trade == trade,
+                      onTap: () => context.read<SearchBloc>().add(
+                        SearchTradeSelected(trade),
+                      ),
                     ),
                   ],
                 ],
@@ -149,7 +174,7 @@ class _SearchPageState extends State<SearchPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 children: [
                   DiscoveryFilterChip(
-                    label: widget.localityName,
+                    label: state.localityName,
                     hasCaret: true,
                     // Changing the area is the area picker's job, so this
                     // hands the screen back rather than filtering in place.
@@ -157,11 +182,11 @@ class _SearchPageState extends State<SearchPage> {
                   ),
                   const SizedBox(width: 8),
                   DiscoveryFilterChip(
-                    label: _minRating == null
-                        ? 'Any rating'
-                        : '${_minRating!.toStringAsFixed(1)}+',
+                    label: state.ratingLabel,
                     hasCaret: true,
-                    onTap: _cycleRating,
+                    onTap: () => context.read<SearchBloc>().add(
+                      const SearchRatingCycled(),
+                    ),
                   ),
                 ],
               ),
@@ -172,11 +197,11 @@ class _SearchPageState extends State<SearchPage> {
               thickness: 1,
               color: AppColor.discoveryBorder,
             ),
-            if (results.isEmpty && _controller.text.trim().isNotEmpty)
+            if (state.hasNoMatches)
               Expanded(
                 child: _NothingHere(
-                  query: _controller.text.trim(),
-                  localityName: widget.localityName,
+                  query: state.query.trim(),
+                  localityName: state.localityName,
                   repository: widget.repository,
                   onPost: widget.onPost,
                   onSearchElsewhere: _searchIn,
@@ -188,7 +213,7 @@ class _SearchPageState extends State<SearchPage> {
                 child: Text(
                   '${results.length} '
                   '${results.length == 1 ? 'result' : 'results'} '
-                  'in ${widget.localityName}',
+                  'in ${state.localityName}',
                   style: DiscoveryText.footnoteStrong,
                 ),
               ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:local_markerplace/basket/app_bottom_bar.dart';
@@ -10,14 +11,12 @@ import 'package:local_markerplace/discovery/presentation/components/discovery_he
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/components/provider_avatar.dart';
+import 'package:local_markerplace/me/bloc/saved_providers_bloc.dart';
 import 'package:local_markerplace/me/model/saved_provider.dart';
 import 'package:local_markerplace/me/repository/me_repository.dart';
 
-/// How the saved list can be narrowed.
-enum _SavedFilter { all, nearMe, openNow }
-
 /// 07 · Saved providers.
-class SavedProvidersPage extends StatefulWidget {
+class SavedProvidersPage extends StatelessWidget {
   const SavedProvidersPage({
     super.key,
     required this.localityName,
@@ -36,25 +35,38 @@ class SavedProvidersPage extends StatefulWidget {
   final VoidCallback? onPost;
 
   @override
-  State<SavedProvidersPage> createState() => _SavedProvidersPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          SavedProvidersBloc(meRepository: repository)
+            ..add(SavedProvidersRequested(localityName)),
+      child: _SavedProvidersView(
+        onProviderTap: onProviderTap,
+        onTabSelected: onTabSelected,
+        onPost: onPost,
+      ),
+    );
+  }
 }
 
-class _SavedProvidersPageState extends State<SavedProvidersPage> {
-  _SavedFilter _filter = _SavedFilter.all;
+class _SavedProvidersView extends StatelessWidget {
+  const _SavedProvidersView({
+    required this.onProviderTap,
+    required this.onTabSelected,
+    required this.onPost,
+  });
+
+  final ValueChanged<SavedProvider>? onProviderTap;
+  final ValueChanged<DiscoveryTab>? onTabSelected;
+  final VoidCallback? onPost;
 
   @override
   Widget build(BuildContext context) {
-    final all = widget.repository.savedProviders();
-    final nearMe = all
-        .where((provider) => provider.localityName == widget.localityName)
-        .toList();
-    final openNow = all.where((provider) => provider.isOpen).toList();
-
-    final shown = switch (_filter) {
-      _SavedFilter.all => all,
-      _SavedFilter.nearMe => nearMe,
-      _SavedFilter.openNow => openNow,
-    };
+    final state = context.watch<SavedProvidersBloc>().state;
+    final all = state.providers;
+    final nearMe = state.nearMe;
+    final openNow = state.openNow;
+    final shown = state.shown;
 
     return Scaffold(
       backgroundColor: AppColor.white,
@@ -66,7 +78,7 @@ class _SavedProvidersPageState extends State<SavedProvidersPage> {
               title: 'Saved providers',
               subtitle:
                   '${all.length} saved · ${nearMe.length} in '
-                  '${widget.localityName}',
+                  '${state.localityName}',
             ),
             const SizedBox(height: 14),
             const Divider(
@@ -83,20 +95,26 @@ class _SavedProvidersPageState extends State<SavedProvidersPage> {
                 children: [
                   DiscoveryFilterChip(
                     label: 'All ${all.length}',
-                    isSelected: _filter == _SavedFilter.all,
-                    onTap: () => setState(() => _filter = _SavedFilter.all),
+                    isSelected: state.filter == SavedFilter.all,
+                    onTap: () => context.read<SavedProvidersBloc>().add(
+                      const SavedFilterSelected(SavedFilter.all),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   DiscoveryFilterChip(
                     label: 'Near me ${nearMe.length}',
-                    isSelected: _filter == _SavedFilter.nearMe,
-                    onTap: () => setState(() => _filter = _SavedFilter.nearMe),
+                    isSelected: state.filter == SavedFilter.nearMe,
+                    onTap: () => context.read<SavedProvidersBloc>().add(
+                      const SavedFilterSelected(SavedFilter.nearMe),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   DiscoveryFilterChip(
                     label: 'Open now ${openNow.length}',
-                    isSelected: _filter == _SavedFilter.openNow,
-                    onTap: () => setState(() => _filter = _SavedFilter.openNow),
+                    isSelected: state.filter == SavedFilter.openNow,
+                    onTap: () => context.read<SavedProvidersBloc>().add(
+                      const SavedFilterSelected(SavedFilter.openNow),
+                    ),
                   ),
                 ],
               ),
@@ -121,7 +139,7 @@ class _SavedProvidersPageState extends State<SavedProvidersPage> {
                   return _SavedCard(
                     provider: shown[index],
                     index: index,
-                    onTap: () => widget.onProviderTap?.call(shown[index]),
+                    onTap: () => onProviderTap?.call(shown[index]),
                     onUnsave: () => ScaffoldMessenger.of(context)
                       ..hideCurrentSnackBar()
                       ..showSnackBar(
@@ -143,8 +161,8 @@ class _SavedProvidersPageState extends State<SavedProvidersPage> {
       ),
       bottomNavigationBar: AppBottomBar(
         current: DiscoveryTab.me,
-        onSelect: (tab) => widget.onTabSelected?.call(tab),
-        onPost: widget.onPost,
+        onSelect: (tab) => onTabSelected?.call(tab),
+        onPost: onPost,
       ),
     );
   }

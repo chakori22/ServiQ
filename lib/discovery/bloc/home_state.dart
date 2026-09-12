@@ -25,6 +25,10 @@ class HomeState extends Equatable {
   /// The area being asked for — "galleria-market-1".
   final String localitySlug;
 
+  /// What the header's two badges say.
+  final int unreadChats;
+  final int unreadNotifications;
+
   const HomeState({
     required this.feed,
     required this.isLoading,
@@ -32,6 +36,8 @@ class HomeState extends Equatable {
     required this.failure,
     required this.failedAt,
     required this.localitySlug,
+    required this.unreadChats,
+    required this.unreadNotifications,
   });
 
   const HomeState.initial({
@@ -41,6 +47,8 @@ class HomeState extends Equatable {
     this.failure,
     this.failedAt,
     this.localitySlug = '',
+    this.unreadChats = 0,
+    this.unreadNotifications = 0,
   });
 
   HomeState copyWith({
@@ -50,6 +58,8 @@ class HomeState extends Equatable {
     Object? failure = _unset,
     Object? failedAt = _unset,
     String? localitySlug,
+    int? unreadChats,
+    int? unreadNotifications,
   }) {
     return HomeState(
       feed: feed == _unset ? this.feed : feed as HomeFeed?,
@@ -58,6 +68,8 @@ class HomeState extends Equatable {
       failure: failure == _unset ? this.failure : failure as Failure?,
       failedAt: failedAt == _unset ? this.failedAt : failedAt as DateTime?,
       localitySlug: localitySlug ?? this.localitySlug,
+      unreadChats: unreadChats ?? this.unreadChats,
+      unreadNotifications: unreadNotifications ?? this.unreadNotifications,
     );
   }
 
@@ -92,5 +104,7 @@ class HomeState extends Equatable {
     failure,
     failedAt,
     localitySlug,
+    unreadChats,
+    unreadNotifications,
   ];
 }

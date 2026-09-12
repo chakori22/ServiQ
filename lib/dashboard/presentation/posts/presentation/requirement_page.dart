@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/dashboard/presentation/posts/bloc/requirement_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
@@ -24,7 +26,7 @@ import 'package:local_markerplace/discovery/presentation/components/discovery_ta
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
 import 'package:local_markerplace/discovery/presentation/components/provider_avatar.dart';
 import 'package:local_markerplace/discovery/presentation/components/status_pill.dart';
-import 'package:local_markerplace/visit/model/visit_service.dart';
+import 'package:local_markerplace/visit/model/visit.dart';
 import 'package:local_markerplace/visit/presentation/visit_booked_page.dart';
 import 'package:local_markerplace/visit/repository/visit_repository.dart';
 
@@ -33,7 +35,7 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 /// The same screen serves both of the design's states: with offers it lists
 /// them, and without it says so and offers a way to spread the word instead
 /// of leaving the seeker on an empty page.
-class RequirementPage extends StatefulWidget {
+class RequirementPage extends StatelessWidget {
   const RequirementPage({
     super.key,
     required this.post,
@@ -74,22 +76,40 @@ class RequirementPage extends StatefulWidget {
   final VisitRepository? visits;
 
   @override
-  State<RequirementPage> createState() => _RequirementPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          RequirementBloc(
+            offerRepository: offers ?? PostOfferRepository.shared,
+            visitRepository: visits ?? VisitRepository.shared,
+          )..add(
+            RequirementOpened(
+              post: post,
+              currentUsername: currentUsername,
+              localityName: localityName,
+            ),
+          ),
+      child: _RequirementView(
+        onOfferMade: onOfferMade,
+        onOfferAccepted: onOfferAccepted,
+        onClosed: onClosed,
+      ),
+    );
+  }
 }
 
-class _RequirementPageState extends State<RequirementPage> {
-  late final PostOfferRepository _offers =
-      widget.offers ?? PostOfferRepository.shared;
+class _RequirementView extends StatelessWidget {
+  const _RequirementView({
+    required this.onOfferMade,
+    required this.onOfferAccepted,
+    required this.onClosed,
+  });
 
-  late final VisitRepository _visits = widget.visits ?? VisitRepository.shared;
+  final ValueChanged<PostOffer>? onOfferMade;
+  final ValueChanged<PostOffer>? onOfferAccepted;
+  final VoidCallback? onClosed;
 
-  /// The page's own copy, so accepting settles it here immediately rather
-  /// than waiting for the board underneath to rebuild.
-  late PostDetails _post = widget.post;
-
-  bool get _isMine => _post.isPostedBy(widget.currentUsername);
-
-  void _notice(String message) {
+  void _notice(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -102,18 +122,18 @@ class _RequirementPageState extends State<RequirementPage> {
       );
   }
 
-  Future<void> _makeOffer() async {
-    final handle = widget.currentUsername?.trim() ?? '';
+  Future<void> _makeOffer(BuildContext context) async {
+    final bloc = context.read<RequirementBloc>();
+    final handle = bloc.state.currentUsername?.trim() ?? '';
     final offer = await showMakeOfferSheet(
       context,
       offeredBy: handle.isEmpty ? 'You' : handle,
     );
-    if (offer == null || !mounted) return;
+    if (offer == null || !context.mounted) return;
 
-    _offers.add(_post, offer);
-    setState(() => _post = _post.copyWith(acceptCount: _post.acceptCount + 1));
-    widget.onOfferMade?.call(offer);
-    _notice('Offer sent.');
+    bloc.add(RequirementOfferMade(offer));
+    onOfferMade?.call(offer);
+    _notice(context, 'Offer sent.');
   }
 
   /// Taking an offer books the visit outright.
@@ -123,42 +143,29 @@ class _RequirementPageState extends State<RequirementPage> {
   /// to both. Sending the seeker to the slot picker afterwards would ask
   /// them to decide something they had just decided, so the requirement goes
   /// straight to a booked visit.
-  Future<void> _accept(PostOffer offer) async {
-    setState(
-      () => _post = _post.copyWith(isAccepted: true, acceptedBy: offer.name),
-    );
-    widget.onOfferAccepted?.call(offer);
+  void _accept(BuildContext context, PostOffer offer) {
+    context.read<RequirementBloc>().add(RequirementOfferAccepted(offer));
+    onOfferAccepted?.call(offer);
+  }
 
-    final booked = _visits.bookFromOffer(
-      providerName: offer.name,
-      providerLine: [?widget.localityName, 'agreed ${offer.price}'].join(' · '),
-      isVerifiedProvider: offer.badge == OfferBadge.verified,
-      agreedWhen: _capitalised(offer.timing),
-      service: VisitService(
-        name: requirementHeadline(_post.description),
-        detail: requirementDetail(_post.description) ?? '',
-        unitPrice: rupeesFrom(offer.price),
-      ),
-    );
-    if (!mounted) return;
-
+  /// The booking is the bloc's; showing its receipt is the screen's, and
+  /// telling the bloc it has been shown is what stops it being shown twice.
+  Future<void> _showReceipt(BuildContext context, Visit booked) async {
+    final bloc = context.read<RequirementBloc>();
     await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => VisitBookedPage(visit: booked)));
-    if (mounted) setState(() {});
+    bloc.add(const RequirementBookingSeen());
   }
-
-  /// Offers are written mid-sentence ("today, 4 – 6 pm"); the booked screen
-  /// shows the timing as a heading of its own.
-  static String _capitalised(String text) =>
-      text.isEmpty ? text : text[0].toUpperCase() + text.substring(1);
 
   /// The only thing in the menu so far, and only on your own post: taking
   /// it down. Closing is separate from accepting — a job can be settled, or
   /// simply no longer needed.
-  Future<void> _openMenu() async {
-    if (!_isMine || _post.isClosed) {
-      return _notice('More options — coming soon.');
+  Future<void> _openMenu(BuildContext context) async {
+    final bloc = context.read<RequirementBloc>();
+    final post = bloc.state.post;
+    if (!bloc.state.isMine || post == null || post.isClosed) {
+      return _notice(context, 'More options — coming soon.');
     }
 
     final close = await showModalBottomSheet<bool>(
@@ -211,107 +218,118 @@ class _RequirementPageState extends State<RequirementPage> {
         ),
       ),
     );
-    if (close != true || !mounted) return;
+    if (close != true || !context.mounted) return;
 
-    setState(() => _post = _post.copyWith(isClosed: true));
-    widget.onClosed?.call();
-    _notice('Post closed.');
+    bloc.add(const RequirementClosed());
+    onClosed?.call();
+    _notice(context, 'Post closed.');
   }
 
   @override
   Widget build(BuildContext context) {
-    final received = _offers.offersOn(_post);
+    final state = context.watch<RequirementBloc>().state;
+    final post = state.post;
+    if (post == null) return const SizedBox.shrink();
+    final received = state.offers;
 
-    return Scaffold(
-      backgroundColor: AppColor.white,
-      body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _Header(onMore: _openMenu),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: FadeSlideIn(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        requirementHeadline(_post.description),
-                        style: DiscoveryText.requirementTitle,
-                      ),
-                      const SizedBox(height: 14),
-                      _AuthorRow(post: _post, isMine: _isMine),
-                      const SizedBox(height: 14),
-                      _MetaChips(post: _post),
-                      const SizedBox(height: 12),
-                      Text(
-                        _postedLine(_post, widget.localityName),
-                        style: DiscoveryText.footnoteStrong,
-                      ),
-                      if (requirementDetail(_post.description) != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          requirementDetail(_post.description)!,
-                          style: DiscoveryText.body,
-                        ),
-                      ],
-                      const SizedBox(height: 18),
-                      // The design's requirement carries no photo, but a post
-                      // in this app does, and it is usually the clearest
-                      // thing about the job.
-                      _RequirementPhoto(imageUrl: _post.imageUrl),
-                      const SizedBox(height: 20),
-                      const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColor.discoveryBorder,
-                      ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-              ),
-              if (received.isEmpty)
-                _NoOffers(
-                  onShare: () =>
-                      _notice('Sharing a requirement — coming soon.'),
-                )
-              else
-                _Offers(
-                  offers: received,
-                  // Only the seeker who posted it decides, and only while it
-                  // is still open.
-                  canAccept: _isMine && !_post.isAccepted && !_post.isClosed,
-                  // On the seeker's own closed post the work is done, so
-                  // Accept is shown greyed rather than taken away. On
-                  // somebody else's it was never theirs to press.
-                  showDisabledAccept: _isMine && _post.isClosed,
-                  onAccept: _accept,
-                ),
-              if (!_isMine && !_post.isAccepted && !_post.isClosed) ...[
-                const SizedBox(height: 24),
+    return BlocListener<RequirementBloc, RequirementState>(
+      listenWhen: (previous, current) =>
+          previous.booked != current.booked && current.booked != null,
+      listener: (context, state) => _showReceipt(context, state.booked!),
+      child: Scaffold(
+        backgroundColor: AppColor.white,
+        body: SafeArea(
+          bottom: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.only(bottom: 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _Header(onMore: () => _openMenu(context)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _MakeOfferButton(onTap: _makeOffer),
+                  child: FadeSlideIn(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          requirementHeadline(post.description),
+                          style: DiscoveryText.requirementTitle,
+                        ),
+                        const SizedBox(height: 14),
+                        _AuthorRow(post: post, isMine: state.isMine),
+                        const SizedBox(height: 14),
+                        _MetaChips(post: post),
+                        const SizedBox(height: 12),
+                        Text(
+                          _postedLine(post, state.localityName),
+                          style: DiscoveryText.footnoteStrong,
+                        ),
+                        if (requirementDetail(post.description) != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            requirementDetail(post.description)!,
+                            style: DiscoveryText.body,
+                          ),
+                        ],
+                        const SizedBox(height: 18),
+                        // The design's requirement carries no photo, but a post
+                        // in this app does, and it is usually the clearest
+                        // thing about the job.
+                        _RequirementPhoto(imageUrl: post.imageUrl),
+                        const SizedBox(height: 20),
+                        const Divider(
+                          height: 1,
+                          thickness: 1,
+                          color: AppColor.discoveryBorder,
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+                    ),
+                  ),
                 ),
+                if (received.isEmpty)
+                  _NoOffers(
+                    onShare: () => _notice(
+                      context,
+                      'Sharing a requirement — coming soon.',
+                    ),
+                  )
+                else
+                  _Offers(
+                    offers: received,
+                    // Only the seeker who posted it decides, and only while it
+                    // is still open.
+                    canAccept:
+                        state.isMine && !post.isAccepted && !post.isClosed,
+                    // On the seeker's own closed post the work is done, so
+                    // Accept is shown greyed rather than taken away. On
+                    // somebody else's it was never theirs to press.
+                    showDisabledAccept: state.isMine && post.isClosed,
+                    onAccept: (offer) => _accept(context, offer),
+                  ),
+                if (!state.isMine && !post.isAccepted && !post.isClosed) ...[
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: _MakeOfferButton(onTap: () => _makeOffer(context)),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: AppBottomBar(
-        current: DiscoveryTab.posts,
-        onSelect: (tab) {
-          // Popping twice would be needed to reach the shell from here, so
-          // the board above is left to forward the chosen tab on.
-          Navigator.of(context).pop(tab);
-        },
-        onPost: () => GoRouter.of(
-          context,
-        ).pushAppRoute(AppRoutes.instantForm, extra: widget.localityName),
+        bottomNavigationBar: AppBottomBar(
+          current: DiscoveryTab.posts,
+          onSelect: (tab) {
+            // Popping twice would be needed to reach the shell from here, so
+            // the board above is left to forward the chosen tab on.
+            Navigator.of(context).pop(tab);
+          },
+          onPost: () => GoRouter.of(
+            context,
+          ).pushAppRoute(AppRoutes.instantForm, extra: state.localityName),
+        ),
       ),
     );
   }

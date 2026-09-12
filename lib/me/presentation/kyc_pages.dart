@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/me/bloc/kyc_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:local_markerplace/core/app_color.dart';
@@ -21,7 +23,20 @@ class KycListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final documents = repository.documents();
+    return BlocProvider(
+      create: (_) =>
+          KycBloc(meRepository: repository)..add(const KycRequested()),
+      child: const _KycListView(),
+    );
+  }
+}
+
+class _KycListView extends StatelessWidget {
+  const _KycListView();
+
+  @override
+  Widget build(BuildContext context) {
+    final documents = context.watch<KycBloc>().state.documents;
 
     return Scaffold(
       backgroundColor: AppColor.white,
@@ -72,7 +87,9 @@ class KycListPage extends StatelessWidget {
                     ),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => KycUploadPage(repository: repository),
+                        builder: (_) => KycUploadPage(
+                          repository: context.read<KycBloc>().meRepository,
+                        ),
                       ),
                     ),
                   ),
@@ -171,24 +188,28 @@ class _DocumentCard extends StatelessWidget {
 
 /// 05 · KYC — upload. Picking a type, adding both sides, and the tips that
 /// keep a submission from bouncing.
-class KycUploadPage extends StatefulWidget {
+class KycUploadPage extends StatelessWidget {
   const KycUploadPage({super.key, this.repository = const MeRepository()});
 
   final MeRepository repository;
 
   @override
-  State<KycUploadPage> createState() => _KycUploadPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          KycBloc(meRepository: repository)..add(const KycRequested()),
+      child: const _KycUploadView(),
+    );
+  }
 }
 
-class _KycUploadPageState extends State<KycUploadPage> {
-  late String _type = widget.repository.documentTypes().first;
-  bool _hasFront = true;
-  bool _hasBack = false;
-
-  bool get _canSubmit => _hasFront && _hasBack;
+class _KycUploadView extends StatelessWidget {
+  const _KycUploadView();
 
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<KycBloc>().state;
+
     return Scaffold(
       backgroundColor: AppColor.white,
       body: SafeArea(
@@ -208,28 +229,33 @@ class _KycUploadPageState extends State<KycUploadPage> {
                 children: [
                   Text('DOCUMENT TYPE', style: DiscoveryText.fieldLabel),
                   const SizedBox(height: 8),
-                  _TypeField(value: _type, onTap: _pickType),
+                  _TypeField(
+                    value: state.type,
+                    onTap: () => _pickType(context, state.types),
+                  ),
                   const SizedBox(height: 24),
                   _SideLabel(
                     label: 'FRONT SIDE',
-                    action: _hasFront ? 'Replace' : null,
-                    onAction: () => setState(() => _hasFront = true),
+                    action: state.hasFront ? 'Replace' : null,
+                    onAction: () => _setSide(context, KycSide.front, true),
                   ),
                   const SizedBox(height: 8),
                   _UploadTarget(
-                    isFilled: _hasFront,
-                    onTap: () => setState(() => _hasFront = !_hasFront),
+                    isFilled: state.hasFront,
+                    onTap: () =>
+                        _setSide(context, KycSide.front, !state.hasFront),
                   ),
                   const SizedBox(height: 24),
                   _SideLabel(
                     label: 'BACK SIDE',
-                    action: _hasBack ? 'Replace' : null,
-                    onAction: () => setState(() => _hasBack = true),
+                    action: state.hasBack ? 'Replace' : null,
+                    onAction: () => _setSide(context, KycSide.back, true),
                   ),
                   const SizedBox(height: 8),
                   _UploadTarget(
-                    isFilled: _hasBack,
-                    onTap: () => setState(() => _hasBack = !_hasBack),
+                    isFilled: state.hasBack,
+                    onTap: () =>
+                        _setSide(context, KycSide.back, !state.hasBack),
                   ),
                   const SizedBox(height: 22),
                   const TipsBox(
@@ -242,10 +268,10 @@ class _KycUploadPageState extends State<KycUploadPage> {
                   ),
                   const SizedBox(height: 20),
                   _SubmitButton(
-                    label: _canSubmit
+                    label: state.canSubmit
                         ? 'Submit for review'
                         : 'Add the back side to submit',
-                    isEnabled: _canSubmit,
+                    isEnabled: state.canSubmit,
                     onTap: () {
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context)
@@ -253,7 +279,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
                         ..showSnackBar(
                           SnackBar(
                             content: Text(
-                              '$_type submitted for review.',
+                              '${state.type} submitted for review.',
                               style: DiscoveryText.heroSubtitle.copyWith(
                                 color: AppColor.white,
                               ),
@@ -271,7 +297,12 @@ class _KycUploadPageState extends State<KycUploadPage> {
     );
   }
 
-  Future<void> _pickType() async {
+  void _setSide(BuildContext context, KycSide side, bool isAdded) {
+    context.read<KycBloc>().add(KycSideChanged(side: side, isAdded: isAdded));
+  }
+
+  Future<void> _pickType(BuildContext context, List<String> types) async {
+    final bloc = context.read<KycBloc>();
     final chosen = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: AppColor.white,
@@ -292,7 +323,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
               ),
             ),
             const SizedBox(height: 22),
-            for (final type in widget.repository.documentTypes())
+            for (final type in types)
               ListTile(
                 title: Text(type, style: DiscoveryText.sheetOption),
                 onTap: () => Navigator.of(context).pop(type),
@@ -302,7 +333,7 @@ class _KycUploadPageState extends State<KycUploadPage> {
         ),
       ),
     );
-    if (chosen != null) setState(() => _type = chosen);
+    if (chosen != null) bloc.add(KycTypeSelected(chosen));
   }
 }
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/visit/bloc/orders_bloc.dart';
 
 import 'package:local_markerplace/basket/app_bottom_bar.dart';
 import 'package:local_markerplace/components/art/seeded_artwork.dart';
@@ -18,7 +20,7 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 /// One entry per booking rather than per provider: two visits from the same
 /// person on different days are two orders, and the reference is what either
 /// of them is quoted by.
-class MyOrdersPage extends StatefulWidget {
+class MyOrdersPage extends StatelessWidget {
   const MyOrdersPage({
     super.key,
     this.repository,
@@ -35,14 +37,32 @@ class MyOrdersPage extends StatefulWidget {
   final VoidCallback? onBrowse;
 
   @override
-  State<MyOrdersPage> createState() => _MyOrdersPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          OrdersBloc(visitRepository: repository ?? VisitRepository.shared)
+            ..add(const OrdersRequested()),
+      child: _MyOrdersView(
+        onTabSelected: onTabSelected,
+        onPost: onPost,
+        onBrowse: onBrowse,
+      ),
+    );
+  }
 }
 
-class _MyOrdersPageState extends State<MyOrdersPage> {
-  late final VisitRepository _visits =
-      widget.repository ?? VisitRepository.shared;
+class _MyOrdersView extends StatelessWidget {
+  const _MyOrdersView({
+    required this.onTabSelected,
+    required this.onPost,
+    required this.onBrowse,
+  });
 
-  void _notice(String message) {
+  final ValueChanged<DiscoveryTab>? onTabSelected;
+  final VoidCallback? onPost;
+  final VoidCallback? onBrowse;
+
+  void _notice(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
@@ -57,7 +77,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
 
   @override
   Widget build(BuildContext context) {
-    final orders = _visits.booked;
+    final orders = context.watch<OrdersBloc>().state.orders;
 
     return Scaffold(
       backgroundColor: AppColor.discoveryTint,
@@ -75,7 +95,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
             const SizedBox(height: 14),
             Expanded(
               child: orders.isEmpty
-                  ? _NoOrders(onBrowse: widget.onBrowse)
+                  ? _NoOrders(onBrowse: onBrowse)
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                       itemCount: orders.length,
@@ -84,9 +104,11 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
                         index: index,
                         child: OrderCard(
                           order: orders[index],
-                          onTrack: () =>
-                              _notice('Tracking a visit — coming soon.'),
-                          onChat: () => _notice('Chat — coming soon.'),
+                          onTrack: () => _notice(
+                            context,
+                            'Tracking a visit — coming soon.',
+                          ),
+                          onChat: () => _notice(context, 'Chat — coming soon.'),
                         ),
                       ),
                     ),
@@ -94,14 +116,14 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
           ],
         ),
       ),
-      bottomNavigationBar: widget.onTabSelected == null
+      bottomNavigationBar: onTabSelected == null
           ? null
           : AppBottomBar(
               current: DiscoveryTab.me,
               // The shell returns to itself; popping here too would take it
               // off the stack and leave the app black.
-              onSelect: (tab) => widget.onTabSelected!(tab),
-              onPost: widget.onPost,
+              onSelect: (tab) => onTabSelected!(tab),
+              onPost: onPost,
             ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:local_markerplace/basket/app_bottom_bar.dart';
@@ -7,6 +8,7 @@ import 'package:local_markerplace/discovery/presentation/components/discovery_as
 import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_tab_bar.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_text.dart';
+import 'package:local_markerplace/me/bloc/addresses_bloc.dart';
 import 'package:local_markerplace/me/model/saved_address.dart';
 import 'package:local_markerplace/me/presentation/components/me_components.dart';
 import 'package:local_markerplace/me/repository/me_repository.dart';
@@ -28,6 +30,23 @@ class AddressesPage extends StatelessWidget {
   final ValueChanged<DiscoveryTab>? onTabSelected;
   final VoidCallback? onPost;
 
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          AddressesBloc(meRepository: repository)
+            ..add(const AddressesRequested()),
+      child: _AddressesView(onTabSelected: onTabSelected, onPost: onPost),
+    );
+  }
+}
+
+class _AddressesView extends StatelessWidget {
+  const _AddressesView({required this.onTabSelected, required this.onPost});
+
+  final ValueChanged<DiscoveryTab>? onTabSelected;
+  final VoidCallback? onPost;
+
   void _notice(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -43,7 +62,7 @@ class AddressesPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final addresses = repository.addresses();
+    final addresses = context.watch<AddressesBloc>().state.addresses;
 
     return Scaffold(
       backgroundColor: AppColor.white,

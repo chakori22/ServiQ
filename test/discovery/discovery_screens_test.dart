@@ -194,7 +194,7 @@ void main() {
     },
   );
 
-  testWidgets('the shell drills from explore down to a locality', (
+  testWidgets('explore opens on the area already chosen, not on a picker', (
     tester,
   ) async {
     await pumpScreen(
@@ -206,18 +206,38 @@ void main() {
 
     await tester.tap(find.text('Explore'));
     await tester.pumpAndSettle();
-    expect(find.text('Pick an area to see who works there'), findsOneWidget);
 
-    await tester.tap(find.text('Crossing Republik'));
-    await tester.pumpAndSettle();
+    // Straight to what is inside the seeker's own zone — no second round of
+    // choosing an area they have already chosen.
+    expect(find.text('Pick an area to see who works there'), findsNothing);
+    expect(find.text('Crossing Republik'), findsOneWidget);
     expect(find.text('Societies'), findsOneWidget);
+    expect(find.text('Markets'), findsOneWidget);
 
+    // And a locality still drills down from there.
     await tester.tap(find.text('Mahagun Mascot'));
     await tester.pumpAndSettle();
     expect(
       find.textContaining('providers · Crossing Republik'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('explore falls back to the zones when the area is unknown', (
+    tester,
+  ) async {
+    // An area that belongs to no zone on file — there is nothing to open on,
+    // so the list of zones is the way in.
+    await pumpScreen(
+      tester,
+      const DiscoveryShell(initialLocality: 'Somewhere Else'),
+    );
+
+    await tester.tap(find.text('Explore'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pick an area to see who works there'), findsOneWidget);
+    expect(find.text('Societies'), findsNothing);
   });
 
   testWidgets('the shell asks for an area when it does not have one', (

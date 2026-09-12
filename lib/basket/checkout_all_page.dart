@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/basket/bloc/basket_bloc.dart';
 
 import 'package:local_markerplace/components/art/seeded_artwork.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
@@ -17,37 +19,42 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 /// Each provider is still booked separately — they are different people
 /// making different trips — but the seeker settles up once and sees one
 /// total, which is what having several carts open is for.
-class CheckoutAllPage extends StatefulWidget {
+class CheckoutAllPage extends StatelessWidget {
   const CheckoutAllPage({super.key, this.repository});
 
   final VisitRepository? repository;
 
   @override
-  State<CheckoutAllPage> createState() => _CheckoutAllPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          BasketBloc(visitRepository: repository ?? VisitRepository.shared)
+            ..add(const BasketRequested()),
+      child: const _CheckoutAllView(),
+    );
+  }
 }
 
-class _CheckoutAllPageState extends State<CheckoutAllPage> {
-  late final VisitRepository _visits =
-      widget.repository ?? VisitRepository.shared;
-
-  List<Visit> get _carts => _visits.carts;
+class _CheckoutAllView extends StatelessWidget {
+  const _CheckoutAllView();
 
   /// Opens one cart so its time can be chosen, then picks up whatever
   /// changed.
-  Future<void> _open(String providerName) async {
+  Future<void> _open(BuildContext context, String providerName) async {
+    final bloc = context.read<BasketBloc>();
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            YourVisitPage(providerName: providerName, repository: _visits),
+        builder: (_) => YourVisitPage(
+          providerName: providerName,
+          repository: bloc.visitRepository,
+        ),
       ),
     );
-    if (mounted) setState(() {});
+    bloc.add(const BasketRequested());
   }
 
-  Future<void> _confirmAll() async {
-    final booked = _visits.confirmAll();
-    if (booked.isEmpty || !mounted) return;
-    await Navigator.of(context).pushAndRemoveUntil(
+  Future<void> _showReceipt(BuildContext context, List<Visit> booked) {
+    return Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => _AllBookedPage(booked: booked)),
       (route) => route.isFirst,
     );
@@ -55,58 +62,65 @@ class _CheckoutAllPageState extends State<CheckoutAllPage> {
 
   @override
   Widget build(BuildContext context) {
-    final carts = _carts;
+    final state = context.watch<BasketBloc>().state;
+    final carts = state.carts;
     if (carts.isEmpty) return const SizedBox.shrink();
 
     final ready = carts.where((cart) => cart.isReady).toList();
     final total = ready.fold<double>(0, (sum, cart) => sum + cart.estimate);
 
-    return Scaffold(
-      backgroundColor: AppColor.discoveryTint,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            DiscoveryHeader(
-              title: 'Checkout',
-              subtitle:
-                  '${carts.length} ${carts.length == 1 ? 'cart' : 'carts'} · '
-                  '${_visits.itemCount} items',
-            ),
-            const SizedBox(height: 14),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-                itemCount: carts.length + 1,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  if (index == carts.length) {
-                    return _GrandTotal(carts: carts, ready: ready);
-                  }
-                  return _CartSummary(
-                    cart: carts[index],
-                    onChoose: () => _open(carts[index].providerName),
-                  );
-                },
+    return BlocListener<BasketBloc, BasketState>(
+      listenWhen: (previous, current) =>
+          previous.booked != current.booked && current.booked.isNotEmpty,
+      listener: (context, state) => _showReceipt(context, state.booked),
+      child: Scaffold(
+        backgroundColor: AppColor.discoveryTint,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              DiscoveryHeader(
+                title: 'Checkout',
+                subtitle:
+                    '${carts.length} ${carts.length == 1 ? 'cart' : 'carts'} · '
+                    '${state.itemCount} items',
               ),
-            ),
-          ],
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                  itemCount: carts.length + 1,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    if (index == carts.length) {
+                      return _GrandTotal(carts: carts, ready: ready);
+                    }
+                    return _CartSummary(
+                      cart: carts[index],
+                      onChoose: () => _open(context, carts[index].providerName),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          color: AppColor.white,
-          child: VisitCta(
-            label: ready.isEmpty
-                ? 'Choose a time to continue'
-                : ready.length == carts.length
-                ? 'Confirm all · ${rupees(total)}'
-                : 'Confirm ${ready.length} of ${carts.length} · '
-                      '${rupees(total)}',
-            enabled: ready.isNotEmpty,
-            onTap: _confirmAll,
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            color: AppColor.white,
+            child: VisitCta(
+              label: ready.isEmpty
+                  ? 'Choose a time to continue'
+                  : ready.length == carts.length
+                  ? 'Confirm all · ${rupees(total)}'
+                  : 'Confirm ${ready.length} of ${carts.length} · '
+                        '${rupees(total)}',
+              enabled: ready.isNotEmpty,
+              onTap: () =>
+                  context.read<BasketBloc>().add(const AllCartsConfirmed()),
+            ),
           ),
         ),
       ),

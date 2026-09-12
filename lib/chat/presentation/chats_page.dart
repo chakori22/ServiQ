@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:local_markerplace/basket/app_bottom_bar.dart';
+import 'package:local_markerplace/chat/bloc/chats_bloc.dart';
 import 'package:local_markerplace/chat/presentation/components/chat_bits.dart';
 import 'package:local_markerplace/chat/presentation/conversation_page.dart';
 import 'package:local_markerplace/chat/repository/chat_repository.dart';
@@ -16,7 +18,7 @@ import 'package:local_markerplace/discovery/presentation/components/discovery_te
 /// note at the foot of the list: chats open when an offer is accepted or a
 /// provider is connected with, and until then nobody has the seeker's
 /// number. The empty state offers the two things that would open one.
-class ChatsPage extends StatefulWidget {
+class ChatsPage extends StatelessWidget {
   const ChatsPage({
     super.key,
     this.repository,
@@ -33,12 +35,41 @@ class ChatsPage extends StatefulWidget {
   final VoidCallback? onFindProvider;
 
   @override
-  State<ChatsPage> createState() => _ChatsPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          ChatsBloc(chatRepository: repository ?? ChatRepository.shared)
+            ..add(const ChatsRequested()),
+      child: _ChatsView(
+        repository: repository,
+        onTabSelected: onTabSelected,
+        onPost: onPost,
+        onFindProvider: onFindProvider,
+      ),
+    );
+  }
 }
 
-class _ChatsPageState extends State<ChatsPage> {
-  late final ChatRepository _chats = widget.repository ?? ChatRepository.shared;
+class _ChatsView extends StatefulWidget {
+  const _ChatsView({
+    required this.repository,
+    required this.onTabSelected,
+    required this.onPost,
+    required this.onFindProvider,
+  });
 
+  final ChatRepository? repository;
+  final ValueChanged<DiscoveryTab>? onTabSelected;
+  final VoidCallback? onPost;
+  final VoidCallback? onFindProvider;
+
+  @override
+  State<_ChatsView> createState() => _ChatsViewState();
+}
+
+class _ChatsViewState extends State<_ChatsView> {
+  /// Local to the field, not the list: what has been typed is the widget's
+  /// own business, and the bloc is told the query rather than the keystrokes.
   final TextEditingController _query = TextEditingController();
 
   @override
@@ -48,19 +79,24 @@ class _ChatsPageState extends State<ChatsPage> {
   }
 
   Future<void> _open(String providerName) async {
+    final bloc = context.read<ChatsBloc>();
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            ConversationPage(providerName: providerName, repository: _chats),
+        builder: (_) => ConversationPage(
+          providerName: providerName,
+          repository: widget.repository,
+        ),
       ),
     );
-    if (mounted) setState(() {});
+    // Reading a thread clears its badge, so the list is asked again.
+    bloc.add(const ChatsRequested());
   }
 
   @override
   Widget build(BuildContext context) {
-    final hasThreads = _chats.threads.isNotEmpty;
-    final results = _chats.search(_query.text);
+    final state = context.watch<ChatsBloc>().state;
+    final hasThreads = state.hasThreads;
+    final results = state.results;
 
     return Scaffold(
       backgroundColor: AppColor.white,
@@ -79,7 +115,8 @@ class _ChatsPageState extends State<ChatsPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: AppTextField(
                   controller: _query,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (value) =>
+                      context.read<ChatsBloc>().add(ChatsSearched(value)),
                   hintText: 'Search chats',
                   autofocus: false,
                   textInputAction: TextInputAction.search,
@@ -110,7 +147,7 @@ class _ChatsPageState extends State<ChatsPage> {
                       onFindProvider: widget.onFindProvider,
                       onPost: widget.onPost,
                     )
-                  : results.isEmpty
+                  : state.hasNoMatches
                   ? const _NoMatches()
                   : ListView.separated(
                       padding: const EdgeInsets.only(bottom: 20),

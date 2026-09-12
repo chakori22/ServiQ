@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'package:local_markerplace/components/art/seeded_artwork.dart';
+import 'package:local_markerplace/visit/bloc/visit_bloc.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/core/app_color.dart';
 import 'package:local_markerplace/discovery/presentation/components/discovery_header.dart';
@@ -8,7 +10,6 @@ import 'package:local_markerplace/discovery/presentation/components/discovery_te
 import 'package:local_markerplace/visit/model/visit.dart';
 import 'package:local_markerplace/visit/model/visit_mode.dart';
 import 'package:local_markerplace/visit/model/visit_service.dart';
-import 'package:local_markerplace/visit/model/visit_slot.dart';
 import 'package:local_markerplace/visit/presentation/components/cart_bits.dart';
 import 'package:local_markerplace/visit/presentation/components/slot_sheet.dart';
 import 'package:local_markerplace/visit/presentation/components/visit_bits.dart';
@@ -21,7 +22,7 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 /// being reviewed does not change when the timing does, so the services, the
 /// address and the bill stay put and only the middle of the page answers the
 /// tab at the top.
-class YourVisitPage extends StatefulWidget {
+class YourVisitPage extends StatelessWidget {
   const YourVisitPage({
     super.key,
     required this.providerName,
@@ -40,89 +41,66 @@ class YourVisitPage extends StatefulWidget {
   final VoidCallback? onAddAnother;
 
   @override
-  State<YourVisitPage> createState() => _YourVisitPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          VisitBloc(visitRepository: repository ?? VisitRepository.shared)
+            ..add(CartOpened(providerName)),
+      child: _YourVisitView(onAddAnother: onAddAnother),
+    );
+  }
 }
 
-class _YourVisitPageState extends State<YourVisitPage> {
-  late final VisitRepository _visits =
-      widget.repository ?? VisitRepository.shared;
+class _YourVisitView extends StatefulWidget {
+  const _YourVisitView({required this.onAddAnother});
 
-  late final List<VisitDay> _days = _visits.days();
-
-  Visit? get _visit => _visits.cartFor(widget.providerName);
-
-  /// The tab showing, which is also the cart's mode.
-  ///
-  /// The two are kept in step deliberately: the screen opens on a tab, and a
-  /// seeker who agrees with it taps the button without touching it. When the
-  /// tab was only a highlight, that button did nothing until they switched
-  /// away and back — and the checkout screen read the cart as untimed.
-  late VisitMode _tab = _visit?.mode ?? _firstAvailableMode();
+  final VoidCallback? onAddAnother;
 
   @override
-  void initState() {
-    super.initState();
-    final cart = _visit;
-    if (cart != null && cart.mode == null && !_instantBlocked) {
-      _visits.setMode(widget.providerName, _tab);
-    }
-  }
+  State<_YourVisitView> createState() => _YourVisitViewState();
+}
 
-  VisitMode _firstAvailableMode() =>
-      _visits.instantAvailable ? VisitMode.instant : VisitMode.scheduled;
+class _YourVisitViewState extends State<_YourVisitView> {
+  VisitBloc get _bloc => context.read<VisitBloc>();
 
-  bool get _instantBlocked =>
-      _tab == VisitMode.instant && !_visits.instantAvailable;
+  VisitState get _state => _bloc.state;
 
-  void _selectTab(VisitMode mode) {
-    setState(() {
-      _tab = mode;
-      // An instant booking nobody can take is the one thing not written to
-      // the cart — there would be nothing to confirm.
-      if (mode != VisitMode.instant || _visits.instantAvailable) {
-        _visits.setMode(widget.providerName, mode);
-      }
-    });
-  }
-
-  void _setQuantity(int index, int quantity) => setState(
-    () => _visits.setQuantityAt(widget.providerName, index, quantity),
-  );
-
-  void _setPartQuantity(int index, int quantity) => setState(
-    () => _visits.setPartQuantityAt(widget.providerName, index, quantity),
-  );
+  void _selectTab(VisitMode mode) => _bloc.add(CartModeSelected(mode));
 
   Future<void> _pickSlot() async {
+    final bloc = _bloc;
     final chosen = await showSlotSheet(
       context,
-      days: _days,
-      selected: _visit?.slot,
+      days: bloc.state.days,
+      selected: bloc.state.cart?.slot,
     );
-    if (chosen == null || !mounted) return;
-    setState(() => _visits.setSlot(widget.providerName, chosen));
+    if (chosen == null) return;
+    bloc.add(CartSlotChosen(chosen));
   }
 
   Future<void> _continue() async {
-    final visit = _visit;
+    final state = _state;
+    final visit = state.cart;
     if (visit == null) return;
-    if (_instantBlocked) return _selectTab(VisitMode.scheduled);
-    if (_tab.needsSlot && visit.slot == null) return _pickSlot();
+    if (state.isInstantBlocked) return _selectTab(VisitMode.scheduled);
+    if (state.needsSlot) return _pickSlot();
     if (!visit.isReady) {
       // Unreachable while the tab and the mode agree, but a button that
       // silently does nothing is worse than one that says what is missing.
       return _notice('Choose when you need this first.');
     }
 
+    final bloc = _bloc;
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ConfirmVisitPage(
-          providerName: widget.providerName,
-          repository: _visits,
+          providerName: state.providerName,
+          repository: bloc.visitRepository,
         ),
       ),
     );
-    if (mounted) setState(() {});
+    // Confirming empties the cart, so what is left is read again.
+    bloc.add(const CartRefreshed());
   }
 
   void _notice(String message) {
@@ -140,7 +118,7 @@ class _YourVisitPageState extends State<YourVisitPage> {
 
   @override
   Widget build(BuildContext context) {
-    final visit = _visit;
+    final visit = context.watch<VisitBloc>().state.cart;
 
     return Scaffold(
       backgroundColor: AppColor.discoveryTint,
@@ -164,9 +142,9 @@ class _YourVisitPageState extends State<YourVisitPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 CartModeTabs(
-                  selected: _tab,
+                  selected: _state.tab,
                   onSelect: _selectTab,
-                  disabled: {if (!_visits.instantAvailable) VisitMode.instant},
+                  disabled: {if (!_state.instantAvailable) VisitMode.instant},
                 ),
                 const SizedBox(height: 22),
                 CartSectionHeading(
@@ -224,7 +202,9 @@ class _YourVisitPageState extends State<YourVisitPage> {
               unitPrice: service.unitPrice,
               quantity: service.quantity,
               unitLabel: service.quantity == 1 ? 'Unit' : 'Units',
-              onQuantity: (value) => _setQuantity(index, value),
+              onQuantity: (value) => _bloc.add(
+                ServiceQuantityChanged(index: index, quantity: value),
+              ),
             ),
           ],
           // Parts sit under the services in the same list: the seeker is
@@ -237,10 +217,11 @@ class _YourVisitPageState extends State<YourVisitPage> {
               unitPrice: part.unitPrice,
               quantity: part.quantity,
               unitLabel: part.quantity == 1 ? 'Piece' : 'Pieces',
-              onQuantity: (value) => _setPartQuantity(index, value),
+              onQuantity: (value) =>
+                  _bloc.add(PartQuantityChanged(index: index, quantity: value)),
             ),
           ],
-          if (_tab != VisitMode.instant && visit.services.isNotEmpty) ...[
+          if (_state.tab != VisitMode.instant && visit.services.isNotEmpty) ...[
             const SizedBox(height: 14),
             const CartNote(
               text:
@@ -279,11 +260,11 @@ class _YourVisitPageState extends State<YourVisitPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (_tab == VisitMode.instant)
+          if (_state.tab == VisitMode.instant)
             CartDetailRow(
               icon: Icons.bolt_rounded,
               title: 'As soon as a provider accepts',
-              subtitle: _visits.instantAvailable
+              subtitle: _state.instantAvailable
                   ? 'Usually about 40 minutes · adds ₹99'
                   : 'Not available right now',
             )
@@ -355,7 +336,7 @@ class _YourVisitPageState extends State<YourVisitPage> {
   double _total(Visit visit) =>
       visit.servicesTotal +
       visit.partsTotal +
-      (_tab == VisitMode.instant ? VisitMode.instant.fee : 0);
+      (_state.tab == VisitMode.instant ? VisitMode.instant.fee : 0);
 
   Widget _actionBar(Visit visit) {
     return SafeArea(
@@ -367,13 +348,14 @@ class _YourVisitPageState extends State<YourVisitPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (_instantBlocked) ...[
+            if (_state.isInstantBlocked) ...[
               const _InstantUnavailable(),
               const SizedBox(height: 12),
             ],
             VisitCta(
               label: _ctaLabel(visit),
-              leading: _tab == VisitMode.instant && !_instantBlocked
+              leading:
+                  _state.tab == VisitMode.instant && !_state.isInstantBlocked
                   ? const Icon(
                       Icons.bolt_rounded,
                       size: 20,
@@ -389,8 +371,8 @@ class _YourVisitPageState extends State<YourVisitPage> {
   }
 
   String _ctaLabel(Visit visit) {
-    if (_instantBlocked) return 'Schedule now';
-    if (_tab.needsSlot && visit.slot == null) return 'Select time slot';
+    if (_state.isInstantBlocked) return 'Schedule now';
+    if (_state.needsSlot) return 'Select time slot';
     return 'Confirm booking · ${rupees(_total(visit))}';
   }
 }

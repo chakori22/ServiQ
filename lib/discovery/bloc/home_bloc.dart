@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 
+import 'package:local_markerplace/chat/repository/chat_repository.dart';
 import 'package:local_markerplace/discovery/model/home_feed.dart';
+import 'package:local_markerplace/notifications/repository/notification_repository.dart';
 import 'package:local_markerplace/discovery/repository/home_repository.dart';
 import 'package:local_markerplace/network/failure.dart';
 
@@ -17,9 +21,53 @@ part 'home_state.dart';
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final HomeSource homeRepository;
 
-  HomeBloc({required this.homeRepository}) : super(const HomeState.initial()) {
+  /// The two the header badges. They are read here rather than in the header
+  /// because both change on screens home cannot see — a thread read, a
+  /// drawer emptied — and a badge that only refreshes when home happens to
+  /// rebuild is a badge that lies.
+  final ChatRepository chatRepository;
+  final NotificationRepository notificationRepository;
+
+  final List<StreamSubscription<void>> _badges = [];
+
+  HomeBloc({
+    required this.homeRepository,
+    ChatRepository? chatRepository,
+    NotificationRepository? notificationRepository,
+  }) : chatRepository = chatRepository ?? ChatRepository.shared,
+       notificationRepository =
+           notificationRepository ?? NotificationRepository.shared,
+       super(const HomeState.initial()) {
     on<HomeRequested>(_onHomeRequested);
     on<HomeRefreshed>(_onHomeRefreshed);
+    on<HomeBadgesChanged>(_onBadgesChanged);
+
+    _badges.addAll([
+      this.chatRepository.changes.listen(_onBadgeChange),
+      this.notificationRepository.changes.listen(_onBadgeChange),
+    ]);
+    add(const HomeBadgesChanged());
+  }
+
+  void _onBadgeChange(void _) {
+    if (!isClosed) add(const HomeBadgesChanged());
+  }
+
+  @override
+  Future<void> close() {
+    for (final badge in _badges) {
+      badge.cancel();
+    }
+    return super.close();
+  }
+
+  void _onBadgesChanged(HomeBadgesChanged event, Emitter<HomeState> emit) {
+    emit(
+      state.copyWith(
+        unreadChats: chatRepository.unreadCount,
+        unreadNotifications: notificationRepository.unreadCount,
+      ),
+    );
   }
 
   /// Opening an area, and re-opening it after a failure.

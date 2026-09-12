@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/visit/bloc/quantity_bloc.dart';
 
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/components/textfield.dart';
@@ -36,7 +38,7 @@ Future<VisitService?> showAddToVisitSheet(
   );
 }
 
-class _AddToVisitSheet extends StatefulWidget {
+class _AddToVisitSheet extends StatelessWidget {
   const _AddToVisitSheet({
     required this.name,
     required this.detail,
@@ -48,12 +50,27 @@ class _AddToVisitSheet extends StatefulWidget {
   final double unitPrice;
 
   @override
-  State<_AddToVisitSheet> createState() => _AddToVisitSheetState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => QuantityBloc(unitPrice: unitPrice),
+      child: _AddToVisitView(name: name, detail: detail),
+    );
+  }
 }
 
-class _AddToVisitSheetState extends State<_AddToVisitSheet> {
+class _AddToVisitView extends StatefulWidget {
+  const _AddToVisitView({required this.name, required this.detail});
+
+  final String name;
+  final String detail;
+
+  @override
+  State<_AddToVisitView> createState() => _AddToVisitViewState();
+}
+
+class _AddToVisitViewState extends State<_AddToVisitView> {
+  /// The note belongs to its field; how many belongs to the bloc.
   final TextEditingController _note = TextEditingController();
-  int _quantity = 1;
 
   @override
   void dispose() {
@@ -61,10 +78,9 @@ class _AddToVisitSheetState extends State<_AddToVisitSheet> {
     super.dispose();
   }
 
-  double get _lineTotal => widget.unitPrice * _quantity;
-
   @override
   Widget build(BuildContext context) {
+    final state = context.watch<QuantityBloc>().state;
     return SafeArea(
       top: false,
       child: SingleChildScrollView(
@@ -92,7 +108,7 @@ class _AddToVisitSheetState extends State<_AddToVisitSheet> {
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    'from ${rupees(widget.unitPrice)}',
+                    'from ${rupees(state.unitPrice)}',
                     style: DiscoveryText.fromPrice,
                   ),
                 ),
@@ -116,8 +132,9 @@ class _AddToVisitSheetState extends State<_AddToVisitSheet> {
                   ),
                 ),
                 _Stepper(
-                  value: _quantity,
-                  onChanged: (value) => setState(() => _quantity = value),
+                  value: state.quantity,
+                  onChanged: (value) =>
+                      context.read<QuantityBloc>().add(QuantityChanged(value)),
                 ),
               ],
             ),
@@ -140,8 +157,8 @@ class _AddToVisitSheetState extends State<_AddToVisitSheet> {
             ),
             const VisitRule(top: 6, bottom: 16),
             TotalRow(
-              label: '${widget.name} × $_quantity',
-              value: rupees(_lineTotal),
+              label: '${widget.name} × ${state.quantity}',
+              value: rupees(state.lineTotal),
             ),
             TotalRow(
               label: 'Visit charge',
@@ -151,7 +168,7 @@ class _AddToVisitSheetState extends State<_AddToVisitSheet> {
             const VisitRule(top: 6, bottom: 14),
             TotalRow(
               label: 'Estimate',
-              value: rupees(_lineTotal),
+              value: rupees(state.lineTotal),
               isTotal: true,
               footnote:
                   'Final price confirmed by the provider before work starts',
@@ -163,8 +180,8 @@ class _AddToVisitSheetState extends State<_AddToVisitSheet> {
                 VisitService(
                   name: widget.name,
                   detail: widget.detail,
-                  unitPrice: widget.unitPrice,
-                  quantity: _quantity,
+                  unitPrice: state.unitPrice,
+                  quantity: state.quantity,
                   note: _note.text.trim(),
                 ),
               ),

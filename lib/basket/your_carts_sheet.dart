@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/basket/bloc/basket_bloc.dart';
 
 import 'package:local_markerplace/components/art/seeded_artwork.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
@@ -41,7 +43,7 @@ Future<CartsAction?> showYourCartsSheet(
   );
 }
 
-class _YourCartsSheet extends StatefulWidget {
+class _YourCartsSheet extends StatelessWidget {
   const _YourCartsSheet({
     required this.visits,
     required this.onOpenCart,
@@ -53,35 +55,51 @@ class _YourCartsSheet extends StatefulWidget {
   final Future<void> Function() onCheckoutAll;
 
   @override
-  State<_YourCartsSheet> createState() => _YourCartsSheetState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          BasketBloc(visitRepository: visits)..add(const BasketRequested()),
+      child: _YourCartsView(
+        onOpenCart: onOpenCart,
+        onCheckoutAll: onCheckoutAll,
+      ),
+    );
+  }
 }
 
-class _YourCartsSheetState extends State<_YourCartsSheet> {
-  List<Visit> get _carts => widget.visits.carts;
+class _YourCartsView extends StatelessWidget {
+  const _YourCartsView({required this.onOpenCart, required this.onCheckoutAll});
 
-  Future<void> _open(String providerName) async {
+  final Future<void> Function(String providerName) onOpenCart;
+  final Future<void> Function() onCheckoutAll;
+
+  Future<void> _open(BuildContext context, String providerName) async {
     Navigator.of(context).pop(CartsAction.openedCart);
-    await widget.onOpenCart(providerName);
+    await onOpenCart(providerName);
   }
 
-  Future<void> _checkoutAll() async {
+  Future<void> _checkoutAll(BuildContext context) async {
     Navigator.of(context).pop(CartsAction.checkedOutAll);
-    await widget.onCheckoutAll();
+    await onCheckoutAll();
   }
 
-  void _remove(String providerName) {
-    setState(() => widget.visits.removeCart(providerName));
-    if (_carts.isEmpty) Navigator.of(context).pop();
+  /// Taking the last cart away leaves nothing to show, so the sheet goes
+  /// with it.
+  void _remove(BuildContext context, String providerName) {
+    final bloc = context.read<BasketBloc>()..add(CartRemoved(providerName));
+    if (bloc.state.isEmpty) Navigator.of(context).pop();
   }
 
-  Future<void> _clearAll() async {
+  Future<void> _clearAll(BuildContext context) async {
+    final bloc = context.read<BasketBloc>();
     final sure = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColor.white,
         title: Text('Clear every cart?', style: DiscoveryText.sheetTitle),
         content: Text(
-          'This empties all ${_carts.length} carts. It cannot be undone.',
+          'This empties all ${context.read<BasketBloc>().state.cartCount} '
+          'carts. It cannot be undone.',
           style: DiscoveryText.caption,
         ),
         actions: [
@@ -96,14 +114,15 @@ class _YourCartsSheetState extends State<_YourCartsSheet> {
         ],
       ),
     );
-    if (sure != true || !mounted) return;
-    widget.visits.clear();
-    if (mounted) Navigator.of(context).pop();
+    if (sure != true || !context.mounted) return;
+    bloc.add(const BasketCleared());
+    Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    final carts = _carts;
+    final state = context.watch<BasketBloc>().state;
+    final carts = state.carts;
     if (carts.isEmpty) return const SizedBox.shrink();
 
     return SafeArea(
@@ -119,7 +138,7 @@ class _YourCartsSheetState extends State<_YourCartsSheet> {
                   child: Text('Your carts', style: DiscoveryText.sectionTitle),
                 ),
                 PressableScale(
-                  onTap: _clearAll,
+                  onTap: () => _clearAll(context),
                   pressedScale: 0.92,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
@@ -140,8 +159,8 @@ class _YourCartsSheetState extends State<_YourCartsSheet> {
               separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (context, index) => CartRow(
                 cart: carts[index],
-                onOpen: () => _open(carts[index].providerName),
-                onRemove: () => _remove(carts[index].providerName),
+                onOpen: () => _open(context, carts[index].providerName),
+                onRemove: () => _remove(context, carts[index].providerName),
               ),
             ),
           ),
@@ -149,8 +168,8 @@ class _YourCartsSheetState extends State<_YourCartsSheet> {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
             child: _CheckoutAll(
               carts: carts,
-              total: widget.visits.grandTotal,
-              onTap: _checkoutAll,
+              total: state.grandTotal,
+              onTap: () => _checkoutAll(context),
             ),
           ),
         ],

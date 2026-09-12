@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
+import 'package:local_markerplace/discovery/bloc/discovery_bloc.dart';
 
 import 'package:local_markerplace/components/skeleton/skeleton.dart';
 import 'package:local_markerplace/visit/presentation/my_orders_page.dart';
@@ -27,6 +30,8 @@ import 'package:local_markerplace/discovery/repository/home_repository.dart';
 import 'package:local_markerplace/network/api_client.dart';
 import 'package:local_markerplace/provider/presentation/provider_profile_page.dart';
 import 'package:local_markerplace/me/model/saved_provider.dart';
+import 'package:local_markerplace/me/model/seeker_account.dart';
+import 'package:local_markerplace/visit/repository/visit_repository.dart';
 import 'package:local_markerplace/me/presentation/addresses_page.dart';
 import 'package:local_markerplace/me/presentation/edit_profile_page.dart';
 import 'package:local_markerplace/me/presentation/kyc_pages.dart';
@@ -34,6 +39,7 @@ import 'package:local_markerplace/me/presentation/me_page.dart';
 import 'package:local_markerplace/me/presentation/picture_picker_sheet.dart';
 import 'package:local_markerplace/me/presentation/saved_providers_page.dart';
 import 'package:local_markerplace/me/presentation/sign_out.dart';
+import 'package:local_markerplace/me/bloc/me_bloc.dart';
 import 'package:local_markerplace/me/repository/me_repository.dart';
 import 'package:local_markerplace/onboarding/model/seeker_profile.dart';
 import 'package:local_markerplace/onboarding/repository/onboarding_repository.dart';
@@ -44,7 +50,7 @@ import 'package:local_markerplace/onboarding/repository/onboarding_repository.da
 /// The drill-down screens (zone detail, locality, search) are pushed on top
 /// of this rather than being tabs of their own, which is why they draw their
 /// own copy of the tab bar and route back through [_selectTab].
-class DiscoveryShell extends StatefulWidget {
+class DiscoveryShell extends StatelessWidget {
   const DiscoveryShell({
     super.key,
     this.initialTab = DiscoveryTab.home,
@@ -81,82 +87,63 @@ class DiscoveryShell extends StatefulWidget {
   final HomeSource? homeRepository;
 
   @override
-  State<DiscoveryShell> createState() => _DiscoveryShellState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => DiscoveryBloc(
+        onboardingRepository: profiles,
+        initialLocality: initialLocality,
+        initialTab: initialTab,
+      )..add(const DiscoveryStarted()),
+      child: _DiscoveryShellView(
+        repository: repository,
+        meRepository: meRepository,
+        homeRepository: homeRepository,
+      ),
+    );
+  }
 }
 
-class _DiscoveryShellState extends State<DiscoveryShell> {
-  late DiscoveryTab _tab = widget.initialTab;
-  late String? _localityName = widget.initialLocality;
+class _DiscoveryShellView extends StatefulWidget {
+  const _DiscoveryShellView({
+    required this.repository,
+    required this.meRepository,
+    required this.homeRepository,
+  });
 
-  /// Held back until the stored profile has been read, so the picker is not
-  /// flashed at a seeker who already told onboarding where they live.
-  bool _resolvingLocality = false;
-
-  /// The profile behind the Me tab. Null until it has been read, or when
-  /// there is none on file.
-  SeekerProfile? _profile;
-
-  /// Bumped every time the seeker picks an area, so home fetches on the
-  /// choice itself rather than only when the choice differs from what it is
-  /// already showing.
-  int _localityChoice = 0;
+  final DiscoveryRepository repository;
+  final MeRepository meRepository;
+  final HomeSource? homeRepository;
 
   @override
-  void initState() {
-    super.initState();
-    if (_localityName == null) {
-      _resolveLocality();
-    }
-  }
+  State<_DiscoveryShellView> createState() => _DiscoveryShellViewState();
+}
 
-  /// Falls back through the places an area can come from: the profile
-  /// onboarding saved, then asking.
-  Future<void> _resolveLocality() async {
-    final profiles = widget.profiles;
-    if (profiles != null) {
-      setState(() => _resolvingLocality = true);
-      final profile = await profiles.readProfile();
-      if (!mounted) return;
-      final locality = profile?.locality ?? '';
-      setState(() {
-        _resolvingLocality = false;
-        _profile = profile;
-      });
-      if (locality.isNotEmpty) {
-        setState(() => _localityName = locality);
-        return;
-      }
-    }
-    // Nothing on file — a seeker who skipped onboarding, or a fresh install.
-    // Deferred to the next frame because it is a route push, not a build.
+class _DiscoveryShellViewState extends State<_DiscoveryShellView> {
+  DiscoveryBloc get _bloc => context.read<DiscoveryBloc>();
+
+  DiscoveryState get _state => _bloc.state;
+
+  String? get _localityName => _state.localityName;
+
+  SeekerProfile? get _profile => _state.profile;
+
+  /// Opening the picker is a route push, not a build, so it is deferred to
+  /// the next frame when the bloc says there is no area on file.
+  void _askForLocality() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _pickLocality();
     });
   }
 
   Future<void> _pickLocality() async {
+    final bloc = _bloc;
     final locality = await Navigator.of(context).push<Locality>(
       MaterialPageRoute(
         builder: (_) => LocationPage(repository: widget.repository),
       ),
     );
-    if (!mounted || locality == null) return;
-    setState(() {
-      _localityName = locality.name;
-      _localityChoice++;
-    });
-    await _rememberLocality(locality.name);
-  }
-
-  /// Writes the chosen area back to the profile so the next launch opens on
-  /// it. A failure here is not worth interrupting browsing for — the seeker
-  /// simply gets asked again next time.
-  Future<void> _rememberLocality(String name) async {
-    final profiles = widget.profiles;
-    if (profiles == null) return;
-    final profile = await profiles.readProfile();
-    if (profile == null || profile.locality == name) return;
-    await profiles.saveProfile(profile.copyWith(locality: name));
+    if (locality == null) return;
+    bloc.add(LocalityChosen(locality.name));
   }
 
   void _selectTab(DiscoveryTab tab) {
@@ -164,7 +151,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
       case DiscoveryTab.home:
       case DiscoveryTab.explore:
       case DiscoveryTab.me:
-        setState(() => _tab = tab);
+        _bloc.add(DiscoveryTabSelected(tab));
       case DiscoveryTab.posts:
         _openPosts();
     }
@@ -182,7 +169,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
       extra: PostsArgs(localityName: _localityName, initialFilter: filter),
     );
     if (!mounted || next == null) return;
-    setState(() => _tab = next);
+    _bloc.add(DiscoveryTabSelected(next));
   }
 
   /// Sends a drill-down screen's tab tap back to the shell underneath it.
@@ -192,7 +179,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
       return;
     }
     Navigator.of(context).popUntil((route) => route.isFirst);
-    setState(() => _tab = tab);
+    _bloc.add(DiscoveryTabSelected(tab));
   }
 
   void _openPostForm() => GoRouter.of(
@@ -217,17 +204,8 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
   }
 
   /// Writes an edited profile back and refreshes the Me tab with it.
-  Future<void> _saveProfile(String name, Set<String> interestLabels) async {
-    final profiles = widget.profiles;
-    final current = _profile ?? const SeekerProfile();
-    final ids = seekerServiceInterests
-        .where((interest) => interestLabels.contains(interest.label))
-        .map((interest) => interest.id)
-        .toSet();
-    final updated = current.copyWith(fullName: name, interestIds: ids);
-
-    setState(() => _profile = updated);
-    await profiles?.saveProfile(updated);
+  void _saveProfile(String name, Set<String> interestLabels) {
+    _bloc.add(ProfileEdited(name: name, interestLabels: interestLabels));
   }
 
   void _openZone(ServiceZone zone) {
@@ -275,13 +253,11 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
           onPost: _openPostForm,
           onFindProvider: () {
             Navigator.of(context).pop();
-            setState(() => _tab = DiscoveryTab.explore);
+            _bloc.add(const DiscoveryTabSelected(DiscoveryTab.explore));
           },
         ),
       ),
     );
-    // The badge on home counts unread threads, so opening one changes it.
-    if (mounted) setState(() {});
   }
 
   /// Home's category tiles are a way into the catalogue, not six screens:
@@ -303,7 +279,6 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
         ),
       ),
     );
-    if (mounted) setState(() {});
   }
 
   /// Every list of providers in the flow ends here.
@@ -338,7 +313,12 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
 
   @override
   Widget build(BuildContext context) {
-    if (_resolvingLocality) {
+    final state = context.watch<DiscoveryBloc>().state;
+
+    // Nothing on file — a seeker who skipped onboarding, or a fresh install.
+    if (state.mustChooseLocality) _askForLocality();
+
+    if (state.isResolvingLocality) {
       // Reading the stored area takes a frame or two. The design's rule is
       // never a spinner, so home wears the shape it is about to become.
       return const Scaffold(
@@ -357,17 +337,40 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
       backgroundColor: AppColor.white,
       body: SafeArea(bottom: false, child: _body()),
       bottomNavigationBar: AppBottomBar(
-        current: _tab,
+        current: state.tab,
         onSelect: _selectTab,
         onPost: _openPostForm,
-        onCartChanged: () => setState(() {}),
       ),
     );
   }
 
   Widget _meView() {
-    final account = widget.meRepository.account(profile: _profile);
+    // The account counts real things — orders, unread chats — so it is built
+    // by a bloc that hears about them rather than read as the tab draws.
+    return BlocProvider(
+      create: (_) => MeBloc(
+        meRepository: widget.meRepository,
+        visitRepository: VisitRepository.shared,
+      )..add(MeRequested(_profile)),
+      // The account is built from the profile, and the profile changes on a
+      // screen of its own — so the tab is told rather than left holding the
+      // one it was opened with.
+      child: BlocListener<DiscoveryBloc, DiscoveryState>(
+        listenWhen: (previous, current) => previous.profile != current.profile,
+        listener: (context, state) =>
+            context.read<MeBloc>().add(MeRequested(state.profile)),
+        child: BlocBuilder<MeBloc, MeState>(
+          builder: (context, state) {
+            final account = state.account;
+            if (account == null) return const SizedBox.shrink();
+            return _me(account);
+          },
+        ),
+      ),
+    );
+  }
 
+  Widget _me(SeekerAccount account) {
     return MeView(
       account: account,
       onEditProfile: () => _push(
@@ -384,7 +387,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
           onPost: _openPostForm,
           onBrowse: () {
             Navigator.of(context).pop();
-            setState(() => _tab = DiscoveryTab.explore);
+            _bloc.add(const DiscoveryTabSelected(DiscoveryTab.explore));
           },
         ),
       ),
@@ -439,7 +442,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
   }
 
   Widget _body() {
-    switch (_tab) {
+    switch (_state.tab) {
       case DiscoveryTab.home:
         // Until an area is chosen the picker is on top of this anyway, so
         // the header falls back to a neutral label rather than a real one.
@@ -447,7 +450,7 @@ class _DiscoveryShellState extends State<DiscoveryShell> {
           localityName: _localityName ?? 'Choose your area',
           repository: widget.repository,
           localitySlug: _localitySlug,
-          localityChoiceId: _localityChoice,
+          localityChoiceId: _state.localityChoiceId,
           homeRepository:
               widget.homeRepository ??
               HomeRepository(apiClient: APIClient(baseUrl: '')),

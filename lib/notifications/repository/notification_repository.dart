@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:local_markerplace/notifications/model/app_notification.dart';
 
 /// What the notifications drawer shows.
@@ -14,6 +16,11 @@ class NotificationRepository {
   /// as the app does — there is nowhere to persist it to yet.
   static final NotificationRepository shared = NotificationRepository._();
 
+  /// Announced when the drawer is read, so the bells that badge it are told.
+  Stream<void> get changes => _changes.stream;
+
+  final StreamController<void> _changes = StreamController<void>.broadcast();
+
   /// Built on first read so the ages are relative to when the app was
   /// opened, then kept so "mark all read" sticks.
   List<AppNotification>? _items;
@@ -29,6 +36,7 @@ class NotificationRepository {
       for (final notification in notifications())
         notification.copyWith(isUnread: false),
     ];
+    if (!_changes.isClosed) _changes.add(null);
   }
 
   List<AppNotification> _seed() {

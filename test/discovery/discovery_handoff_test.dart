@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:local_markerplace/discovery/presentation/components/provider_avatar.dart';
 import 'package:local_markerplace/discovery/presentation/discovery_shell.dart';
 import 'package:local_markerplace/network/failure.dart';
 import 'package:local_markerplace/onboarding/model/seeker_profile.dart';
@@ -124,6 +125,35 @@ void main() {
     expect(profiles.saved?.locality, 'Mahagun Mascot');
     // The rest of the profile survives the write.
     expect(profiles.saved?.fullName, 'Asha');
+  });
+
+  testWidgets('an edited profile shows on the Me tab straight away', (
+    tester,
+  ) async {
+    final profiles = _FakeProfiles(
+      const SeekerProfile(fullName: 'Asha', locality: 'Ajnara Gen X'),
+    );
+
+    await pumpShell(tester, profiles);
+
+    await tester.tap(find.text('Me'));
+    await tester.pumpAndSettle();
+    expect(find.text('Asha'), findsOneWidget);
+
+    // Open Edit profile from the avatar on the hero.
+    await tester.tap(find.byType(ProviderAvatar).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Edit profile'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField).first, 'Asha Verma');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    // Back on the Me tab, the header says what was just saved rather than
+    // the name the account was built with when the tab was first opened.
+    expect(find.text('Asha Verma'), findsOneWidget);
+    expect(profiles.saved?.fullName, 'Asha Verma');
   });
 
   testWidgets('picking the area already on file does not rewrite it', (

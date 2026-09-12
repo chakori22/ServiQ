@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/discovery/bloc/catalogue_bloc.dart';
 
 import 'package:local_markerplace/components/art/seeded_artwork.dart';
 import 'package:local_markerplace/components/motion/app_motion.dart';
@@ -26,7 +28,7 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 ///
 /// Adding here puts the job on the visit, which is where a service lives —
 /// a part goes in the cart, a service becomes a trip.
-class ServicesPage extends StatefulWidget {
+class ServicesPage extends StatelessWidget {
   const ServicesPage({
     super.key,
     required this.localityName,
@@ -57,16 +59,35 @@ class ServicesPage extends StatefulWidget {
   final VisitRepository? visits;
 
   @override
-  State<ServicesPage> createState() => _ServicesPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          CatalogueBloc(
+            providerRepository: providers,
+            visitRepository: visits ?? VisitRepository.shared,
+          )..add(
+            CatalogueOpened(
+              localityName: localityName,
+              category: initialCategory,
+              categories: categories ?? repository.categories(),
+            ),
+          ),
+      child: _ServicesView(visits: visits),
+    );
+  }
 }
 
-class _ServicesPageState extends State<ServicesPage> {
-  late final VisitRepository _visits = widget.visits ?? VisitRepository.shared;
+class _ServicesView extends StatefulWidget {
+  const _ServicesView({required this.visits});
 
-  late String? _category = widget.initialCategory;
+  final VisitRepository? visits;
 
-  List<ServiceCategory> get _categories =>
-      widget.categories ?? widget.repository.categories();
+  @override
+  State<_ServicesView> createState() => _ServicesViewState();
+}
+
+class _ServicesViewState extends State<_ServicesView> {
+  CatalogueBloc get _bloc => context.read<CatalogueBloc>();
 
   /// True while the sheet is up.
   ///
@@ -79,70 +100,46 @@ class _ServicesPageState extends State<ServicesPage> {
   Future<void> _openFilter() async {
     if (_filterIsOpen) return;
     _filterIsOpen = true;
+    final bloc = _bloc;
     final choice = await CategoryFilterSheet.show(
       context,
-      categories: _categories,
-      selected: _category,
+      categories: bloc.state.categories,
+      selected: bloc.state.category,
     );
     _filterIsOpen = false;
-    if (choice == null || !mounted) return;
-    setState(() => _category = choice.label);
-  }
-
-  List<CatalogueService> get _services => widget.providers.servicesIn(
-    widget.localityName,
-    categoryLabel: _category,
-  );
-
-  /// How many of [service] are already on the visit, so the row can offer to
-  /// take it off again rather than add a second one.
-  int _onVisit(CatalogueService service) {
-    final visit = _visits.cartFor(service.providerName);
-    if (visit == null) return 0;
-    for (final booked in visit.services) {
-      if (booked.name == service.name) return booked.quantity;
-    }
-    return 0;
+    if (choice == null) return;
+    bloc.add(CatalogueFiltered(choice.label));
   }
 
   Future<void> _add(CatalogueService service) async {
+    final bloc = _bloc;
     final added = await showAddToVisitSheet(
       context,
       name: service.name,
       detail: service.detail,
       unitPrice: rupeesFrom(service.fromPrice),
     );
-    if (added == null || !mounted) return;
+    if (added == null) return;
 
-    _visits.addService(
-      providerName: service.providerName,
-      providerLine: service.providerLine(widget.localityName),
-      isVerifiedProvider: service.isVerifiedProvider,
-      service: added,
+    bloc.add(
+      CatalogueServiceAdded(
+        providerName: service.providerName,
+        providerLine: service.providerLine(bloc.state.localityName),
+        isVerifiedProvider: service.isVerifiedProvider,
+        service: added,
+      ),
     );
-    setState(() {});
-  }
-
-  /// Takes the job back off the visit. The list is the only place it can be
-  /// removed from without opening the visit itself, so the row keeps the
-  /// action once something is on it.
-  void _remove(CatalogueService service) {
-    final visit = _visits.cartFor(service.providerName);
-    if (visit == null) return;
-    final index = visit.services.indexWhere((s) => s.name == service.name);
-    if (index == -1) return;
-    setState(() => _visits.removeServiceAt(service.providerName, index));
   }
 
   Future<void> _openVisit() async {
-    await openBasket(context, visits: _visits);
-    if (mounted) setState(() {});
+    await openBasket(context, visits: widget.visits);
   }
 
   @override
   Widget build(BuildContext context) {
-    final services = _services;
-    final cart = currentBasket(visits: _visits);
+    final state = context.watch<CatalogueBloc>().state;
+    final services = state.services;
+    final cart = currentBasket(visits: widget.visits);
 
     return Scaffold(
       backgroundColor: AppColor.white,
@@ -155,13 +152,13 @@ class _ServicesPageState extends State<ServicesPage> {
               subtitle: [
                 '${services.length} '
                     '${services.length == 1 ? 'job' : 'jobs'} in '
-                    '${widget.localityName}',
+                    '${state.localityName}',
                 // Says which filter produced that count, so a short list
                 // reads as narrowed rather than as an empty area.
-                ?_category,
+                ?state.category,
               ].join(' · '),
               trailing: _FilterButton(
-                isFiltered: _category != null,
+                isFiltered: state.category != null,
                 onTap: _openFilter,
               ),
             ),
@@ -177,7 +174,7 @@ class _ServicesPageState extends State<ServicesPage> {
                   : ListView.separated(
                       // Keyed on the filter so switching categories builds
                       // the list afresh and its rows play their entrance.
-                      key: ValueKey(_category),
+                      key: ValueKey(state.category),
                       padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                       itemCount: services.length,
                       separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -185,9 +182,14 @@ class _ServicesPageState extends State<ServicesPage> {
                         index: index,
                         child: CatalogueServiceCard(
                           service: services[index],
-                          quantityOnVisit: _onVisit(services[index]),
+                          quantityOnVisit: state.quantityOf(services[index]),
                           onAdd: () => _add(services[index]),
-                          onRemove: () => _remove(services[index]),
+                          onRemove: () => _bloc.add(
+                            CatalogueServiceRemoved(
+                              providerName: services[index].providerName,
+                              name: services[index].name,
+                            ),
+                          ),
                         ),
                       ),
                     ),

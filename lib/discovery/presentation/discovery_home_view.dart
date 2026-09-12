@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import 'package:local_markerplace/chat/repository/chat_repository.dart';
 import 'package:local_markerplace/components/art/bezier_wash.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
 import 'package:local_markerplace/components/skeleton/skeleton.dart';
@@ -22,7 +21,6 @@ import 'package:local_markerplace/discovery/presentation/components/section_head
 import 'package:local_markerplace/discovery/repository/discovery_repository.dart';
 import 'package:local_markerplace/discovery/repository/home_repository.dart';
 import 'package:local_markerplace/notifications/presentation/notifications_sheet.dart';
-import 'package:local_markerplace/notifications/repository/notification_repository.dart';
 
 /// 02 · Home — the seeker's starting point: where they are, what they can
 /// search for, the trades on offer and who is working nearby.
@@ -241,9 +239,8 @@ class _HomeViewState extends State<_HomeView> {
                     onChangeLocality: widget.onChangeLocality,
                     onNotifications: () => showNotificationsSheet(context),
                     onChat: widget.onChat,
-                    unreadChats: ChatRepository.shared.unreadCount,
-                    unreadNotifications:
-                        NotificationRepository.shared.unreadCount,
+                    unreadChats: state.unreadChats,
+                    unreadNotifications: state.unreadNotifications,
                   ),
                   const SizedBox(height: 14),
                   FadeSlideIn(

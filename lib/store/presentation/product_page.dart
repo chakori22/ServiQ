@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/visit/bloc/quantity_bloc.dart';
 
 import 'package:local_markerplace/components/art/seeded_artwork.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
@@ -17,7 +19,7 @@ import 'package:local_markerplace/visit/presentation/components/visit_bits.dart'
 /// out. The screen never touches the cart itself: whoever opened it owns the
 /// provider the part belongs to, and a part in a cart without its provider
 /// is not deliverable.
-class ProductPage extends StatefulWidget {
+class ProductPage extends StatelessWidget {
   const ProductPage({
     super.key,
     required this.product,
@@ -35,30 +37,45 @@ class ProductPage extends StatefulWidget {
   final VoidCallback? onBookFitting;
 
   @override
-  State<ProductPage> createState() => _ProductPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => QuantityBloc(unitPrice: rupeesFrom(product.price)),
+      child: _ProductView(
+        product: product,
+        localityName: localityName,
+        onBookFitting: onBookFitting,
+      ),
+    );
+  }
 }
 
-class _ProductPageState extends State<ProductPage> {
-  int _quantity = 1;
+class _ProductView extends StatelessWidget {
+  const _ProductView({
+    required this.product,
+    required this.localityName,
+    required this.onBookFitting,
+  });
 
-  double get _unitPrice => rupeesFrom(widget.product.price);
+  final StoreProduct product;
+  final String localityName;
+  final VoidCallback? onBookFitting;
 
-  double get _lineTotal => _unitPrice * _quantity;
-
-  void _add() {
+  /// Hands the part back to whoever opened the page; putting it in a cart is
+  /// theirs to do, since only they know whose cart it is.
+  void _add(BuildContext context, QuantityState state) {
     Navigator.of(context).pop(
       CartProduct(
-        name: widget.product.name,
-        detail: widget.product.detail,
-        unitPrice: _unitPrice,
-        quantity: _quantity,
+        name: product.name,
+        detail: product.detail,
+        unitPrice: state.unitPrice,
+        quantity: state.quantity,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final product = widget.product;
+    final state = context.watch<QuantityBloc>().state;
     final fitting = product.fittingName;
 
     return Scaffold(
@@ -131,10 +148,11 @@ class _ProductPageState extends State<ProductPage> {
                           ),
                         ),
                         CartQuantityStepper(
-                          value: _quantity,
-                          unitLabel: _quantity == 1 ? 'Piece' : 'Pieces',
-                          onChanged: (value) =>
-                              setState(() => _quantity = value),
+                          value: state.quantity,
+                          unitLabel: state.quantity == 1 ? 'Piece' : 'Pieces',
+                          onChanged: (value) => context
+                              .read<QuantityBloc>()
+                              .add(QuantityChanged(value)),
                         ),
                       ],
                     ),
@@ -143,16 +161,16 @@ class _ProductPageState extends State<ProductPage> {
                       _FittingOffer(
                         service: fitting,
                         fromPrice: product.fittingFrom ?? '',
-                        onTap: widget.onBookFitting,
+                        onTap: onBookFitting,
                       ),
                     ],
                     const VisitRule(top: 22, bottom: 14),
                     TotalRow(
-                      label: '${product.name} × $_quantity',
-                      value: rupees(_lineTotal),
+                      label: '${product.name} × ${state.quantity}',
+                      value: rupees(state.lineTotal),
                     ),
                     TotalRow(
-                      label: 'Delivery in ${widget.localityName}',
+                      label: 'Delivery in $localityName',
                       value: rupees(0),
                     ),
                   ],
@@ -171,8 +189,8 @@ class _ProductPageState extends State<ProductPage> {
             border: Border(top: BorderSide(color: AppColor.discoveryBorder)),
           ),
           child: VisitCta(
-            label: 'Add to cart · ${rupees(_lineTotal)}',
-            onTap: _add,
+            label: 'Add to cart · ${rupees(state.lineTotal)}',
+            onTap: () => _add(context, state),
           ),
         ),
       ),

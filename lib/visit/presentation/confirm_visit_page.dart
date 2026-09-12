@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:local_markerplace/visit/bloc/visit_bloc.dart';
 
 import 'package:local_markerplace/components/motion/app_motion.dart';
 import 'package:local_markerplace/components/motion/entrance.dart';
@@ -17,7 +19,7 @@ import 'package:local_markerplace/visit/repository/visit_repository.dart';
 /// Everything here is already decided; the screen exists so nothing is a
 /// surprise — who is coming, when, where, what it costs and how it gets
 /// paid, with a way back to each.
-class ConfirmVisitPage extends StatefulWidget {
+class ConfirmVisitPage extends StatelessWidget {
   const ConfirmVisitPage({
     super.key,
     required this.providerName,
@@ -30,21 +32,25 @@ class ConfirmVisitPage extends StatefulWidget {
   final VisitRepository? repository;
 
   @override
-  State<ConfirmVisitPage> createState() => _ConfirmVisitPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) =>
+          VisitBloc(visitRepository: repository ?? VisitRepository.shared)
+            ..add(CartOpened(providerName)),
+      child: const _ConfirmVisitView(),
+    );
+  }
 }
 
-class _ConfirmVisitPageState extends State<ConfirmVisitPage> {
-  late final VisitRepository _visits =
-      widget.repository ?? VisitRepository.shared;
+class _ConfirmVisitView extends StatelessWidget {
+  const _ConfirmVisitView();
 
-  Future<void> _confirm() async {
-    final booked = _visits.confirm(widget.providerName);
-    if (!mounted) return;
-    // Everything behind this screen is about a visit that no longer exists
-    // to edit — going back to the slot picker would land on "nothing on this
-    // visit yet". So the booked screen replaces the whole flow and sits on
-    // the shell, where back means home.
-    await Navigator.of(context).pushAndRemoveUntil(
+  /// Everything behind this screen is about a visit that no longer exists to
+  /// edit — going back to the slot picker would land on "nothing on this
+  /// visit yet". So the booked screen replaces the whole flow and sits on
+  /// the shell, where back means home.
+  Future<void> _showReceipt(BuildContext context, Visit booked) {
+    return Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => VisitBookedPage(visit: booked)),
       (route) => route.isFirst,
     );
@@ -52,124 +58,134 @@ class _ConfirmVisitPageState extends State<ConfirmVisitPage> {
 
   @override
   Widget build(BuildContext context) {
-    final visit = _visits.cartFor(widget.providerName);
+    final state = context.watch<VisitBloc>().state;
+    final visit = state.cart;
     if (visit == null) return const SizedBox.shrink();
 
-    return Scaffold(
-      backgroundColor: AppColor.white,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            const DiscoveryHeader(title: 'Confirm visit'),
-            const SizedBox(height: 14),
-            const Divider(
-              height: 1,
-              thickness: 1,
-              color: AppColor.discoveryBorder,
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    ProviderStrip(visit: visit),
-                    const SizedBox(height: 14),
-                    _DetailCard(
-                      icon: visit.mode == VisitMode.instant
-                          ? Icons.bolt_rounded
-                          : Icons.event_available_rounded,
-                      title: visit.whenLabel,
-                      subtitle: '${visit.mode?.label ?? ''} visit',
-                      // Going back is how the slot or the mode is changed —
-                      // this screen only reports them.
-                      onChange: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(height: 12),
-                    _DetailCard(
-                      icon: Icons.place_outlined,
-                      title: visit.addressLabel,
-                      subtitle: visit.addressLine,
-                      onChange: () => _notice(
-                        'Changing the address — coming '
-                        'soon.',
+    return BlocListener<VisitBloc, VisitState>(
+      listenWhen: (previous, current) =>
+          previous.booked != current.booked && current.booked != null,
+      listener: (context, state) => _showReceipt(context, state.booked!),
+      child: Scaffold(
+        backgroundColor: AppColor.white,
+        body: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              const DiscoveryHeader(title: 'Confirm visit'),
+              const SizedBox(height: 14),
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColor.discoveryBorder,
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ProviderStrip(visit: visit),
+                      const SizedBox(height: 14),
+                      _DetailCard(
+                        icon: visit.mode == VisitMode.instant
+                            ? Icons.bolt_rounded
+                            : Icons.event_available_rounded,
+                        title: visit.whenLabel,
+                        subtitle: '${visit.mode?.label ?? ''} visit',
+                        // Going back is how the slot or the mode is changed —
+                        // this screen only reports them.
+                        onChange: () => Navigator.of(context).pop(),
                       ),
-                    ),
-                    const SizedBox(height: 22),
-                    Text('SERVICES', style: DiscoveryText.tipsHeading),
-                    const SizedBox(height: 12),
-                    for (final service in visit.services)
-                      TotalRow(
-                        label: '${service.name} × ${service.quantity}',
-                        value: rupees(service.lineTotal),
-                      ),
-                    if (visit.parts.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text('PARTS', style: DiscoveryText.tipsHeading),
                       const SizedBox(height: 12),
-                      for (final part in visit.parts)
+                      _DetailCard(
+                        icon: Icons.place_outlined,
+                        title: visit.addressLabel,
+                        subtitle: visit.addressLine,
+                        onChange: () => _notice(
+                          context,
+                          'Changing the address — coming '
+                          'soon.',
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                      Text('SERVICES', style: DiscoveryText.tipsHeading),
+                      const SizedBox(height: 12),
+                      for (final service in visit.services)
                         TotalRow(
-                          label: '${part.name} × ${part.quantity}',
-                          value: rupees(part.lineTotal),
+                          label: '${service.name} × ${service.quantity}',
+                          value: rupees(service.lineTotal),
                         ),
-                    ],
-                    if (visit.instantFee > 0)
+                      if (visit.parts.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text('PARTS', style: DiscoveryText.tipsHeading),
+                        const SizedBox(height: 12),
+                        for (final part in visit.parts)
+                          TotalRow(
+                            label: '${part.name} × ${part.quantity}',
+                            value: rupees(part.lineTotal),
+                          ),
+                      ],
+                      if (visit.instantFee > 0)
+                        TotalRow(
+                          label: 'Instant fee',
+                          value: rupees(visit.instantFee),
+                        ),
+                      const VisitRule(top: 6, bottom: 14),
+                      const TotalRow(label: 'Visit charge', value: 'waived'),
                       TotalRow(
-                        label: 'Instant fee',
-                        value: rupees(visit.instantFee),
+                        label: 'Estimate',
+                        value: rupees(visit.estimate),
+                        isTotal: true,
                       ),
-                    const VisitRule(top: 6, bottom: 14),
-                    const TotalRow(label: 'Visit charge', value: 'waived'),
-                    TotalRow(
-                      label: 'Estimate',
-                      value: rupees(visit.estimate),
-                      isTotal: true,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      visit.parts.isEmpty
-                          ? 'You pay after the work is done. The provider '
-                                'confirms the final price before starting.'
-                          : 'The provider brings the parts on the visit. You '
-                                'pay once the work is done.',
-                      style: DiscoveryText.smallPrint,
-                    ),
-                    const SizedBox(height: 24),
-                    Text('PAYMENT', style: DiscoveryText.tipsHeading),
-                    const SizedBox(height: 12),
-                    for (final method in VisitPayment.values) ...[
-                      _PaymentRow(
-                        method: method,
-                        isSelected: visit.payment == method,
-                        onTap: () => setState(
-                          () => _visits.setPayment(widget.providerName, method),
+                      const SizedBox(height: 6),
+                      Text(
+                        visit.parts.isEmpty
+                            ? 'You pay after the work is done. The provider '
+                                  'confirms the final price before starting.'
+                            : 'The provider brings the parts on the visit. You '
+                                  'pay once the work is done.',
+                        style: DiscoveryText.smallPrint,
+                      ),
+                      const SizedBox(height: 24),
+                      Text('PAYMENT', style: DiscoveryText.tipsHeading),
+                      const SizedBox(height: 12),
+                      for (final method in VisitPayment.values) ...[
+                        _PaymentRow(
+                          method: method,
+                          isSelected: visit.payment == method,
+                          onTap: () => context.read<VisitBloc>().add(
+                            CartPaymentChosen(method),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
+                        const SizedBox(height: 10),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          decoration: const BoxDecoration(
-            color: AppColor.white,
-            border: Border(top: BorderSide(color: AppColor.discoveryBorder)),
+            ],
           ),
-          child: VisitCta(label: 'Confirm visit', onTap: _confirm),
+        ),
+        bottomNavigationBar: SafeArea(
+          top: false,
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+            decoration: const BoxDecoration(
+              color: AppColor.white,
+              border: Border(top: BorderSide(color: AppColor.discoveryBorder)),
+            ),
+            child: VisitCta(
+              label: 'Confirm visit',
+              onTap: () => context.read<VisitBloc>().add(const CartConfirmed()),
+            ),
+          ),
         ),
       ),
     );
   }
 
-  void _notice(String message) {
+  void _notice(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
